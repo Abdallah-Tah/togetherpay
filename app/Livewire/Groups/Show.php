@@ -36,10 +36,8 @@ class Show extends Component
     {
         return view('livewire.groups.show', [
             'currentCycle' => $this->currentCycle,
-        ])->layout('components.layouts.dashboard', [
-            'heading' => $this->group->name,
             'title' => $this->group->name.' - Group',
+            'pageHeading' => $this->group->name,
         ]);
     }
 }
-

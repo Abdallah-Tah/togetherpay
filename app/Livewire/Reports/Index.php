@@ -110,10 +110,7 @@ class Index extends Component
         return view('livewire.reports.index', [
             'groups' => $this->groups,
             'stats' => $this->stats,
-        ])->layout('components.layouts.dashboard', [
-            'heading' => 'Reports',
             'title' => 'Reports',
         ]);
     }
 }
-

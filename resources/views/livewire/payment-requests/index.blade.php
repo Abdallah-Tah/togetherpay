@@ -1,4 +1,10 @@
+@php($pageTitle = $title ?? 'Payments')
+
 <div class="space-y-6">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ $pageTitle }}</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Track the status of every payment request across your groups.</p>
+        </div>
         <!-- Stats Overview -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">

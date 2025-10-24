@@ -57,10 +57,8 @@ class Create extends Component
 
     public function render()
     {
-        return view('livewire.groups.create')->layout('components.layouts.dashboard', [
-            'heading' => 'Create Group',
+        return view('livewire.groups.create', [
             'title' => 'Create Group',
         ]);
     }
 }
-

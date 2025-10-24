@@ -1,4 +1,10 @@
+@php($pageTitle = $title ?? 'Reports')
+
 <div class="space-y-6">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ $pageTitle }}</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Generate payout summaries and export data for your groups.</p>
+        </div>
         <!-- Filter Section -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Generate Report</h3>

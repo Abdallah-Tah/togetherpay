@@ -29,8 +29,6 @@ class Index extends Component
     {
         return view('livewire.groups.index', [
             'groups' => $this->groups,
-        ])->layout('components.layouts.dashboard', [
-            'heading' => 'Groups',
             'title' => 'Groups',
         ]);
     }

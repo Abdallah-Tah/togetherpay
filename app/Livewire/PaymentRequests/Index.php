@@ -60,10 +60,7 @@ class Index extends Component
         return view('livewire.payment-requests.index', [
             'requests' => $this->requests,
             'stats' => $this->stats,
-        ])->layout('components.layouts.dashboard', [
-            'heading' => 'Payments',
             'title' => 'Payments',
         ]);
     }
 }
-
