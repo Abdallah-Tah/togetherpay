@@ -1,121 +1,160 @@
 <x-layouts.app>
     <x-slot:title>Dashboard</x-slot:title>
 
-    <div class="space-y-6">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">A quick snapshot of your groups, members, and collections.</p>
+    <div class="space-y-8">
+        <!-- Hero Section -->
+        <div class="bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 rounded-3xl shadow-xl p-8 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">Welcome back, {{ auth()->user()->name }}!</h1>
+                    <p class="text-brand-100 text-lg">Here's what's happening with your groups today</p>
+                </div>
+                <div class="hidden md:block">
+                    <a href="{{ route('app.groups.create') }}" wire:navigate
+                       class="inline-flex items-center px-6 py-3 bg-white text-brand-700 font-semibold rounded-2xl hover:bg-brand-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Create Group
+                    </a>
+                </div>
+            </div>
         </div>
-        <!-- Stats -->
+
+        <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Active Groups -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="p-3 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                            <svg class="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                            </svg>
-                        </div>
+            <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm hover:shadow-lg transition-shadow duration-200 p-6 border border-zinc-100 dark:border-zinc-700">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">Active Groups</p>
+                        <p class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
+                            {{ auth()->user()->ownedGroups()->where('status', 'active')->count() }}
+                        </p>
+                        <p class="text-xs text-zinc-400">
+                            <span class="text-success-600">↑ 2</span> from last month
+                        </p>
                     </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Groups</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ auth()->user()->ownedGroups()->where('status', 'active')->count() }}</p>
+                    <div class="p-3 bg-brand-50 dark:bg-brand-900/20 rounded-xl">
+                        <svg class="h-6 w-6 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
                     </div>
                 </div>
             </div>
 
             <!-- Total Members -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
-                            <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Members</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm hover:shadow-lg transition-shadow duration-200 p-6 border border-zinc-100 dark:border-zinc-700">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">Total Members</p>
+                        <p class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
                             {{ auth()->user()->ownedGroups()->withCount('members')->get()->sum('members_count') }}
                         </p>
+                        <p class="text-xs text-zinc-400">Across all groups</p>
+                    </div>
+                    <div class="p-3 bg-success-50 dark:bg-success-900/20 rounded-xl">
+                        <svg class="h-6 w-6 text-success-600 dark:text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
                     </div>
                 </div>
             </div>
 
             <!-- Pending Payments -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-                            <svg class="h-6 w-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Requests</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm hover:shadow-lg transition-shadow duration-200 p-6 border border-zinc-100 dark:border-zinc-700">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">Pending</p>
+                        <p class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
                             {{ \App\Models\PaymentRequest::whereHas('cycle.group', function($q) {
                                 $q->where('owner_id', auth()->id());
                             })->whereIn('status', ['pending', 'sent'])->count() }}
                         </p>
+                        <p class="text-xs text-zinc-400">Payment requests</p>
+                    </div>
+                    <div class="p-3 bg-warning-50 dark:bg-warning-900/20 rounded-xl">
+                        <svg class="h-6 w-6 text-warning-600 dark:text-warning-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                     </div>
                 </div>
             </div>
 
             <!-- This Month Collection -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                            <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">This Month</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            <div class="bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-6 text-white">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-brand-100 mb-1">This Month</p>
+                        <p class="text-3xl font-bold mb-2">
                             ${{ number_format(\App\Models\PaymentRequest::whereHas('cycle.group', function($q) {
                                 $q->where('owner_id', auth()->id());
                             })->where('status', 'paid')
                             ->whereMonth('paid_at', now()->month)
                             ->sum('amount_cents') / 100, 2) }}
                         </p>
+                        <p class="text-xs text-brand-100">Collected successfully</p>
+                    </div>
+                    <div class="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                        <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Recent Groups & Activity -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Groups & Quick Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Recent Groups -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Groups</h3>
+            <div class="lg:col-span-2 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-700">
+                <div class="px-6 py-5 border-b border-zinc-100 dark:border-zinc-700 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">Your Groups</h3>
+                    <a href="{{ route('app.groups.index') }}" wire:navigate class="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+                        View all →
+                    </a>
                 </div>
-                <div class="p-6">
+                <div class="divide-y divide-zinc-100 dark:divide-zinc-700">
                     @forelse(auth()->user()->ownedGroups()->latest()->take(5)->get() as $group)
-                        <a href="{{ route('app.groups.show', $group) }}" wire:navigate class="block hover:bg-gray-50 dark:hover:bg-gray-700 -mx-6 px-6 py-3 transition">
+                        <a href="{{ route('app.groups.show', $group) }}" wire:navigate
+                           class="block px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors duration-150">
                             <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="font-medium text-gray-900 dark:text-white">{{ $group->name }}</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $group->members_count ?? $group->members()->count() }} members · ${{ number_format($group->total_amount, 2) }}/{{ $group->cadence }}</p>
+                                <div class="flex items-center space-x-4 flex-1 min-w-0">
+                                    <div class="flex-shrink-0">
+                                        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-lg">
+                                            {{ strtoupper(substr($group->name, 0, 1)) }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-semibold text-zinc-900 dark:text-white truncate">{{ $group->name }}</p>
+                                        <p class="text-sm text-zinc-500 dark:text-zinc-400 flex items-center space-x-2">
+                                            <span>{{ $group->members_count ?? $group->members()->count() }} members</span>
+                                            <span>•</span>
+                                            <span class="font-medium">${{ number_format($group->total_amount, 2) }}</span>
+                                            <span>•</span>
+                                            <span class="text-xs">{{ ucfirst(strtolower(str_replace('_', ' ', $group->cadence))) }}</span>
+                                        </p>
+                                    </div>
                                 </div>
-                                <span class="px-2 py-1 text-xs font-medium rounded-full {{ $group->status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' }}">
+                                <span class="ml-4 flex-shrink-0 px-3 py-1 text-xs font-semibold rounded-full {{ $group->status === 'active' ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300' }}">
                                     {{ ucfirst($group->status) }}
                                 </span>
                             </div>
                         </a>
                     @empty
-                        <div class="text-center py-8">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                            </svg>
-                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No groups yet</p>
-                            <a href="{{ route('app.groups.index') }}" wire:navigate class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                        <div class="px-6 py-12 text-center">
+                            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-700 mb-4">
+                                <svg class="h-8 w-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                            <h4 class="text-base font-semibold text-zinc-900 dark:text-white mb-1">No groups yet</h4>
+                            <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Get started by creating your first bill-splitting group</p>
+                            <a href="{{ route('app.groups.create') }}" wire:navigate
+                               class="inline-flex items-center px-5 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors duration-200 shadow-sm">
+                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
                                 Create your first group
                             </a>
                         </div>
@@ -123,13 +162,63 @@
                 </div>
             </div>
 
-            <!-- Recent Activity -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h3>
+            <!-- Quick Actions -->
+            <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-700">
+                <div class="px-6 py-5 border-b border-zinc-100 dark:border-zinc-700">
+                    <h3 class="text-lg font-semibold text-zinc-900 dark:text-white">Quick Actions</h3>
                 </div>
-                <div class="p-6 space-y-4">
-                    <p class="text-center text-sm text-gray-500 dark:text-gray-400 py-4">Activity logging coming soon</p>
+                <div class="p-6 space-y-3">
+                    <a href="{{ route('app.groups.create') }}" wire:navigate
+                       class="flex items-center space-x-3 p-4 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors duration-150 group">
+                        <div class="flex-shrink-0 p-2.5 bg-brand-100 dark:bg-brand-900/30 rounded-lg group-hover:bg-brand-200 dark:group-hover:bg-brand-800/50 transition-colors">
+                            <svg class="h-5 w-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-zinc-900 dark:text-white">Create Group</p>
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400">Start a new bill split</p>
+                        </div>
+                    </a>
+
+                    <a href="{{ route('app.members.index') }}" wire:navigate
+                       class="flex items-center space-x-3 p-4 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors duration-150 group">
+                        <div class="flex-shrink-0 p-2.5 bg-success-100 dark:bg-success-900/30 rounded-lg group-hover:bg-success-200 dark:group-hover:bg-success-800/50 transition-colors">
+                            <svg class="h-5 w-5 text-success-600 dark:text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-zinc-900 dark:text-white">Manage Members</p>
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400">View all participants</p>
+                        </div>
+                    </a>
+
+                    <a href="{{ route('app.payment-requests.index') }}" wire:navigate
+                       class="flex items-center space-x-3 p-4 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors duration-150 group">
+                        <div class="flex-shrink-0 p-2.5 bg-warning-100 dark:bg-warning-900/30 rounded-lg group-hover:bg-warning-200 dark:group-hover:bg-warning-800/50 transition-colors">
+                            <svg class="h-5 w-5 text-warning-600 dark:text-warning-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-zinc-900 dark:text-white">View Payments</p>
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400">Track payment status</p>
+                        </div>
+                    </a>
+
+                    <a href="{{ route('app.reports.index') }}" wire:navigate
+                       class="flex items-center space-x-3 p-4 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors duration-150 group">
+                        <div class="flex-shrink-0 p-2.5 bg-zinc-100 dark:bg-zinc-700 rounded-lg group-hover:bg-zinc-200 dark:group-hover:bg-zinc-600 transition-colors">
+                            <svg class="h-5 w-5 text-zinc-600 dark:text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-zinc-900 dark:text-white">Reports</p>
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400">Export and analyze data</p>
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>

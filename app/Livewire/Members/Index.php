@@ -75,6 +75,11 @@ class Index extends Component
             ->toArray();
     }
 
+    public function getHasGroupsProperty(): bool
+    {
+        return count($this->groups()) > 0;
+    }
+
     protected function rules(): array
     {
         $base = [
@@ -84,8 +89,15 @@ class Index extends Component
             'formCashPhone' => ['nullable', 'string'],
             'formCashEmail' => ['nullable', 'email'],
             'formShareType' => ['required', Rule::in(['AMOUNT', 'PERCENT'])],
-            'formShareValue' => ['required', 'numeric', 'min:0'],
         ];
+
+        $shareValueRules = ['required', 'numeric', 'min:0'];
+
+        if ($this->formShareType === 'PERCENT') {
+            $shareValueRules[] = 'max:100';
+        }
+
+        $base['formShareValue'] = $shareValueRules;
 
         if ($this->editingMemberId) {
             return array_merge($base, [
@@ -124,11 +136,19 @@ class Index extends Component
 
     public function openCreateModal(): void
     {
+        if (! $this->hasGroups) {
+            session()->flash('error', 'Create a group first before adding members.');
+
+            return;
+        }
+
         $this->resetForm();
         $groups = $this->groups();
         if (! $this->formGroupId && count($groups)) {
             $this->formGroupId = (int) array_key_first($groups);
         }
+        $this->resetValidation();
+        $this->resetErrorBag();
         $this->showCreateModal = true;
     }
 
@@ -138,6 +158,8 @@ class Index extends Component
         $this->showEditModal = false;
         $this->showRemoveModal = false;
         $this->editingMemberId = null;
+        $this->resetValidation();
+        $this->resetErrorBag();
     }
 
     public function createMember(): void
@@ -194,6 +216,7 @@ class Index extends Component
 
         $this->closeModals();
         $this->resetForm();
+        $this->resetPage();
     }
 
     public function editMember(int $memberId): void
@@ -246,6 +269,7 @@ class Index extends Component
 
         $this->closeModals();
         $this->resetForm();
+        $this->resetPage();
     }
 
     public function confirmRemoval(int $memberId): void
@@ -274,6 +298,7 @@ class Index extends Component
 
         $this->closeModals();
         $this->resetForm();
+        $this->resetPage();
     }
 
     protected function resetForm(): void
@@ -296,6 +321,20 @@ class Index extends Component
         $this->formShareType = 'AMOUNT';
         $this->formStatus = 'active';
         $this->formShareValue = '';
+    }
+
+    public function updatedFormPreferredChannel(): void
+    {
+        if ($this->formPreferredChannel !== 'VENMO') {
+            $this->formVenmoUsername = '';
+        }
+    }
+
+    public function updatedFormShareType(): void
+    {
+        if ($this->formShareType === 'PERCENT' && $this->formShareValue !== '') {
+            $this->formShareValue = (string) min(100, max(0, (float) $this->formShareValue));
+        }
     }
 
     public function render()
