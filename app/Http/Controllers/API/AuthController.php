@@ -3,47 +3,94 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\API\LoginRequest;
+use App\Http\Requests\API\RegisterRequest;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Register a new user
      */
-    public function index()
+    public function register(RegisterRequest $request): JsonResponse
     {
-        //
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'password' => Hash::make($request->password),
+            'role' => 'member',
+        ]);
+
+        $token = $user->createToken('mobile-app')->plainTextToken;
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+            ],
+            'token' => $token,
+        ], 201);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Login user
      */
-    public function store(Request $request)
+    public function login(LoginRequest $request): JsonResponse
     {
-        //
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        // Revoke old tokens if requested
+        if ($request->revoke_old_tokens) {
+            $user->tokens()->delete();
+        }
+
+        $token = $user->createToken('mobile-app')->plainTextToken;
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+            ],
+            'token' => $token,
+        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Logout user (revoke token)
      */
-    public function show(string $id)
+    public function logout(Request $request): JsonResponse
     {
-        //
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'Logged out successfully',
+        ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Get authenticated user
      */
-    public function update(Request $request, string $id)
+    public function me(Request $request): JsonResponse
     {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'user' => $request->user(),
+        ]);
     }
 }
