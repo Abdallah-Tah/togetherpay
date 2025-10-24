@@ -3,6 +3,7 @@
 use App\Livewire\Groups\Create as GroupsCreate;
 use App\Livewire\Groups\Index as GroupsIndex;
 use App\Livewire\Groups\Show as GroupsShow;
+use App\Livewire\Members\Index as MembersIndex;
 use App\Livewire\PaymentRequests\Index as PaymentRequestsIndex;
 use App\Livewire\Reports\Index as ReportsIndex;
 use Illuminate\Support\Facades\Route;
@@ -19,15 +20,18 @@ Route::view('dashboard', 'dashboard')
 
 Route::middleware(['auth'])->group(function () {
     // Groups
-    Route::get('groups', GroupsIndex::class)->name('groups.index');
-    Route::get('groups/create', GroupsCreate::class)->name('groups.create');
-    Route::get('groups/{group}', GroupsShow::class)->name('groups.show');
+    Route::get('groups', GroupsIndex::class)->name('app.groups.index');
+    Route::get('groups/create', GroupsCreate::class)->name('app.groups.create');
+    Route::get('groups/{group}', GroupsShow::class)->name('app.groups.show');
+
+    // Members
+    Route::get('members', MembersIndex::class)->name('app.members.index');
 
     // Payment Requests
-    Route::get('payment-requests', PaymentRequestsIndex::class)->name('payment-requests.index');
+    Route::get('payment-requests', PaymentRequestsIndex::class)->name('app.payment-requests.index');
 
     // Reports
-    Route::get('reports', ReportsIndex::class)->name('reports.index');
+    Route::get('reports', ReportsIndex::class)->name('app.reports.index');
 
     // Settings
     Route::redirect('settings', 'settings/profile');

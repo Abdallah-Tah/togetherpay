@@ -1,4 +1,6 @@
-@php($pageTitle = $title ?? 'Reports')
+@php
+    $pageTitle = $title ?? 'Reports';
+@endphp
 
 <div class="space-y-6">
         <div>

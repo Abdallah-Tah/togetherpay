@@ -1,4 +1,6 @@
-@php($pageTitle = $title ?? 'Create Group')
+@php
+    $pageTitle = $title ?? 'Create Group';
+@endphp
 
 <div class="space-y-6">
         <div>
@@ -158,7 +160,7 @@
 
                 <!-- Actions -->
                 <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between rounded-b-lg">
-                    <a href="{{ route('groups.index') }}"
+                    <a href="{{ route('app.groups.index') }}"
                        wire:navigate
                        class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                         Cancel

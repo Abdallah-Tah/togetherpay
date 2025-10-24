@@ -1,4 +1,6 @@
-@php($heading = $pageHeading ?? ($group->name ?? 'Group'))
+@php
+    $heading = $pageHeading ?? ($group->name ?? 'Group');
+@endphp
 
 <div class="space-y-6">
         <div>

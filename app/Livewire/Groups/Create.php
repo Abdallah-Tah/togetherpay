@@ -52,7 +52,7 @@ class Create extends Component
 
         session()->flash('success', 'Group created successfully!');
 
-        $this->redirect(route('groups.show', $group), navigate: true);
+        $this->redirect(route('app.groups.show', $group), navigate: true);
     }
 
     public function render()

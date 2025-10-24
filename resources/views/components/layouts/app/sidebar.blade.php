@@ -14,9 +14,10 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
-                    <flux:navlist.item icon="users" :href="route('groups.index')" :current="request()->routeIs('groups.*')" wire:navigate>{{ __('Groups') }}</flux:navlist.item>
-                    <flux:navlist.item icon="wallet" :href="route('payment-requests.index')" :current="request()->routeIs('payment-requests.*')" wire:navigate>{{ __('Payments') }}</flux:navlist.item>
-                    <flux:navlist.item icon="chart-bar" :href="route('reports.index')" :current="request()->routeIs('reports.*')" wire:navigate>{{ __('Reports') }}</flux:navlist.item>
+                    <flux:navlist.item icon="users" :href="route('app.groups.index')" :current="request()->routeIs('app.groups.*')" wire:navigate>{{ __('Groups') }}</flux:navlist.item>
+                    <flux:navlist.item icon="user-circle" :href="route('app.members.index')" :current="request()->routeIs('app.members.*')" wire:navigate>{{ __('Members') }}</flux:navlist.item>
+                    <flux:navlist.item icon="wallet" :href="route('app.payment-requests.index')" :current="request()->routeIs('app.payment-requests.*')" wire:navigate>{{ __('Payments') }}</flux:navlist.item>
+                    <flux:navlist.item icon="chart-bar" :href="route('app.reports.index')" :current="request()->routeIs('app.reports.*')" wire:navigate>{{ __('Reports') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
