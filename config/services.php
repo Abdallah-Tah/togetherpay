@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    'cashapp' => [
+        'client_id' => env('CASHAPP_CLIENT_ID'),
+        'client_secret' => env('CASHAPP_CLIENT_SECRET'),
+        'api_url' => env('CASHAPP_API_URL', 'https://api.cash.app'),
+        'webhook_secret' => env('CASHAPP_WEBHOOK_SECRET'),
+    ],
+
+    'venmo' => [
+        'client_id' => env('VENMO_CLIENT_ID'),
+        'client_secret' => env('VENMO_CLIENT_SECRET'),
+        'api_url' => env('VENMO_API_URL', 'https://api.venmo.com'),
+    ],
+
 ];

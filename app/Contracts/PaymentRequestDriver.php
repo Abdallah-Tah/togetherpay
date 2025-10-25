@@ -7,32 +7,28 @@ use App\Models\GroupMember;
 interface PaymentRequestDriver
 {
     /**
-     * Build a payment link for the member
+     * Build deep link and web fallback for payment request
      *
-     * @param GroupMember $member
-     * @param int $amountCents
-     * @param string $note
-     * @return string
+     * @param  GroupMember  $member  The member who will pay
+     * @param  int  $amountCents  Amount in cents (e.g., 5000 = $50.00)
+     * @param  string  $prCode  Payment Request Code for reconciliation
+     * @param  string  $note  Payment note/description
+     * @return array{uri: string, web_fallback: string} Deep link and web fallback URL
      */
-    public function buildLink(GroupMember $member, int $amountCents, string $note): string;
+    public function buildLink(
+        GroupMember $member,
+        int $amountCents,
+        string $prCode,
+        string $note
+    ): array;
 
     /**
-     * Send a payment request (for API-based drivers)
+     * Validate payment account format
      *
-     * @param GroupMember $member
-     * @param int $amountCents
-     * @param string $note
-     * @return array{success: bool, external_id?: string, error?: string}
+     * @param  string  $account  Account identifier (e.g., $cashtag or @username)
+     * @return bool True if account format is valid
      */
-    public function sendRequest(GroupMember $member, int $amountCents, string $note): array;
-
-    /**
-     * Verify if a payment handle is valid
-     *
-     * @param string $handle
-     * @return bool
-     */
-    public function verifyHandle(string $handle): bool;
+    public function validateAccount(string $account): bool;
 
     /**
      * Get the driver name

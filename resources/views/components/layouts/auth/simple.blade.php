@@ -1,22 +1,26 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white antialiased dark:bg-linear-to-b dark:from-neutral-950 dark:to-neutral-900">
-        <div class="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-            <div class="flex w-full max-w-sm flex-col gap-2">
-                <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium" wire:navigate>
-                    <span class="flex h-9 w-9 mb-1 items-center justify-center rounded-md">
-                        <x-app-logo-icon class="size-9 fill-current text-black dark:text-white" />
+    <body class="h-full bg-gradient-to-br from-brand-50 via-white to-brand-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 antialiased">
+        <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
+            <div class="sm:mx-auto sm:w-full sm:max-w-md">
+                <!-- Logo -->
+                <a href="{{ route('home') }}" class="flex flex-col items-center gap-3 mb-8" wire:navigate>
+                    <div class="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-xl shadow-brand-500/30">
+                        <x-app-logo-icon class="h-10 w-10 text-white" />
+                    </div>
+                    <span class="text-2xl font-bold bg-gradient-to-r from-brand-600 to-brand-500 bg-clip-text text-transparent">
+                        {{ config('app.name', 'TogetherPay') }}
                     </span>
-                    <span class="sr-only">{{ config('app.name', 'Laravel') }}</span>
                 </a>
-                <div class="flex flex-col gap-6">
+
+                <!-- Auth Card -->
+                <div class="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-zinc-900/10 dark:shadow-zinc-950/50 border border-zinc-100 dark:border-zinc-800 px-8 py-10 sm:px-10">
                     {{ $slot }}
                 </div>
             </div>
         </div>
-        @fluxScripts
     </body>
 </html>

@@ -27,6 +27,12 @@ class User extends Authenticatable
         'phone',
         'role',
         'password',
+        'cashapp_tag',
+        'cashapp_customer_id',
+        'venmo_username',
+        'venmo_customer_id',
+        'preferred_payment_method',
+        'payment_metadata',
     ];
 
     /**
@@ -62,7 +68,7 @@ class User extends Authenticatable
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->map(fn($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
 

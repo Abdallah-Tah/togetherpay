@@ -7,24 +7,41 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DunningEvent extends Model
 {
-    public $timestamps = false;
-
     protected $fillable = [
         'payment_request_id',
-        'attempt_no',
-        'type',
+        'kind',
+        'channel',
+        'sent_at',
+        'delivered_at',
+        'opened_at',
         'meta',
-        'created_at',
     ];
 
     protected $casts = [
-        'attempt_no' => 'integer',
+        'sent_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'opened_at' => 'datetime',
         'meta' => 'array',
-        'created_at' => 'datetime',
     ];
 
     public function paymentRequest(): BelongsTo
     {
         return $this->belongsTo(PaymentRequest::class);
+    }
+
+    /**
+     * Scope for specific dunning kind
+     */
+    public function scopeKind($query, string $kind)
+    {
+        return $query->where('kind', $kind);
+    }
+
+    /**
+     * Scope for specific channel
+     */
+    public function scopeChannel($query, string $channel)
+    {
+        return $query->where('channel', $channel);
     }
 }

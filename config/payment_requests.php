@@ -64,5 +64,63 @@ return [
             ['days' => 7, 'type' => 'reminder'],
             ['days' => 10, 'type' => 'escalation'],
         ],
+
+        // V2: Enhanced dunning schedule (days relative to due date)
+        'retry1_days_before' => env('DUNNING_RETRY1_DAYS_BEFORE', 2),  // D-2 (friendly reminder)
+        'retry2_days_after' => env('DUNNING_RETRY2_DAYS_AFTER', 2),    // D+2 (gentle nudge)
+        'final_days_after' => env('DUNNING_FINAL_DAYS_AFTER', 5),      // D+5 (final notice)
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Grace Period
+    |--------------------------------------------------------------------------
+    |
+    | Number of days after the due date before marking a billing cycle
+    | as closed and carrying forward unpaid requests.
+    |
+    */
+    'grace_period_days' => env('CYCLE_GRACE_PERIOD_DAYS', 7),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Request Statuses (V2)
+    |--------------------------------------------------------------------------
+    |
+    | Valid status values for payment requests state machine
+    |
+    */
+    'statuses' => [
+        'pending',         // Created but not yet sent
+        'sent',            // Notification sent to member
+        'member_marked',   // Member marked as paid
+        'owner_confirmed', // Owner confirmed receipt
+        'auto_verified',   // Automatically verified (future feature)
+        'failed',          // Payment failed
+        'expired',         // Request expired without payment
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Evidence Types (V2)
+    |--------------------------------------------------------------------------
+    |
+    | Valid types of payment evidence members can submit
+    |
+    */
+    'evidence_types' => [
+        'photo',
+        'screenshot',
+        'confirmation_code',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Link Shortener (V2)
+    |--------------------------------------------------------------------------
+    */
+    'shortener' => [
+        'enabled' => env('LINK_SHORTENER_ENABLED', false),
+        'base_url' => env('LINK_SHORTENER_BASE', 'https://tpay.app/p/'),
     ],
 ];

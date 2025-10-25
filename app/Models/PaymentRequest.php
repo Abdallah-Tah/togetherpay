@@ -9,14 +9,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class PaymentRequest extends Model
 {
     protected $fillable = [
+        'group_id',
         'cycle_id',
         'member_id',
         'amount_cents',
-        'channel',
-        'link',
+        'method_hint',
+        'pr_code',
+        'note',
+        'deep_link',
+        'web_fallback_link',
         'external_id',
         'status',
+        'evidence_url',
+        'evidence_type',
+        'initiated_at',
         'sent_at',
+        'marked_at',
+        'confirmed_at',
         'paid_at',
         'fail_reason',
         'metadata',
@@ -24,10 +33,18 @@ class PaymentRequest extends Model
 
     protected $casts = [
         'amount_cents' => 'integer',
+        'initiated_at' => 'datetime',
         'sent_at' => 'datetime',
+        'marked_at' => 'datetime',
+        'confirmed_at' => 'datetime',
         'paid_at' => 'datetime',
         'metadata' => 'array',
     ];
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class, 'group_id');
+    }
 
     public function cycle(): BelongsTo
     {
@@ -56,23 +73,41 @@ class PaymentRequest extends Model
 
     public function isPaid(): bool
     {
-        return $this->status === 'paid';
+        return in_array($this->status, ['paid', 'owner_confirmed', 'auto_verified'], true);
     }
 
     public function isPending(): bool
     {
-        return $this->status === 'pending' || $this->status === 'sent';
+        return in_array($this->status, ['pending', 'sent'], true);
+    }
+
+    public function isMarkedByMember(): bool
+    {
+        return $this->status === 'member_marked';
+    }
+
+    public function isConfirmed(): bool
+    {
+        return in_array($this->status, ['owner_confirmed', 'auto_verified'], true);
     }
 
     public function markAsPaid(): void
     {
         $this->update([
-            'status' => 'paid',
-            'paid_at' => now(),
+            'status' => 'member_marked',
+            'marked_at' => now(),
+        ]);
+    }
+
+    public function confirmPayment(): void
+    {
+        $this->update([
+            'status' => 'owner_confirmed',
+            'confirmed_at' => now(),
         ]);
 
         // Update cycle collected amount
-        $this->cycle->increment('collected_amount_cents', $this->amount_cents);
+        $this->cycle->increment('total_collected_cents', $this->amount_cents);
     }
 
     public function markAsFailed(string $reason): void
@@ -81,5 +116,28 @@ class PaymentRequest extends Model
             'status' => 'failed',
             'fail_reason' => $reason,
         ]);
+    }
+
+    public function markAsExpired(): void
+    {
+        $this->update([
+            'status' => 'expired',
+        ]);
+    }
+
+    /**
+     * Scope for filtering by status
+     */
+    public function scopeStatus($query, string|array $status)
+    {
+        return $query->whereIn('status', (array) $status);
+    }
+
+    /**
+     * Scope for payments awaiting owner confirmation
+     */
+    public function scopeAwaitingConfirmation($query)
+    {
+        return $query->where('status', 'member_marked');
     }
 }

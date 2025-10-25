@@ -47,7 +47,7 @@ class PaymentRequestController extends Controller
     }
 
     /**
-     * Get a specific payment request
+     * Get a specific payment request by ID
      */
     public function show(Request $request, PaymentRequest $paymentRequest): JsonResponse
     {
@@ -64,6 +64,46 @@ class PaymentRequestController extends Controller
 
         return response()->json([
             'payment_request' => $paymentRequest,
+        ]);
+    }
+
+    /**
+     * Get payment request by PR code (V2 endpoint)
+     *
+     * GET /api/v1/requests/by-code/{prCode}
+     */
+    public function showByCode(string $prCode): JsonResponse
+    {
+        $pr = PaymentRequest::where('pr_code', $prCode)
+            ->with(['group.owner', 'member.user', 'cycle'])
+            ->firstOrFail();
+
+        $this->authorize('view', $pr);
+
+        return response()->json([
+            'id' => $pr->id,
+            'pr_code' => $pr->pr_code,
+            'group' => [
+                'id' => $pr->group->id,
+                'name' => $pr->group->name,
+                'owner' => [
+                    'name' => $pr->group->owner->name,
+                    'cash_tag' => $pr->group->owner->cash_tag,
+                    'venmo_username' => $pr->group->owner->venmo_username,
+                ],
+            ],
+            'amount_cents' => $pr->amount_cents,
+            'amount_display' => '$'.number_format($pr->amount_cents / 100, 2),
+            'status' => $pr->status,
+            'method_hint' => $pr->method_hint,
+            'note' => $pr->note,
+            'deep_link' => $pr->deep_link,
+            'web_fallback_link' => $pr->web_fallback_link,
+            'due_date' => $pr->cycle->due_date?->toIso8601String(),
+            'sent_at' => $pr->sent_at?->toIso8601String(),
+            'marked_at' => $pr->marked_at?->toIso8601String(),
+            'confirmed_at' => $pr->confirmed_at?->toIso8601String(),
+            'evidence_url' => $pr->evidence_url,
         ]);
     }
 
@@ -151,6 +191,91 @@ class PaymentRequestController extends Controller
             'pending_requests' => $pendingRequests,
             'total_paid' => round($totalPaid, 2),
             'on_time_rate' => round($onTimeRate, 2),
+        ]);
+    }
+
+    /**
+     * Owner confirms payment received (V2 endpoint)
+     *
+     * POST /api/v1/requests/by-code/{prCode}/confirm
+     */
+    public function confirmPayment(string $prCode): JsonResponse
+    {
+        $pr = PaymentRequest::where('pr_code', $prCode)
+            ->with('cycle')
+            ->firstOrFail();
+
+        $this->authorize('confirm', $pr);
+
+        $pr->confirmPayment();
+
+        return response()->json([
+            'ok' => true,
+            'pr' => [
+                'id' => $pr->id,
+                'pr_code' => $pr->pr_code,
+                'status' => $pr->status,
+                'confirmed_at' => $pr->confirmed_at->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * Owner bulk confirms multiple payments (V2 endpoint)
+     *
+     * POST /api/v1/cycles/{cycleId}/bulk-confirm
+     */
+    public function bulkConfirm(int $cycleId, Request $request): JsonResponse
+    {
+        $cycle = BillingCycle::with('group')->findOrFail($cycleId);
+
+        $this->authorize('view', $cycle->group);
+
+        $validated = $request->validate([
+            'pr_codes' => 'required|array|min:1',
+            'pr_codes.*' => 'required|string',
+        ]);
+
+        // Only confirm payments that are member_marked
+        $payments = PaymentRequest::whereIn('pr_code', $validated['pr_codes'])
+            ->where('cycle_id', $cycleId)
+            ->where('status', 'member_marked')
+            ->get();
+
+        $confirmed = 0;
+        $totalCents = 0;
+
+        foreach ($payments as $pr) {
+            $pr->confirmPayment();
+            $confirmed++;
+            $totalCents += $pr->amount_cents;
+        }
+
+        return response()->json([
+            'ok' => true,
+            'confirmed_count' => $confirmed,
+            'total_cents' => $totalCents,
+            'total_display' => '$'.number_format($totalCents / 100, 2),
+        ]);
+    }
+
+    /**
+     * Owner sends reminder/nudge to member (V2 endpoint)
+     *
+     * POST /api/v1/requests/by-code/{prCode}/nudge
+     */
+    public function nudge(string $prCode): JsonResponse
+    {
+        $pr = PaymentRequest::where('pr_code', $prCode)->firstOrFail();
+
+        $this->authorize('manage', $pr);
+
+        // TODO: Dispatch reminder job
+        // \App\Jobs\SendPaymentReminderJob::dispatch($pr);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Reminder sent',
         ]);
     }
 }

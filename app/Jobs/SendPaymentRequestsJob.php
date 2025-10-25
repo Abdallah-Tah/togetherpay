@@ -38,6 +38,11 @@ class SendPaymentRequestsJob implements ShouldQueue
                     new PaymentRequestNotification($request)
                 );
 
+                // If payment method is Cash App and member has customer ID, send via Cash App API
+                if ($request->payment_method === 'CASH_APP' && $request->member->cash_app_customer_id) {
+                    dispatch(new SendCashAppPaymentRequestJob($request));
+                }
+
                 $sentCount++;
 
                 Log::info("Sent payment request {$request->id} to user {$request->member->user_id}");

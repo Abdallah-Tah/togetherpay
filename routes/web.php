@@ -6,6 +6,7 @@ use App\Livewire\Groups\Show as GroupsShow;
 use App\Livewire\Members\Index as MembersIndex;
 use App\Livewire\PaymentRequests\Index as PaymentRequestsIndex;
 use App\Livewire\Reports\Index as ReportsIndex;
+use App\Http\Controllers\SmartPayController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
@@ -13,6 +14,9 @@ use Livewire\Volt\Volt;
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+// Smart Pay - Public payment page (no auth required)
+Route::get('/pay/{request}', [SmartPayController::class, 'show'])->name('smartpay.show');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
@@ -37,6 +41,7 @@ Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('user-password.edit');
+    Volt::route('settings/payment-accounts', 'settings.payment-accounts')->name('payment-accounts.edit');
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
 
     Volt::route('settings/two-factor', 'settings.two-factor')
@@ -50,3 +55,8 @@ Route::middleware(['auth'])->group(function () {
         )
         ->name('two-factor.show');
 });
+
+// Payment callback for Cash App redirects
+Route::get('/payment/callback', function () {
+    return view('payment.callback');
+})->name('payment.callback');
