@@ -8,7 +8,12 @@ import '../../main.dart';
 ///
 /// Creates a new account via Laravel API and automatically logs in
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final VoidCallback onAuthSuccess;
+
+  const RegisterScreen({
+    super.key,
+    required this.onAuthSuccess,
+  });
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -83,8 +88,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
 
-        // Navigate back to login screen, which will detect token and go to home
-        Navigator.pop(context, true);
+        widget.onAuthSuccess();
+
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
       }
     } on DioException catch (e) {
       if (Env.debug) {

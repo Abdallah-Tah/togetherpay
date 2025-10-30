@@ -6,7 +6,7 @@ class Env {
   /// Base URL for the Laravel API
   static const apiBase = String.fromEnvironment(
     'API_BASE',
-    defaultValue: 'http://localhost:8000/api/v1',
+    defaultValue: 'https://georgiann-semiacademic-never.ngrok-free.dev/api/v1',
   );
 
   /// Enable debug logging

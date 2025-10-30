@@ -1,0 +1,180 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                           ║
+║     TogetherPay Mobile App - API Integration Checklist                   ║
+║     Your ngrok API: https://georgiann-semiacademic-never.ngrok-free.dev  ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+## ✅ COMPLETION CHECKLIST
+
+### Phase 1: Backend Fix (CRITICAL)
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [ ] Open Laravel routes/api.php                                         │
+│ [ ] Find: Route::get('/requests/by-code/{prCode}', ...)                │
+│ [ ] Move it FROM protected section TO public section                    │
+│ [ ] Save file                                                           │
+│ [ ] Restart Laravel server (php artisan serve)                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+### Phase 2: API Testing
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [ ] Test login endpoint with curl                                       │
+│     Expected: 200 OK with {"token": "..."}                              │
+│                                                                          │
+│ [ ] Test payment request endpoint (THE CRITICAL ONE!)                   │
+│     curl https://georgiann-semiacademic-never.ngrok-free.dev/api/v1/\   │
+│          requests/by-code/PR_TEST                                        │
+│     Expected: 200 OK (NOT 401 Unauthorized)                             │
+│                                                                          │
+│ [ ] Optional: Run ./test_api.sh for full endpoint testing               │
+└─────────────────────────────────────────────────────────────────────────┘
+
+### Phase 3: Laravel Configuration
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [ ] Add ngrok URL to config/cors.php                                    │
+│     'allowed_origins' => [                                              │
+│         'https://georgiann-semiacademic-never.ngrok-free.dev',          │
+│     ],                                                                   │
+│                                                                          │
+│ [ ] Set proxies in app/Http/Middleware/TrustProxies.php                │
+│     protected $proxies = '*';                                           │
+│                                                                          │
+│ [ ] Restart Laravel server                                              │
+└─────────────────────────────────────────────────────────────────────────┘
+
+### Phase 4: Run Mobile App
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [ ] Navigate to mobile directory                                        │
+│     cd /Users/amohamed/Herd/togetherpay/mobile                          │
+│                                                                          │
+│ [ ] Run app with ngrok URL                                              │
+│     flutter run --dart-define=API_BASE=https://georgiann-semiacademic-\ │
+│                 never.ngrok-free.dev/api/v1                             │
+│                                                                          │
+│ [ ] OR use the interactive script                                       │
+│     ./run_with_ngrok.sh                                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+### Phase 5: App Testing
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [ ] Test Login                                                          │
+│     • Enter email and password                                          │
+│     • Tap login                                                         │
+│     • Should navigate to home screen                                    │
+│     • No errors in console                                              │
+│                                                                          │
+│ [ ] Test Groups Screen                                                  │
+│     • Should load list of groups                                        │
+│     • No 401 errors                                                     │
+│                                                                          │
+│ [ ] Test Payment Requests Screen                                        │
+│     • Should load list of payment requests                              │
+│     • No 401 errors                                                     │
+│                                                                          │
+│ [ ] Test Payment Flow (CRITICAL)                                        │
+│     • Tap a payment request                                             │
+│     • Should navigate to PayScreen                                      │
+│     • Should load payment details (NO 401 ERROR!)                       │
+│     • Should auto-launch payment app                                    │
+│     • Complete mock payment                                             │
+│     • Return to app                                                     │
+│     • Should show confirmation dialog                                   │
+│     • Tap "Yes, I paid"                                                 │
+│     • Should mark as paid successfully                                  │
+└─────────────────────────────────────────────────────────────────────────┘
+
+### Phase 6: Final Verification
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [ ] No 401 errors in console                                            │
+│ [ ] No CORS errors                                                      │
+│ [ ] All screens load without errors                                     │
+│ [ ] Payment flow works end-to-end                                       │
+│ [ ] App feels smooth and responsive                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════
+
+## 🚨 MOST COMMON ISSUES & FIXES
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PROBLEM: "Unable to load payment request" or 401 Unauthorized          │
+│ FIX:     Route is still protected. Move to public section!             │
+│ TEST:    curl the endpoint - should return 200, not 401                │
+├─────────────────────────────────────────────────────────────────────────┤
+│ PROBLEM: CORS policy error in console                                  │
+│ FIX:     Add ngrok URL to Laravel config/cors.php                      │
+│ TEST:    Restart Laravel and try again                                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│ PROBLEM: Connection refused or timeout                                 │
+│ FIX:     Make sure ngrok and Laravel are both running                  │
+│ TEST:    Visit ngrok URL in browser - should load                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│ PROBLEM: App crashes on startup                                        │
+│ FIX:     Run flutter clean && flutter pub get                          │
+│ TEST:    Try running again                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════
+
+## 📊 SUCCESS CRITERIA
+
+You know everything is working when:
+
+  ✅ Login works and stores auth token
+  ✅ Groups screen loads data
+  ✅ Payment requests screen loads data
+  ✅ Tapping payment request opens PayScreen
+  ✅ PayScreen loads details WITHOUT 401 error ← MOST IMPORTANT
+  ✅ Payment app launches automatically
+  ✅ Can mark payment as paid
+  ✅ No errors in console/logs
+
+═══════════════════════════════════════════════════════════════════════════
+
+## 📚 DOCUMENTATION REFERENCE
+
+┌──────────────────────────────┬─────────────────────────────────────────┐
+│ Document                     │ When to Use                             │
+├──────────────────────────────┼─────────────────────────────────────────┤
+│ START_HERE.md                │ Quick start guide                       │
+│ LARAVEL_FIX_REQUIRED.md      │ Backend route fix instructions          │
+│ How_To_Run_With_Your_API.md  │ Complete run guide + troubleshooting    │
+│ CURL_TESTS.md                │ Manual API endpoint testing             │
+│ API_FLOW_DIAGRAM.md          │ Visual flows and diagrams               │
+│ README_API_INTEGRATION.md    │ Full integration documentation          │
+│ test_api.sh                  │ Automated API testing script            │
+│ run_with_ngrok.sh            │ Interactive run script                  │
+└──────────────────────────────┴─────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════
+
+## 🎯 QUICK COMMAND REFERENCE
+
+Run app:
+  flutter run --dart-define=API_BASE=https://georgiann-semiacademic-never.ngrok-free.dev/api/v1
+
+Or:
+  ./run_with_ngrok.sh
+
+Test API:
+  curl "https://georgiann-semiacademic-never.ngrok-free.dev/api/v1/requests/by-code/PR_TEST"
+
+Run all tests:
+  ./test_api.sh https://georgiann-semiacademic-never.ngrok-free.dev/api/v1
+
+Clean build:
+  flutter clean && flutter pub get && flutter run --dart-define=API_BASE=...
+
+═══════════════════════════════════════════════════════════════════════════
+
+## 💡 REMEMBER
+
+• Your mobile app is ALREADY CORRECT ✅
+• Only the backend needs ONE route moved ⚠️
+• Takes 2 minutes to fix 🚀
+• After fix, everything will work perfectly 🎉
+
+═══════════════════════════════════════════════════════════════════════════
+
+Print this checklist and check off each item as you complete it!
+

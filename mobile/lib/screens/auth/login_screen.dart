@@ -9,7 +9,12 @@ import 'register_screen.dart';
 ///
 /// Authenticates users via Laravel Sanctum API and stores auth token
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final VoidCallback onAuthSuccess;
+
+  const LoginScreen({
+    super.key,
+    required this.onAuthSuccess,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -71,9 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        // Navigate to home screen (let parent handle this by rebuilding)
-        // Pop with success flag
-        Navigator.pop(context, true);
+        widget.onAuthSuccess();
       }
     } on DioException catch (e) {
       if (Env.debug) {
@@ -285,7 +288,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => const RegisterScreen(),
+                                    builder: (_) => RegisterScreen(
+                                      onAuthSuccess: widget.onAuthSuccess,
+                                    ),
                                   ),
                                 );
                               },
