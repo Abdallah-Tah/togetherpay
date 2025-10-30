@@ -3,10 +3,15 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\API\ManualPaymentRequestRequest;
 use App\Models\BillingCycle;
+use App\Models\Group;
+use App\Models\GroupMember;
 use App\Models\PaymentRequest;
+use App\Services\PaymentRequestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class PaymentRequestController extends Controller
 {
@@ -80,18 +85,102 @@ class PaymentRequestController extends Controller
 
         $this->authorize('view', $pr);
 
+        return response()->json($this->transformPaymentRequest($pr));
+    }
+
+    /**
+     * Create and optionally send a manual payment request to a member.
+     */
+    public function storeManual(
+        ManualPaymentRequestRequest $request,
+        Group $group,
+        GroupMember $member,
+        PaymentRequestService $paymentRequestService
+    ): JsonResponse {
+        $this->authorize('update', $group);
+
+        if ($member->group_id !== $group->id) {
+            abort(404, 'Member not found in this group');
+        }
+
+        if ($member->status !== 'active') {
+            throw ValidationException::withMessages([
+                'member' => ['Member is not active in this group.'],
+            ]);
+        }
+
+        if (! $member->isVerified()) {
+            throw ValidationException::withMessages([
+                'member' => ['Member must verify their payment details before sending requests.'],
+            ]);
+        }
+
+        if (! $member->preferred_channel || ! $member->getPaymentHandle()) {
+            throw ValidationException::withMessages([
+                'member' => ['Member is missing payment handle information.'],
+            ]);
+        }
+
+        $cycle = null;
+        if ($request->filled('cycle_id')) {
+            $cycle = BillingCycle::where('group_id', $group->id)
+                ->findOrFail($request->integer('cycle_id'));
+        }
+
+        $amountCents = $request->filled('amount_cents')
+            ? $request->integer('amount_cents')
+            : (int) round($request->float('amount') * 100);
+
+        $note = $request->input(
+            'note',
+            sprintf('%s • Manual request %s', $group->name, now($group->timezone ?? config('app.timezone'))->format('M d, Y'))
+        );
+
+        $sendNow = $request->boolean('send_now', true);
+
+        $paymentRequest = $paymentRequestService->createManualRequest(
+            $member,
+            $amountCents,
+            $note,
+            $cycle,
+            $sendNow
+        );
+
+        $paymentRequest->load(['group.owner', 'member.user', 'cycle']);
+
         return response()->json([
+            'ok' => true,
+            'message' => $sendNow
+                ? 'Payment request sent successfully.'
+                : 'Payment request created successfully.',
+            'payment_request' => $this->transformPaymentRequest($paymentRequest),
+        ], 201);
+    }
+
+    protected function transformPaymentRequest(PaymentRequest $pr): array
+    {
+        $group = $pr->group;
+        $cycle = $pr->cycle;
+        $member = $pr->member;
+
+        return [
             'id' => $pr->id,
             'pr_code' => $pr->pr_code,
-            'group' => [
-                'id' => $pr->group->id,
-                'name' => $pr->group->name,
-                'owner' => [
-                    'name' => $pr->group->owner->name,
-                    'cash_tag' => $pr->group->owner->cash_tag,
-                    'venmo_username' => $pr->group->owner->venmo_username,
-                ],
-            ],
+            'group' => $group ? [
+                'id' => $group->id,
+                'name' => $group->name,
+                'owner' => $group->owner ? [
+                    'name' => $group->owner->name,
+                    'cash_tag' => $group->owner->cash_tag,
+                    'venmo_username' => $group->owner->venmo_username,
+                ] : null,
+            ] : null,
+            'member' => $member ? [
+                'id' => $member->id,
+                'name' => $member->user?->name,
+                'email' => $member->user?->email,
+                'preferred_channel' => $member->preferred_channel,
+            ] : null,
             'amount_cents' => $pr->amount_cents,
             'amount_display' => '$'.number_format($pr->amount_cents / 100, 2),
             'status' => $pr->status,
@@ -99,12 +188,19 @@ class PaymentRequestController extends Controller
             'note' => $pr->note,
             'deep_link' => $pr->deep_link,
             'web_fallback_link' => $pr->web_fallback_link,
-            'due_date' => $pr->cycle->due_date?->toIso8601String(),
             'sent_at' => $pr->sent_at?->toIso8601String(),
             'marked_at' => $pr->marked_at?->toIso8601String(),
             'confirmed_at' => $pr->confirmed_at?->toIso8601String(),
+            'due_date' => $cycle?->due_at?->toIso8601String(),
+            'cycle' => $cycle ? [
+                'id' => $cycle->id,
+                'period_start' => $cycle->period_start?->toDateString(),
+                'period_end' => $cycle->period_end?->toDateString(),
+                'due_at' => $cycle->due_at?->toIso8601String(),
+            ] : null,
+            'metadata' => $pr->metadata,
             'evidence_url' => $pr->evidence_url,
-        ]);
+        ];
     }
 
     /**

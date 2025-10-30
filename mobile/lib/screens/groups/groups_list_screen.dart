@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../env.dart';
 import '../../main.dart';
 import '../../widgets/group_card.dart';
+import 'group_form_sheet.dart';
 import 'group_details_screen.dart';
 
 /// Groups list screen showing user's groups
@@ -35,27 +36,49 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
 
     try {
       final response = await dio.get('/groups');
+      final data = response.data;
 
-      if (response.data is Map<String, dynamic>) {
-        // API returns { data: [...] }
-        final data = response.data as Map<String, dynamic>;
-        final groupsList = data['data'] as List<dynamic>?;
+      final List<Map<String, dynamic>> groups = [];
 
-        setState(() {
-          _groups = groupsList?.map((g) => g as Map<String, dynamic>).toList() ?? [];
-          _loading = false;
-        });
-      } else if (response.data is List) {
-        // API returns [...] directly
-        setState(() {
-          _groups = (response.data as List)
-              .map((g) => g as Map<String, dynamic>)
-              .toList();
-          _loading = false;
-        });
+      if (data is Map<String, dynamic>) {
+        final owned = data['owned_groups'];
+        final member = data['member_groups'];
+
+        if (owned is List) {
+          for (final group in owned) {
+            groups.add(_normalizeGroup(group, isOwner: true));
+          }
+        }
+
+        if (member is List) {
+          for (final group in member) {
+            groups.add(_normalizeGroup(group, isOwner: false));
+          }
+        }
+
+        if (groups.isEmpty && data['data'] is List) {
+          for (final group in data['data'] as List<dynamic>) {
+            groups.add(_normalizeGroup(group, isOwner: false));
+          }
+        }
+      } else if (data is List) {
+        for (final group in data) {
+          groups.add(_normalizeGroup(group, isOwner: false));
+        }
       } else {
         throw Exception('Unexpected response format');
       }
+
+      groups.sort((a, b) {
+        final nameA = (a['name'] as String?) ?? '';
+        final nameB = (b['name'] as String?) ?? '';
+        return nameA.toLowerCase().compareTo(nameB.toLowerCase());
+      });
+
+      setState(() {
+        _groups = groups;
+        _loading = false;
+      });
 
       if (Env.debug) {
         print('Loaded ${_groups.length} groups');
@@ -82,6 +105,73 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
     }
   }
 
+  Map<String, dynamic> _normalizeGroup(dynamic group, {required bool isOwner}) {
+    final map = Map<String, dynamic>.from(group as Map);
+
+    map['is_owner'] = isOwner || (map['is_owner'] as bool? ?? false);
+
+    if (map['member_count'] == null) {
+      final members = map['members'];
+      if (members is List) {
+        map['member_count'] = members.length;
+      }
+    }
+
+    if (map['pending_payments_count'] == null) {
+      map['pending_payments_count'] = _countPendingRequests(map);
+    }
+
+    return map;
+  }
+
+  int _countPendingRequests(Map<String, dynamic> group) {
+    int count = 0;
+
+    void handleList(List<dynamic> list) {
+      for (final item in list) {
+        if (item is Map<String, dynamic>) {
+          final status = item['status'] as String?;
+          if (_isPendingStatus(status)) {
+            count++;
+          }
+        }
+      }
+    }
+
+    final paymentRequests = group['payment_requests'];
+    if (paymentRequests is List) {
+      handleList(paymentRequests);
+    } else {
+      final cycles = group['cycles'];
+      if (cycles is List) {
+        for (final cycle in cycles) {
+          if (cycle is Map<String, dynamic>) {
+            final cycleRequests = cycle['payment_requests'];
+            if (cycleRequests is List) {
+              handleList(cycleRequests);
+            }
+          }
+        }
+      }
+    }
+
+    return count;
+  }
+
+  bool _isPendingStatus(String? status) {
+    switch ((status ?? '').toLowerCase()) {
+      case 'pending':
+      case 'sent':
+      case 'member_marked':
+      case 'collecting':
+      case 'overdue':
+      case 'late':
+        return true;
+      default:
+        return false;
+    }
+  }
+
   Future<void> _handleRefresh() async {
     await _loadGroups();
   }
@@ -99,12 +189,32 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => GroupDetailsScreen(groupId: groupId),
+        builder: (_) => GroupDetailsScreen(
+          groupId: groupId,
+          initialGroup: group,
+        ),
       ),
     ).then((_) {
       // Refresh groups when returning from details
       _loadGroups();
     });
+  }
+
+  Future<void> _showCreateGroupSheet() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const GroupFormSheet(),
+    );
+
+    if (result != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Group "${result['name'] ?? 'New Group'}" created'),
+        ),
+      );
+      await _loadGroups();
+    }
   }
 
   @override
@@ -122,14 +232,7 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Implement create group
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Create group feature coming soon'),
-            ),
-          );
-        },
+        onPressed: _loading ? null : _showCreateGroupSheet,
         icon: const Icon(Icons.add),
         label: const Text('New Group'),
       ),
@@ -202,14 +305,7 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
               ),
               const SizedBox(height: 32),
               FilledButton.icon(
-                onPressed: () {
-                  // TODO: Implement create group
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Create group feature coming soon'),
-                    ),
-                  );
-                },
+                onPressed: _loading ? null : _showCreateGroupSheet,
                 icon: const Icon(Icons.add),
                 label: const Text('Create Your First Group'),
               ),

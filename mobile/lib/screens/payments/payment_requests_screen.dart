@@ -25,6 +25,10 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
   List<Map<String, dynamic>> _pendingRequests = [];
   List<Map<String, dynamic>> _paidRequests = [];
   List<Map<String, dynamic>> _overdueRequests = [];
+  List<Map<String, dynamic>> _failedRequests = [];
+
+  // Track which payment request is being retried
+  String? _retryingRequestId;
 
   @override
   void initState() {
@@ -61,12 +65,15 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
       _pendingRequests = [];
       _paidRequests = [];
       _overdueRequests = [];
+      _failedRequests = [];
 
       for (final request in requests) {
         final status = (request['status'] as String? ?? 'pending').toLowerCase();
 
         if (status == 'paid' || status == 'member_marked' || status == 'confirmed') {
           _paidRequests.add(request);
+        } else if (status == 'failed' || status == 'error') {
+          _failedRequests.add(request);
         } else if (status == 'overdue' || status == 'late') {
           _overdueRequests.add(request);
         } else {
@@ -81,7 +88,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
 
       if (Env.debug) {
         print('Loaded ${_allRequests.length} payment requests');
-        print('Pending: ${_pendingRequests.length}, Paid: ${_paidRequests.length}, Overdue: ${_overdueRequests.length}');
+        print('Pending: ${_pendingRequests.length}, Paid: ${_paidRequests.length}, Overdue: ${_overdueRequests.length}, Failed: ${_failedRequests.length}');
       }
     } on DioException catch (e) {
       if (Env.debug) {
@@ -131,6 +138,55 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
       // Refresh payment requests when returning
       _loadPaymentRequests();
     });
+  }
+
+  Future<void> _retryPaymentRequest(Map<String, dynamic> paymentRequest) async {
+    final requestId = paymentRequest['id'];
+    
+    if (requestId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid payment request')),
+      );
+      return;
+    }
+
+    setState(() {
+      _retryingRequestId = requestId.toString();
+    });
+
+    try {
+      await dio.post('/payment-requests/$requestId/retry');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment request will be resent'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Refresh the list
+        await _loadPaymentRequests();
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        final message = e.response?.data?['message'] as String? ??
+            'Failed to retry payment request';
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _retryingRequestId = null;
+        });
+      }
+    }
   }
 
   @override
@@ -225,7 +281,29 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
       child: ListView(
         padding: const EdgeInsets.only(top: 8, bottom: 16),
         children: [
-          // Overdue section (highest priority)
+          // Failed section (highest priority)
+          if (_failedRequests.isNotEmpty) ...[
+            _buildSectionHeader(
+              'Failed',
+              _failedRequests.length,
+              Colors.red.shade700,
+              Icons.error,
+            ),
+            ..._failedRequests.map((request) {
+              final requestId = request['id']?.toString();
+              final isRetrying = requestId == _retryingRequestId;
+              
+              return PaymentRequestCard(
+                paymentRequest: request,
+                onTap: () => _navigateToPayScreen(request),
+                onRetry: () => _retryPaymentRequest(request),
+                isProcessingRetry: isRetrying,
+              );
+            }),
+            const SizedBox(height: 16),
+          ],
+
+          // Overdue section
           if (_overdueRequests.isNotEmpty) ...[
             _buildSectionHeader(
               'Overdue',

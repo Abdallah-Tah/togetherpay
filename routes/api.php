@@ -40,6 +40,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('/groups/{group}/members', [GroupController::class, 'addMember']);
     Route::put('/groups/{group}/members/{member}', [GroupController::class, 'updateMember']);
     Route::delete('/groups/{group}/members/{member}', [GroupController::class, 'removeMember']);
+    Route::post('/groups/{group}/members/{member}/payment-requests', [PaymentRequestController::class, 'storeManual']);
 
     // Payment Requests (Existing endpoints)
     Route::get('/payment-requests', [PaymentRequestController::class, 'index']);

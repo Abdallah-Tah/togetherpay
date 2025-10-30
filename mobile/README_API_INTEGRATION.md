@@ -54,6 +54,7 @@ Route::prefix('v1')->group(function () {
 | `/auth/me` | GET | ✅ Protected | Perfect |
 | `/groups` | GET | ✅ Protected | Perfect |
 | `/groups/{id}` | GET | ✅ Protected | Perfect |
+| `/groups/{group}/members/{member}/payment-requests` | POST | ✅ Protected | **New – manual send** |
 | `/payment-requests` | GET | ✅ Protected | Perfect |
 | `/devices/register` | POST | ✅ Public | Perfect |
 | `/requests/by-code/{prCode}` | GET | ⚠️ Protected | **Needs Fix** |
@@ -151,6 +152,30 @@ Your `PaymentRequestController@showByCode` should return:
 
 ---
 
+### New: Manual Payment Request Endpoint
+
+Owners can now send an ad-hoc payment link to any verified member without waiting for the nightly cycle job.
+
+`POST /api/v1/groups/{group}/members/{member}/payment-requests`
+
+```bash
+curl -X POST https://georgiann-semiacademic-never.ngrok-free.dev/api/v1/groups/42/members/17/payment-requests \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 45.50,
+    "note": "T-Mobile add-on – Nov 12",
+    "send_now": true
+  }'
+```
+
+- Supply either `amount` (USD) or `amount_cents`  
+- Optional `cycle_id` ties the request back to an existing billing cycle  
+- `send_now` defaults to `true`; set to `false` to create the record without sending notifications yet  
+- Response mirrors `GET /requests/by-code/{prCode}` so the mobile app can present the payment screen immediately.
+
+---
+
 ## 🧪 Testing Flow
 
 1. **Backend Fix**
@@ -224,4 +249,3 @@ flutter build ios --release --dart-define=API_BASE=https://api.togetherpay.app/a
 ```
 
 Replace with your actual production API URL.
-

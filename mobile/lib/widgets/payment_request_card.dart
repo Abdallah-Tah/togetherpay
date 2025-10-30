@@ -1,18 +1,31 @@
 import 'package:flutter/material.dart';
 
-/// Reusable payment request card widget
+/// Reusable payment request card widget.
 ///
-/// Displays payment request details with status badge and action button
+/// Displays payment request details with optional actionable buttons for
+/// paying, nudging, or confirming payments depending on status.
 class PaymentRequestCard extends StatelessWidget {
   final Map<String, dynamic> paymentRequest;
   final VoidCallback? onTap;
   final VoidCallback? onPay;
+  final VoidCallback? onNudge;
+  final VoidCallback? onConfirm;
+  final VoidCallback? onRetry;
+  final bool isProcessingNudge;
+  final bool isProcessingConfirm;
+  final bool isProcessingRetry;
 
   const PaymentRequestCard({
     super.key,
     required this.paymentRequest,
     this.onTap,
     this.onPay,
+    this.onNudge,
+    this.onConfirm,
+    this.onRetry,
+    this.isProcessingNudge = false,
+    this.isProcessingConfirm = false,
+    this.isProcessingRetry = false,
   });
 
   @override
@@ -30,11 +43,21 @@ class PaymentRequestCard extends StatelessWidget {
 
     switch (status.toLowerCase()) {
       case 'paid':
-      case 'member_marked':
       case 'confirmed':
         statusColor = Colors.green;
         statusIcon = Icons.check_circle;
         statusLabel = 'Paid';
+        break;
+      case 'member_marked':
+        statusColor = Colors.amber.shade800;
+        statusIcon = Icons.hourglass_bottom;
+        statusLabel = 'Awaiting confirm';
+        break;
+      case 'failed':
+      case 'error':
+        statusColor = Colors.red.shade700;
+        statusIcon = Icons.error;
+        statusLabel = 'Failed';
         break;
       case 'overdue':
       case 'late':
@@ -54,6 +77,12 @@ class PaymentRequestCard extends StatelessWidget {
         statusLabel = 'Pending';
         break;
     }
+
+    final dueDateLabel = _formatDueDateLabel(dueDate);
+    final showPayButton = onPay != null && _canShowPayButton(status);
+    final showNudgeButton = onNudge != null && _canShowNudge(status);
+    final showConfirmButton = onConfirm != null && _canShowConfirm(status);
+    final showRetryButton = onRetry != null && _canShowRetry(status);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -128,7 +157,7 @@ class PaymentRequestCard extends StatelessWidget {
               const SizedBox(height: 4),
 
               // Due date
-              if (dueDate != null) ...[
+              if (dueDateLabel != null) ...[
                 Row(
                   children: [
                     Icon(
@@ -138,7 +167,7 @@ class PaymentRequestCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Due: $dueDate',
+                      'Due: $dueDateLabel',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
                           ),
@@ -162,9 +191,7 @@ class PaymentRequestCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Pay button for pending/sent payments
-                  if (onPay != null &&
-                      (status == 'pending' || status == 'sent')) ...[
+                  if (showPayButton) ...[
                     const SizedBox(width: 8),
                     FilledButton.icon(
                       onPressed: onPay,
@@ -180,10 +207,115 @@ class PaymentRequestCard extends StatelessWidget {
                   ],
                 ],
               ),
+
+              if (showNudgeButton || showConfirmButton || showRetryButton) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    if (showRetryButton)
+                      OutlinedButton.icon(
+                        onPressed: isProcessingRetry ? null : onRetry,
+                        icon: isProcessingRetry
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.orange,
+                        ),
+                      ),
+                    if (showNudgeButton)
+                      OutlinedButton.icon(
+                        onPressed: isProcessingNudge ? null : onNudge,
+                        icon: isProcessingNudge
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.notifications_active_outlined),
+                        label: const Text('Remind'),
+                      ),
+                    if (showConfirmButton)
+                      FilledButton.icon(
+                        onPressed: isProcessingConfirm ? null : onConfirm,
+                        icon: isProcessingConfirm
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.verified_outlined),
+                        label: const Text('Confirm'),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  bool _canShowPayButton(String status) {
+    final normalized = status.toLowerCase();
+    return normalized == 'pending' ||
+        normalized == 'sent' ||
+        normalized == 'overdue' ||
+        normalized == 'late';
+  }
+
+  bool _canShowNudge(String status) {
+    final normalized = status.toLowerCase();
+    return normalized == 'pending' ||
+        normalized == 'sent' ||
+        normalized == 'member_marked' ||
+        normalized == 'overdue' ||
+        normalized == 'late';
+  }
+
+  bool _canShowConfirm(String status) {
+    return status.toLowerCase() == 'member_marked';
+  }
+
+  bool _canShowRetry(String status) {
+    final normalized = status.toLowerCase();
+    return normalized == 'failed' || normalized == 'error';
+  }
+
+  String? _formatDueDateLabel(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      final month = months[dt.month - 1];
+      final day = dt.day.toString();
+      return '$month $day, ${dt.year}';
+    } catch (_) {
+      return raw;
+    }
   }
 }
