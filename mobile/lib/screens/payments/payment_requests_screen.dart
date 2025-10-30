@@ -51,7 +51,8 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
         // API returns { data: [...] }
         final data = response.data as Map<String, dynamic>;
         final requestsList = data['data'] as List<dynamic>?;
-        requests = requestsList?.map((r) => r as Map<String, dynamic>).toList() ?? [];
+        requests =
+            requestsList?.map((r) => r as Map<String, dynamic>).toList() ?? [];
       } else if (response.data is List) {
         // API returns [...] directly
         requests = (response.data as List)
@@ -68,9 +69,12 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
       _failedRequests = [];
 
       for (final request in requests) {
-        final status = (request['status'] as String? ?? 'pending').toLowerCase();
+        final status =
+            (request['status'] as String? ?? 'pending').toLowerCase();
 
-        if (status == 'paid' || status == 'member_marked' || status == 'confirmed') {
+        if (status == 'paid' ||
+            status == 'member_marked' ||
+            status == 'confirmed') {
           _paidRequests.add(request);
         } else if (status == 'failed' || status == 'error') {
           _failedRequests.add(request);
@@ -88,7 +92,8 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
 
       if (Env.debug) {
         print('Loaded ${_allRequests.length} payment requests');
-        print('Pending: ${_pendingRequests.length}, Paid: ${_paidRequests.length}, Overdue: ${_overdueRequests.length}, Failed: ${_failedRequests.length}');
+        print(
+            'Pending: ${_pendingRequests.length}, Paid: ${_paidRequests.length}, Overdue: ${_overdueRequests.length}, Failed: ${_failedRequests.length}');
       }
     } on DioException catch (e) {
       if (Env.debug) {
@@ -97,7 +102,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
 
       setState(() {
         _error = e.response?.data?['message'] as String? ??
-                 'Failed to load payment requests';
+            'Failed to load payment requests';
         _loading = false;
       });
     } catch (e) {
@@ -142,7 +147,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
 
   Future<void> _retryPaymentRequest(Map<String, dynamic> paymentRequest) async {
     final requestId = paymentRequest['id'];
-    
+
     if (requestId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid payment request')),
@@ -172,7 +177,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
       if (mounted) {
         final message = e.response?.data?['message'] as String? ??
             'Failed to retry payment request';
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
@@ -292,7 +297,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
             ..._failedRequests.map((request) {
               final requestId = request['id']?.toString();
               final isRetrying = requestId == _retryingRequestId;
-              
+
               return PaymentRequestCard(
                 paymentRequest: request,
                 onTap: () => _navigateToPayScreen(request),

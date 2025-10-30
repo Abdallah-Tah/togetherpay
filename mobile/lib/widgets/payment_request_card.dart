@@ -190,7 +190,6 @@ class PaymentRequestCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-
                   if (showPayButton) ...[
                     const SizedBox(width: 8),
                     FilledButton.icon(
@@ -222,7 +221,8 @@ class PaymentRequestCard extends StatelessWidget {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.refresh),
                         label: const Text('Retry'),
@@ -237,7 +237,8 @@ class PaymentRequestCard extends StatelessWidget {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.notifications_active_outlined),
                         label: const Text('Remind'),
