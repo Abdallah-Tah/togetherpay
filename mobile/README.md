@@ -1,39 +1,72 @@
 # TogetherPay Mobile
 
-Flutter mobile app for TogetherPay - P2P bill splitting with push notifications.
+Complete Flutter mobile app for TogetherPay - P2P bill splitting with authentication, groups management, and push notifications.
 
 ## Features
 
+### Core Functionality
+- 🔐 **Full Authentication System** - Login, registration, secure token storage
+- 👥 **Groups Management** - View groups, group details, members, shares
+- 💰 **Payment Requests** - View all payments organized by status (Overdue, Pending, Paid)
 - 🔔 **Push Notifications** (FCM/APNs) for payment requests
-- 💰 **Deep Link Wallet Launch** (Cash App, Venmo) with prefilled amounts
-- ✅ **Mark as Paid** workflow with owner confirmation
-- 🔐 **Secure Token Storage** for Laravel Sanctum authentication
+- 💸 **Deep Link Wallet Launch** (Cash App, Venmo) with prefilled amounts
+- ✅ **Auto-Confirmation Dialog** - Prompts user after returning from wallet app
 - 📱 **iOS + Android** support
+- 🎨 **Material Design 3** - Modern, polished UI
+
+### User Experience
+- Pull-to-refresh on all list screens
+- Empty states with helpful messaging
+- Loading states and error handling
+- Bottom navigation (Groups, Payments, Profile)
+- Splash screen on app startup
+- Logout with confirmation
 
 ---
 
 ## Architecture
 
-### Payment Flow
+### Complete Payment Flow
 
 ```
-1. Push notification →
-2. App opens →
-3. Fetch payment details from API →
-4. Launch wallet (Cash App/Venmo) with prefilled amount + PR code →
-5. Member completes payment →
-6. Returns to app →
-7. Taps "Mark as Paid" →
-8. API updates status to `member_marked` →
-9. Owner confirms via web/mobile →
-10. Status updated to `owner_confirmed`
+1. User opens app → Splash screen → Auth check
+2. If not authenticated → Login/Register screen
+3. After login → Groups list (bottom nav: Groups, Payments, Profile)
+4. Push notification arrives → "Pay $50 for T-Mobile"
+5. User taps notification → App opens PayScreen
+6. PayScreen fetches details from API → Auto-launches wallet
+7. User completes payment in Cash App/Venmo
+8. User returns to app → AUTO-DIALOG: "Did you complete the payment?"
+   - "Yes, I paid" → Calls API to mark as paid → Success → Navigate back
+   - "Remind me later" → Shows reminder message (TODO: schedule notification)
+   - "I'll pay later" → Dismisses, navigates back
+9. Payment status updated to `member_marked` in backend
+10. Owner confirms via web/mobile → Status updated to `confirmed`
+```
+
+### App Structure
+
+```
+TogetherPayApp (root)
+├── SplashScreen (initializing)
+├── LoginScreen (not authenticated)
+└── MainScaffold (authenticated)
+    ├── Bottom Navigation
+    │   ├── Tab 1: GroupsListScreen
+    │   ├── Tab 2: PaymentRequestsScreen
+    │   └── Tab 3: ProfileScreen
+    └── Push notification → PayScreen (deep link)
 ```
 
 ### Key Components
 
-- **`lib/main.dart`** - App initialization, FCM setup, navigation
-- **`lib/pay_screen.dart`** - Payment request UI with wallet launcher
+- **`lib/main.dart`** - App entry, auth flow, navigation, FCM setup, profile screen
+- **`lib/pay_screen.dart`** - Enhanced payment UI with auto-confirmation dialog
 - **`lib/env.dart`** - Environment configuration
+- **`lib/screens/auth/`** - Login and registration screens
+- **`lib/screens/groups/`** - Groups list and group details screens
+- **`lib/screens/payments/`** - Payment requests screen with status filtering
+- **`lib/widgets/`** - Reusable components (GroupCard, PaymentRequestCard)
 
 ---
 
@@ -159,9 +192,15 @@ flutter build ios --release --dart-define=API_BASE=https://api.togetherpay.app/a
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/devices/register` | POST | Register FCM token |
-| `/requests/by-code/{prCode}` | GET | Get payment request details |
-| `/requests/by-code/{prCode}/mark` | POST | Member marks as paid |
+| `/auth/login` | POST | Login with email/password, returns auth token |
+| `/auth/register` | POST | Register new user, returns auth token |
+| `/auth/logout` | POST | Logout and invalidate token |
+| `/groups` | GET | List user's groups |
+| `/groups/{id}` | GET | Get group details with members and payment requests |
+| `/payment-requests` | GET | List all user's payment requests |
+| `/devices/register` | POST | Register FCM token for push notifications |
+| `/requests/by-code/{prCode}` | GET | Get payment request details by code |
+| `/requests/by-code/{prCode}/mark` | POST | Member marks payment as completed |
 
 ### Example API Responses
 
@@ -398,32 +437,203 @@ flutter run --dart-define=API_BASE=https://api.togetherpay.app/api/v1 --dart-def
 ```
 mobile/
 ├── lib/
-│   ├── main.dart              # App entry, FCM setup, navigation
-│   ├── pay_screen.dart        # Payment request UI
-│   └── env.dart               # Environment config
+│   ├── main.dart                              # App entry, navigation, auth flow, profile
+│   ├── pay_screen.dart                        # Enhanced payment screen with auto-confirm
+│   ├── env.dart                               # Environment config
+│   ├── screens/
+│   │   ├── auth/
+│   │   │   ├── login_screen.dart             # Login with email/password
+│   │   │   └── register_screen.dart          # User registration
+│   │   ├── groups/
+│   │   │   ├── groups_list_screen.dart       # List of user's groups
+│   │   │   └── group_details_screen.dart     # Group info, members, payments
+│   │   └── payments/
+│   │       └── payment_requests_screen.dart  # All payment requests by status
+│   └── widgets/
+│       ├── group_card.dart                    # Reusable group card widget
+│       └── payment_request_card.dart          # Reusable payment request card
 ├── ios/
 │   └── Runner/
-│       ├── Info.plist         # iOS config, URL schemes
-│       └── GoogleService-Info.plist
+│       ├── Info.plist                         # iOS config, URL schemes
+│       └── GoogleService-Info.plist           # Firebase config (not committed)
 ├── android/
 │   └── app/
-│       ├── build.gradle       # Firebase plugin
+│       ├── build.gradle                       # Firebase plugin config
 │       ├── src/main/
-│       │   └── AndroidManifest.xml  # Permissions, deep links
-│       └── google-services.json
-└── pubspec.yaml               # Dependencies
+│       │   └── AndroidManifest.xml           # Permissions, deep links
+│       └── google-services.json               # Firebase config (not committed)
+└── pubspec.yaml                               # Dependencies
 ```
 
 ---
 
+## Testing the Complete App
+
+### Manual Testing Flow
+
+1. **Authentication**
+   ```bash
+   flutter run
+   ```
+   - Register new account
+   - Verify token stored
+   - Logout and login again
+   - Test "Remember me" functionality
+
+2. **Groups Management**
+   - View groups list (empty state if no groups)
+   - Tap a group → View details
+   - See members list with shares
+   - See recent payment requests
+
+3. **Payment Requests**
+   - Switch to "Payments" tab in bottom nav
+   - See requests grouped by status (Overdue, Pending, Paid)
+   - Tap a payment request → Opens PayScreen
+
+4. **Payment Flow**
+   - From PayScreen, tap "Open Wallet"
+   - Cash App/Venmo should open with prefilled amount
+   - Complete payment in wallet app
+   - Return to TogetherPay app
+   - **NEW:** Dialog appears: "Did you complete the payment?"
+   - Tap "Yes, I paid" → API call → Success message → Navigate back
+   - Verify payment status updated in lists
+
+5. **Push Notifications**
+   - Send test notification from Firebase Console
+   - Tap notification → App opens PayScreen
+   - Complete payment flow as above
+
+6. **Profile & Settings**
+   - Switch to "Profile" tab
+   - View user info
+   - Tap settings options (coming soon placeholders)
+   - Tap "Logout" → Confirm → Returns to login screen
+
+### API Endpoint Testing
+
+Test backend endpoints with curl:
+
+```bash
+# Register new user
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "password123",
+    "password_confirmation": "password123"
+  }'
+
+# Login
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "password123"
+  }'
+
+# Get groups (with auth token)
+curl http://localhost:8000/api/v1/groups \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+
+# Get payment requests
+curl http://localhost:8000/api/v1/payment-requests \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
 ## Next Steps
 
 1. **Set up Firebase** - Add iOS/Android apps, download config files
-2. **Configure backend** - Implement `/devices/register` endpoint
+2. **Configure backend** - Implement all API endpoints (auth, groups, payment-requests)
 3. **Test locally** - Run with `--dart-define=API_BASE=http://localhost:8000/api/v1`
-4. **Test push** - Send test notification from Firebase Console
-5. **Test payment flow** - Open app from push → launch wallet → mark as paid
-6. **Deploy** - Build release APK/IPA with production API URL
+4. **Test authentication** - Register → Login → Logout flow
+5. **Test groups** - View groups list and details
+6. **Test payments** - View payment requests, tap to pay
+7. **Test push** - Send test notification from Firebase Console
+8. **Test complete payment flow** - Push notification → Pay → Auto-confirm → Success
+9. **Deploy** - Build release APK/IPA with production API URL
+
+## Implemented Features Summary
+
+### Authentication System ✅
+- Login screen with email/password
+- Registration screen with validation
+- Secure token storage (FlutterSecureStorage)
+- Auto-login on app startup
+- Logout with confirmation
+- Auth header injection in all API calls
+
+### Groups Management ✅
+- Groups list with pull-to-refresh
+- Group cards showing member count and pending payments
+- Group details with:
+  - Group info (name, description, owner)
+  - Members list with avatars and share amounts
+  - Recent payment requests
+  - Owner badge
+  - "You" indicator for current user
+
+### Payment Requests ✅
+- Payment requests list with pull-to-refresh
+- Organized by status: Overdue, Pending, Paid
+- Color-coded status badges
+- Due dates display
+- Quick "Pay" button
+- Navigate to PayScreen on tap
+
+### Enhanced PayScreen ✅
+- Auto-launch wallet on load
+- Manual "Open Wallet" button
+- **Auto-confirmation dialog** when returning from wallet
+- Three dialog options:
+  - "Yes, I paid" - Confirms via API
+  - "Remind me later" - Shows reminder message
+  - "I'll pay later" - Dismisses
+- Payment details display
+- Step-by-step instructions
+- PR code reference
+
+### Navigation & UX ✅
+- Splash screen during initialization
+- Conditional routing (Login vs Main App)
+- Bottom navigation (Groups, Payments, Profile)
+- Profile screen with settings and logout
+- Pull-to-refresh on all lists
+- Loading states (CircularProgressIndicator)
+- Error states with "Try Again" buttons
+- Empty states with helpful messaging
+- Material Design 3 theming
+
+### Push Notifications ✅
+- FCM background message handler
+- Foreground local notifications
+- App opened from notification handler
+- Deep link navigation to PayScreen
+- FCM token registration with backend
+
+### Reusable Components ✅
+- GroupCard widget
+- PaymentRequestCard widget
+- Consistent styling and theming
+- Proper Material Design 3 usage
+
+## Future Enhancements
+
+- [ ] Create group functionality
+- [ ] Edit group settings
+- [ ] Invite members to groups
+- [ ] Local reminder notifications (5 min after "Remind me later")
+- [ ] User profile editing
+- [ ] Password reset flow
+- [ ] Payment method management
+- [ ] Search/filter groups and payments
+- [ ] Payment history and receipts
+- [ ] Export reports (CSV/PDF)
+- [ ] State management with Riverpod
+- [ ] Unit and widget tests
+- [ ] Biometric authentication
 
 ---
 

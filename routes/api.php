@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\DeviceController;
 use App\Http\Controllers\API\GroupController;
 use App\Http\Controllers\API\PaymentRequestController;
 use App\Http\Controllers\CashAppWebhookController;
@@ -20,6 +21,12 @@ Route::post('/webhooks/cashapp', [CashAppWebhookController::class, 'handle'])->n
 Route::prefix('v1')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
+
+    // Device registration (allows both authenticated and guest users)
+    Route::post('/devices/register', [DeviceController::class, 'register']);
+
+    // Member marks payment as sent (public endpoint - auth by PR code)
+    Route::post('/requests/by-code/{prCode}/mark', [PaymentRequestController::class, 'markByCode']);
 });
 
 // Protected routes

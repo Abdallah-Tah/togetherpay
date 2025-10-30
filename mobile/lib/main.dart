@@ -10,6 +10,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'env.dart';
 import 'pay_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/groups/groups_list_screen.dart';
+import 'screens/payments/payment_requests_screen.dart';
 
 /// Global Dio instance for API calls
 final dio = Dio(BaseOptions(baseUrl: Env.apiBase));
@@ -77,6 +80,7 @@ class TogetherPayApp extends StatefulWidget {
 class _TogetherPayAppState extends State<TogetherPayApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
   String? _authToken;
+  bool _isInitializing = true;
 
   @override
   void initState() {
@@ -95,6 +99,10 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
       // Set authorization header for all API requests
       dio.options.headers['Authorization'] = 'Bearer $_authToken';
     }
+
+    setState(() {
+      _isInitializing = false;
+    });
 
     // Request notification permissions (mobile only)
     if (!kIsWeb) {
@@ -122,6 +130,9 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
             'fcm_token': fcmToken,
             'platform': Platform.isIOS ? 'ios' : 'android',
           });
+          if (Env.debug) {
+            print('Device registered successfully');
+          }
         } catch (e) {
           if (Env.debug) {
             print('Failed to register FCM token: $e');
@@ -202,6 +213,36 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     );
   }
 
+  /// Handle logout and clear auth token
+  Future<void> _handleLogout() async {
+    try {
+      // Call logout API
+      await dio.post('/auth/logout');
+    } catch (e) {
+      if (Env.debug) {
+        print('Logout error: $e');
+      }
+    }
+
+    // Clear stored token
+    await storage.delete(key: 'auth_token');
+
+    // Clear auth header
+    dio.options.headers.remove('Authorization');
+
+    setState(() {
+      _authToken = null;
+    });
+  }
+
+  /// Handle successful login/registration
+  Future<void> _handleAuthSuccess() async {
+    final token = await storage.read(key: 'auth_token');
+    setState(() {
+      _authToken = token;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -222,155 +263,314 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
           brightness: Brightness.dark,
         ),
       ),
-      home: const HomeScreen(),
+      home: _isInitializing
+          ? const SplashScreen()
+          : _authToken != null
+              ? MainScaffold(onLogout: _handleLogout)
+              : LoginScreenWrapper(onAuthSuccess: _handleAuthSuccess),
     );
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+/// Splash screen shown during initialization
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Groups'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // TODO: Show notifications/payment requests
-            },
-          ),
-        ],
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.groups_outlined,
-              size: 64,
-              color: Colors.grey,
+            Icon(
+              Icons.account_balance_wallet_rounded,
+              size: 80,
+              color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(height: 16),
             Text(
-              'Your groups will appear here',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey,
+              'TogetherPay',
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
             ),
             const SizedBox(height: 32),
-            // Demo button to test payment flow
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const DemoGroupScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Demo Group'),
-            ),
+            const CircularProgressIndicator(),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Create new group
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Create group - Coming soon')),
-          );
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('New Group'),
       ),
     );
   }
 }
 
-class DemoGroupScreen extends StatelessWidget {
-  const DemoGroupScreen({super.key});
+/// Login screen wrapper that handles auth success callback
+class LoginScreenWrapper extends StatelessWidget {
+  final VoidCallback onAuthSuccess;
+
+  const LoginScreenWrapper({
+    super.key,
+    required this.onAuthSuccess,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return const LoginScreen();
+  }
+}
+
+/// Main scaffold with bottom navigation
+class MainScaffold extends StatefulWidget {
+  final VoidCallback onLogout;
+
+  const MainScaffold({
+    super.key,
+    required this.onLogout,
+  });
+
+  @override
+  State<MainScaffold> createState() => _MainScaffoldState();
+}
+
+class _MainScaffoldState extends State<MainScaffold> {
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = const [
+    GroupsListScreen(),
+    PaymentRequestsScreen(),
+    ProfileScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups),
+            label: 'Groups',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.payment_outlined),
+            selectedIcon: Icon(Icons.payment),
+            label: 'Payments',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Profile screen with settings and logout
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('T-Mobile Family Plan'),
+        title: const Text('Profile'),
       ),
       body: ListView(
         children: [
-          // Group info card
-          Card(
-            margin: const EdgeInsets.all(16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Your Share',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '\$50.00',
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Due today',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.orange,
-                        ),
-                  ),
-                ],
+          const SizedBox(height: 16),
+
+          // User info section
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                      child: Icon(
+                        Icons.person,
+                        size: 40,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'User Name',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'user@example.com',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey,
+                          ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
 
-          // Payment requests list
+          // Settings section
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Settings',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+
           ListTile(
-            leading: const CircleAvatar(
-              child: Icon(Icons.payment),
-            ),
-            title: const Text('October 2025 Payment'),
-            subtitle: const Text('PR_2025-10_G5_M7_demo'),
-            trailing: FilledButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const PayScreen(
-                      prCode: 'PR_2025-10_G5_M7_demo',
-                      deepLink: null,
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Pay'),
-            ),
+            leading: const Icon(Icons.notifications_outlined),
+            title: const Text('Notifications'),
+            subtitle: const Text('Manage notification preferences'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Coming soon')),
+              );
+            },
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.payment_outlined),
+            title: const Text('Payment Methods'),
+            subtitle: const Text('Manage Cash App and Venmo'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Coming soon')),
+              );
+            },
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.security_outlined),
+            title: const Text('Security'),
+            subtitle: const Text('Password and authentication'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Coming soon')),
+              );
+            },
           ),
 
           const Divider(),
 
-          // Past payments
+          // About section
           ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.green.shade100,
-              child: Icon(Icons.check, color: Colors.green.shade700),
-            ),
-            title: const Text('September 2025'),
-            subtitle: const Text('Paid on Sep 15'),
-            trailing: const Text(
-              '\$50.00',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            leading: const Icon(Icons.info_outline),
+            title: const Text('About'),
+            subtitle: const Text('Version 1.0.0'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              showAboutDialog(
+                context: context,
+                applicationName: 'TogetherPay',
+                applicationVersion: '1.0.0',
+                applicationIcon: Icon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                children: const [
+                  Text('Split bills together with ease'),
+                ],
+              );
+            },
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: const Text('Privacy Policy'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Coming soon')),
+              );
+            },
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: const Text('Terms of Service'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Coming soon')),
+              );
+            },
+          ),
+
+          const SizedBox(height: 16),
+
+          // Logout button
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Logout'),
+                    content: const Text(
+                      'Are you sure you want to logout?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Logout'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirmed == true && context.mounted) {
+                  // Find the MainScaffold ancestor and call logout
+                  final mainScaffold =
+                      context.findAncestorStateOfType<_TogetherPayAppState>();
+                  if (mainScaffold != null) {
+                    await mainScaffold._handleLogout();
+                  }
+                }
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red),
+              ),
+              icon: const Icon(Icons.logout),
+              label: const Text('Logout'),
             ),
           ),
+
+          const SizedBox(height: 32),
         ],
       ),
     );

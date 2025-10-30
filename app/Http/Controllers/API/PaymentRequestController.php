@@ -195,6 +195,35 @@ class PaymentRequestController extends Controller
     }
 
     /**
+     * Member marks payment as sent (V2 endpoint)
+     *
+     * POST /api/v1/requests/by-code/{prCode}/mark
+     */
+    public function markByCode(Request $request, string $prCode): JsonResponse
+    {
+        $pr = PaymentRequest::where('pr_code', $prCode)->firstOrFail();
+
+        // Update status to member_marked
+        $pr->update([
+            'status' => 'member_marked',
+            'marked_at' => now(),
+            'evidence_url' => $request->input('evidence_url'),
+            'evidence_type' => $request->input('evidence_type'),
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Payment marked as sent',
+            'pr' => [
+                'id' => $pr->id,
+                'pr_code' => $pr->pr_code,
+                'status' => $pr->status,
+                'marked_at' => $pr->marked_at->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
      * Owner confirms payment received (V2 endpoint)
      *
      * POST /api/v1/requests/by-code/{prCode}/confirm

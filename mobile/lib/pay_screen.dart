@@ -19,9 +19,11 @@ class PayScreen extends StatefulWidget {
   State<PayScreen> createState() => _PayScreenState();
 }
 
-class _PayScreenState extends State<PayScreen> {
+class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
   bool _loading = true;
   bool _launching = false;
+  bool _hasLaunchedWallet = false;
+  bool _confirmationShown = false;
   String? _error;
 
   // Payment request data
@@ -32,7 +34,33 @@ class _PayScreenState extends State<PayScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadPaymentRequest();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // When user returns to app after launching wallet, show confirmation dialog
+    if (state == AppLifecycleState.resumed &&
+        _hasLaunchedWallet &&
+        !_confirmationShown &&
+        mounted) {
+      _confirmationShown = true;
+      // Delay to ensure UI is ready
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _showPaymentConfirmationDialog();
+        }
+      });
+    }
   }
 
   Future<void> _loadPaymentRequest() async {
@@ -111,7 +139,11 @@ class _PayScreenState extends State<PayScreen> {
           mode: LaunchMode.externalApplication,
         );
 
-        if (!launched) {
+        if (launched) {
+          setState(() {
+            _hasLaunchedWallet = true;
+          });
+        } else {
           setState(() {
             _error = 'Unable to open payment app';
           });
@@ -138,32 +170,57 @@ class _PayScreenState extends State<PayScreen> {
     }
   }
 
-  Future<void> _markAsPaid() async {
-    try {
-      // Show confirmation dialog
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Confirm Payment'),
-          content: const Text(
-            'Have you completed the payment in your wallet app?',
+  /// Show payment confirmation dialog automatically after returning from wallet
+  Future<void> _showPaymentConfirmationDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Did you complete the payment?'),
+        content: const Text(
+          'Please confirm if you successfully sent the payment in your wallet app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'later'),
+            child: const Text('Remind me later'),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Not Yet'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Yes, Mark as Paid'),
-            ),
-          ],
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'no'),
+            child: const Text("I'll pay later"),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'yes'),
+            child: const Text('Yes, I paid'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (result == 'yes') {
+      await _confirmPayment();
+    } else if (result == 'later') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('We\'ll remind you to confirm this payment'),
         ),
       );
+      // TODO: Schedule local notification reminder after 5 minutes
+    } else if (result == 'no') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You can pay anytime from your payment requests'),
+        ),
+      );
+      Navigator.pop(context);
+    }
+  }
 
-      if (confirmed != true) return;
-
-      // Mark as paid via API
+  /// Confirm payment by calling API
+  Future<void> _confirmPayment() async {
+    try {
       await dio.post(
         '/requests/by-code/${widget.prCode}/mark',
         data: {
@@ -175,13 +232,18 @@ class _PayScreenState extends State<PayScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✓ Payment marked as paid'),
+            content: Text('Payment marked as paid'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
 
-        // Go back to previous screen
-        Navigator.pop(context);
+        // Navigate back after a short delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        });
       }
     } on DioException catch (e) {
       if (Env.debug) {
@@ -212,6 +274,10 @@ class _PayScreenState extends State<PayScreen> {
         );
       }
     }
+  }
+
+  Future<void> _markAsPaid() async {
+    await _confirmPayment();
   }
 
   @override

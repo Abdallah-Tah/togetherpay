@@ -178,6 +178,44 @@ Set at build/run time with `--dart-define`:
 | `API_BASE` | `http://localhost:8000/api/v1` | Laravel backend API base URL |
 | `DEBUG` | `true` | Enable debug logging and Firebase debug info |
 
+### Connecting to Local Laravel Backend
+
+When developing locally with Laravel Valet on macOS:
+
+**The Problem:** Android emulators can't resolve `.test` domains or access `localhost` directly.
+
+**Solutions:**
+
+1. **Use your machine's network IP** (Recommended for network testing):
+   ```bash
+   # Find your IP
+   ifconfig | grep "inet " | grep -v 127.0.0.1
+   # Example output: inet 192.168.1.100
+
+   # Run Flutter with your IP
+   flutter run --dart-define=API_BASE=http://192.168.1.100/api/v1
+   ```
+   **Note:** Your Laravel Valet must be accessible on your network IP. For most Valet setups, this works by default.
+
+2. **Use ngrok** (Recommended for quick testing):
+   ```bash
+   # In one terminal: Start ngrok
+   ngrok http https://togetherpay.test
+
+   # In another terminal: Run Flutter with ngrok URL
+   flutter run --dart-define=API_BASE=https://abc123.ngrok.io/api/v1
+   ```
+
+3. **Use production API**:
+   ```bash
+   flutter run --dart-define=API_BASE=https://api.togetherpay.app/api/v1
+   ```
+
+**For iOS Simulator:** Can access `localhost` directly:
+```bash
+flutter run -d iPhone --dart-define=API_BASE=http://localhost/api/v1
+```
+
 ### Firebase Setup Required
 1. **iOS:** Add `GoogleService-Info.plist` to `ios/Runner/` and Xcode project
 2. **Android:** Add `google-services.json` to `android/app/`
