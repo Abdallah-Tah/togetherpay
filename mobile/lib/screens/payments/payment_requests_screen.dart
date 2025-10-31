@@ -396,7 +396,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
     IconData icon,
   ) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: const EdgeInsets.fromLTRB(
         AppTheme.spaceMedium,
         AppTheme.spaceMedium,
         AppTheme.spaceMedium,
@@ -407,7 +407,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha:0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
             ),
             child: Icon(icon, size: 20, color: color),
@@ -428,12 +428,12 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
             ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [color, color.withValues(alpha:0.8)],
+                colors: [color, color.withValues(alpha: 0.8)],
               ),
               borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
               boxShadow: [
                 BoxShadow(
-                  color: color.withValues(alpha:0.3),
+                  color: color.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),

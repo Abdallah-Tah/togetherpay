@@ -164,4 +164,166 @@ class CashAppService
             throw $e;
         }
     }
+
+    /**
+     * Generate OAuth authorization URL for member onboarding
+     *
+     * @param string $redirectUri
+     * @param string $state
+     * @return string
+     */
+    public function getAuthorizationUrl(string $redirectUri, string $state): string
+    {
+        $params = http_build_query([
+            'client_id' => $this->clientId,
+            'scope' => 'customer_profile payments',
+            'redirect_uri' => $redirectUri,
+            'state' => $state,
+            'response_type' => 'code',
+        ]);
+
+        return "{$this->apiUrl}/oauth/authorize?{$params}";
+    }
+
+    /**
+     * Exchange authorization code for access token and customer ID
+     *
+     * @param string $code
+     * @param string $redirectUri
+     * @return array|null Returns ['access_token' => ..., 'customer_id' => ...]
+     */
+    public function exchangeCodeForTokens(string $code, string $redirectUri): ?array
+    {
+        try {
+            $response = Http::asForm()->post("{$this->apiUrl}/oauth/token", [
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+                'code' => $code,
+                'grant_type' => 'authorization_code',
+                'redirect_uri' => $redirectUri,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('Cash App OAuth token exchange successful', [
+                    'customer_id' => $data['customer_id'] ?? null,
+                ]);
+
+                return [
+                    'access_token' => $data['access_token'],
+                    'refresh_token' => $data['refresh_token'] ?? null,
+                    'customer_id' => $data['customer_id'] ?? null,
+                    'expires_in' => $data['expires_in'] ?? null,
+                ];
+            }
+
+            Log::error('Cash App OAuth token exchange failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Cash App OAuth token exchange exception', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Resolve Cash App $cashtag to customer ID
+     *
+     * @param string $cashtag e.g., "$JohnDoe" or "JohnDoe"
+     * @return string|null
+     */
+    public function resolveCustomerId(string $cashtag): ?string
+    {
+        // Ensure cashtag starts with $
+        if (!str_starts_with($cashtag, '$')) {
+            $cashtag = '$' . $cashtag;
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+                'User-Agent' => config('app.name') . '/1.0',
+                'Authorization' => 'Bearer ' . $this->getAccessToken(),
+            ])->get("{$this->apiUrl}/v1/customers/cashtag/{$cashtag}");
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $customerId = $data['customer']['id'] ?? null;
+
+                if ($customerId) {
+                    Log::info('Cash App customer ID resolved', [
+                        'cashtag' => $cashtag,
+                        'customer_id' => $customerId,
+                    ]);
+
+                    return $customerId;
+                }
+            }
+
+            Log::warning('Cash App customer ID resolution failed', [
+                'cashtag' => $cashtag,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Cash App customer ID resolution exception', [
+                'cashtag' => $cashtag,
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Refresh an expired access token
+     *
+     * @param string $refreshToken
+     * @return array|null
+     */
+    public function refreshAccessToken(string $refreshToken): ?array
+    {
+        try {
+            $response = Http::asForm()->post("{$this->apiUrl}/oauth/token", [
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+                'refresh_token' => $refreshToken,
+                'grant_type' => 'refresh_token',
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('Cash App token refreshed successfully');
+
+                return [
+                    'access_token' => $data['access_token'],
+                    'refresh_token' => $data['refresh_token'] ?? null,
+                    'expires_in' => $data['expires_in'] ?? null,
+                ];
+            }
+
+            Log::error('Cash App token refresh failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Cash App token refresh exception', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
 }

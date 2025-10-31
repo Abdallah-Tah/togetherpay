@@ -6,6 +6,7 @@ import '../../main.dart';
 import '../../pay_screen.dart';
 import '../../utils/theme.dart';
 import '../../widgets/payment_request_card.dart';
+import 'add_member_sheet.dart';
 import 'group_form_sheet.dart';
 
 /// Group details screen showing members and payment requests.
@@ -553,9 +554,21 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
   }
 
   Future<void> _showAddMemberDialog() async {
-    final result = await showDialog<Map<String, dynamic>>(
+    // Get existing member user IDs to exclude from selection
+    final existingUserIds = ((_groupData?['members'] as List?) ?? [])
+        .map((m) => (m['user'] as Map?)?['id'] as int?)
+        .where((id) => id != null)
+        .cast<int>()
+        .toList();
+
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
-      builder: (context) => _AddMemberDialog(groupId: widget.groupId),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddMemberSheet(
+        groupId: widget.groupId,
+        existingMemberUserIds: existingUserIds,
+      ),
     );
 
     if (result != null && mounted) {
@@ -565,7 +578,10 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      await _loadGroupDetails();
+
+      if (result['refresh'] == true) {
+        await _loadGroupDetails();
+      }
     }
   }
 
@@ -1186,16 +1202,35 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
     } on DioException catch (e) {
       if (Env.debug) {
         debugPrint('Add member error: ${e.response?.data}');
+        debugPrint('Status code: ${e.response?.statusCode}');
       }
 
       if (mounted) {
+        String errorMessage = 'Failed to add member';
+
+        if (e.response?.statusCode == 404) {
+          errorMessage = 'User not found. They need to register first.';
+        } else if (e.response?.statusCode == 422) {
+          final errors = e.response?.data?['errors'];
+          if (errors is Map) {
+            final emailErrors = errors['email'];
+            if (emailErrors is List && emailErrors.isNotEmpty) {
+              errorMessage = emailErrors[0].toString();
+            } else {
+              errorMessage = e.response?.data?['message'] ?? errorMessage;
+            }
+          } else {
+            errorMessage = e.response?.data?['message'] ?? errorMessage;
+          }
+        } else {
+          errorMessage = e.response?.data?['message'] as String? ?? errorMessage;
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              e.response?.data?['message'] as String? ??
-                  'Failed to add member',
-            ),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -1227,6 +1262,8 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                   labelText: 'Email',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.email_outlined),
+                  helperText: 'User must have a registered account',
+                  helperMaxLines: 2,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {

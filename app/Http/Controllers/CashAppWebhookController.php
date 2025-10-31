@@ -13,10 +13,10 @@ class CashAppWebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        // Verify webhook signature (implement Cash App webhook verification)
-        // if (!$this->verifySignature($request)) {
-        //     return response()->json(['error' => 'Invalid signature'], 401);
-        // }
+        // Verify webhook signature
+        if (!$this->verifySignature($request)) {
+            return response()->json(['error' => 'Invalid signature'], 401);
+        }
 
         $event = $request->input('event_type');
         $data = $request->input('data');
@@ -138,11 +138,41 @@ class CashAppWebhookController extends Controller
 
     /**
      * Verify Cash App webhook signature
+     *
+     * Cash App sends a signature in the X-CashApp-Signature header
+     * that should be validated using HMAC-SHA256
      */
     protected function verifySignature(Request $request): bool
     {
-        // TODO: Implement Cash App webhook signature verification
-        // See Cash App documentation for webhook security
+        $webhookSecret = config('services.cashapp.webhook_secret');
+
+        // If no webhook secret is configured, skip verification in development
+        if (!$webhookSecret) {
+            Log::warning('Cash App webhook secret not configured - skipping signature verification');
+            return config('app.env') !== 'production';
+        }
+
+        $signature = $request->header('X-CashApp-Signature');
+        if (!$signature) {
+            Log::warning('Cash App webhook missing signature header');
+            return false;
+        }
+
+        // Get raw request body
+        $payload = $request->getContent();
+
+        // Calculate expected signature
+        $expectedSignature = hash_hmac('sha256', $payload, $webhookSecret);
+
+        // Compare signatures (timing-safe comparison)
+        if (!hash_equals($expectedSignature, $signature)) {
+            Log::warning('Cash App webhook signature mismatch', [
+                'expected' => $expectedSignature,
+                'received' => $signature,
+            ]);
+            return false;
+        }
+
         return true;
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\CashAppOAuthController;
 use App\Http\Controllers\API\DeviceController;
 use App\Http\Controllers\API\GroupController;
 use App\Http\Controllers\API\PaymentRequestController;
@@ -27,6 +28,9 @@ Route::prefix('v1')->group(function () {
 
     // Member marks payment as sent (public endpoint - auth by PR code)
     Route::post('/requests/by-code/{prCode}/mark', [PaymentRequestController::class, 'markByCode']);
+
+    // Cash App OAuth callback (public - handles OAuth redirect)
+    Route::get('/cashapp/oauth/callback', [CashAppOAuthController::class, 'callback'])->name('api.cashapp.oauth.callback');
 });
 
 // Protected routes
@@ -55,6 +59,14 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('/requests/by-code/{prCode}/confirm', [PaymentRequestController::class, 'confirmPayment']);
     Route::post('/requests/by-code/{prCode}/nudge', [PaymentRequestController::class, 'nudge']);
     Route::post('/cycles/{cycleId}/bulk-confirm', [PaymentRequestController::class, 'bulkConfirm']);
+
+    // Cash App OAuth endpoints
+    Route::prefix('cashapp')->group(function () {
+        Route::get('/oauth/authorize', [CashAppOAuthController::class, 'authorize']);
+        Route::post('/resolve-cashtag', [CashAppOAuthController::class, 'resolveCashtag']);
+        Route::delete('/disconnect', [CashAppOAuthController::class, 'disconnect']);
+        Route::get('/status', [CashAppOAuthController::class, 'status']);
+    });
 });
 
 // Mark payment as paid (public endpoint with optional auth)

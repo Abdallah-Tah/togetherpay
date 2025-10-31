@@ -7,16 +7,25 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'env.dart';
 import 'pay_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/groups/groups_list_screen.dart';
 import 'screens/payments/payment_requests_screen.dart';
+import 'screens/settings/notification_preferences_screen.dart';
+import 'screens/settings/payment_methods_screen.dart';
 import 'utils/theme.dart';
 
 /// Global Dio instance for API calls
-final dio = Dio(BaseOptions(baseUrl: Env.apiBase));
+final dio = Dio(BaseOptions(
+  baseUrl: Env.apiBase,
+  headers: {
+    'ngrok-skip-browser-warning': 'true', // Bypass ngrok warning page
+  },
+));
 
 /// Secure storage for auth tokens
 const storage = FlutterSecureStorage();
@@ -39,6 +48,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize timezone database for scheduled notifications
+  tz.initializeTimeZones();
+  tz.setLocalLocation(tz.getLocation('America/New_York'));
 
   // Initialize Firebase only on mobile platforms
   if (!kIsWeb) {
@@ -666,8 +679,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               subtitle: const Text('Manage notification preferences'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Coming soon')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationPreferencesScreen(),
+                  ),
                 );
               },
             ),
@@ -678,8 +694,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               subtitle: const Text('Manage Cash App and Venmo'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Coming soon')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PaymentMethodsScreen(),
+                  ),
                 );
               },
             ),

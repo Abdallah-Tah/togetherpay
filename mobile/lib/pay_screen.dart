@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'package:url_launcher/url_launcher.dart';
 
 import 'env.dart';
@@ -202,12 +204,14 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
     if (result == 'yes') {
       await _confirmPayment();
     } else if (result == 'later') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('We\'ll remind you to confirm this payment'),
-        ),
-      );
-      // TODO: Schedule local notification reminder after 5 minutes
+      await _schedulePaymentReminder();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('We\'ll remind you to confirm this payment in 5 minutes'),
+          ),
+        );
+      }
     } else if (result == 'no') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -278,6 +282,56 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
 
   Future<void> _markAsPaid() async {
     await _confirmPayment();
+  }
+
+  /// Schedule a local notification reminder after 5 minutes
+  Future<void> _schedulePaymentReminder() async {
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        'payment_reminders',
+        'Payment Reminders',
+        channelDescription: 'Reminders to confirm payment completion',
+        importance: Importance.high,
+        priority: Priority.high,
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      // Schedule notification for 5 minutes from now
+      final scheduledTime = tz.TZDateTime.now(tz.local).add(const Duration(minutes: 5));
+
+      final groupName = _paymentData?['group']?['name'] ?? 'Payment';
+      final amount = _paymentData?['amount_display'] ?? '\$0.00';
+
+      await localNotifications.zonedSchedule(
+        widget.prCode.hashCode, // Unique ID based on PR code
+        'Payment Confirmation Reminder',
+        'Don\'t forget to confirm your $amount payment for $groupName',
+        scheduledTime,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: widget.prCode,
+      );
+
+      if (Env.debug) {
+        debugPrint('Scheduled payment reminder for ${widget.prCode} at $scheduledTime');
+      }
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Error scheduling payment reminder: $e');
+      }
+    }
   }
 
   @override
