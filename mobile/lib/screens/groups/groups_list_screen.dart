@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../env.dart';
 import '../../main.dart';
+import '../../utils/animations.dart';
+import '../../utils/theme.dart';
 import '../../widgets/group_card.dart';
 import 'group_form_sheet.dart';
 import 'group_details_screen.dart';
@@ -81,11 +83,11 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
       });
 
       if (Env.debug) {
-        print('Loaded ${_groups.length} groups');
+        debugPrint('Loaded ${_groups.length} groups');
       }
     } on DioException catch (e) {
       if (Env.debug) {
-        print('Error loading groups: ${e.response?.data}');
+        debugPrint('Error loading groups: ${e.response?.data}');
       }
 
       setState(() {
@@ -95,7 +97,7 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
       });
     } catch (e) {
       if (Env.debug) {
-        print('Unexpected error loading groups: $e');
+        debugPrint('Unexpected error loading groups: $e');
       }
 
       setState(() {
@@ -188,7 +190,7 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(
+      SlidePageRoute(
         builder: (_) => GroupDetailsScreen(
           groupId: groupId,
           initialGroup: group,
@@ -201,16 +203,32 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
   }
 
   Future<void> _showCreateGroupSheet() async {
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const GroupFormSheet(),
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      SlidePageRoute(
+        builder: (_) => const GroupFormSheet(),
+      ),
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Group "${result['name'] ?? 'New Group'}" created'),
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Group "${result['name'] ?? 'New Group'}" created',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+          ),
         ),
       );
       await _loadGroups();
@@ -322,9 +340,23 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
         itemCount: _groups.length,
         itemBuilder: (context, index) {
           final group = _groups[index];
-          return GroupCard(
-            group: group,
-            onTap: () => _navigateToGroupDetails(group),
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 350 + (index * 50)),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 20 * (1 - value)),
+                  child: child,
+                ),
+              );
+            },
+            child: GroupCard(
+              group: group,
+              onTap: () => _navigateToGroupDetails(group),
+            ),
           );
         },
       ),

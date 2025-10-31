@@ -88,7 +88,7 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
       }
     } catch (e) {
       if (Env.debug) {
-        print('Error loading payment request: $e');
+        debugPrint('Error loading payment request: $e');
       }
 
       setState(() {
@@ -155,7 +155,7 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
       }
     } catch (e) {
       if (Env.debug) {
-        print('Error launching wallet: $e');
+        debugPrint('Error launching wallet: $e');
       }
 
       setState(() {
@@ -247,7 +247,7 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
       }
     } on DioException catch (e) {
       if (Env.debug) {
-        print('Error marking as paid: ${e.response?.data}');
+        debugPrint('Error marking as paid: ${e.response?.data}');
       }
 
       if (mounted) {
@@ -262,7 +262,7 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
       }
     } catch (e) {
       if (Env.debug) {
-        print('Unexpected error: $e');
+        debugPrint('Unexpected error: $e');
       }
 
       if (mounted) {

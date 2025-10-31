@@ -13,6 +13,7 @@ import 'pay_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/groups/groups_list_screen.dart';
 import 'screens/payments/payment_requests_screen.dart';
+import 'utils/theme.dart';
 
 /// Global Dio instance for API calls
 final dio = Dio(BaseOptions(baseUrl: Env.apiBase));
@@ -23,13 +24,16 @@ const storage = FlutterSecureStorage();
 /// Local notifications plugin for foreground messages
 final localNotifications = FlutterLocalNotificationsPlugin();
 
+/// Global navigator key for notification navigation
+final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>();
+
 /// Background message handler
 /// Must be top-level function for Firebase
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   if (Env.debug) {
-    print('Background message: ${message.messageId}');
+    debugPrint('Background message: ${message.messageId}');
   }
 }
 
@@ -43,7 +47,7 @@ void main() async {
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     } catch (e) {
       if (Env.debug) {
-        print('Firebase initialization error: $e');
+        debugPrint('Firebase initialization error: $e');
       }
     }
 
@@ -61,7 +65,17 @@ void main() async {
       initSettings,
       onDidReceiveNotificationResponse: (details) {
         if (Env.debug) {
-          print('Notification tapped: ${details.payload}');
+          debugPrint('Notification tapped: ${details.payload}');
+        }
+
+        // Navigate to PayScreen when notification is tapped
+        final prCode = details.payload;
+        if (prCode != null && prCode.isNotEmpty) {
+          globalNavigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (_) => PayScreen(prCode: prCode),
+            ),
+          );
         }
       },
     );
@@ -78,7 +92,6 @@ class TogetherPayApp extends StatefulWidget {
 }
 
 class _TogetherPayAppState extends State<TogetherPayApp> {
-  final _navigatorKey = GlobalKey<NavigatorState>();
   String? _authToken;
   bool _isInitializing = true;
 
@@ -114,14 +127,14 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
       );
 
       if (Env.debug) {
-        print('Notification permission: ${settings.authorizationStatus}');
+        debugPrint('Notification permission: ${settings.authorizationStatus}');
       }
 
       // Get FCM token and register with backend
       final fcmToken = await messaging.getToken();
       if (fcmToken != null) {
         if (Env.debug) {
-          print('FCM Token: $fcmToken');
+          debugPrint('FCM Token: $fcmToken');
         }
 
         // Register device with backend
@@ -131,11 +144,11 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
             'platform': Platform.isIOS ? 'ios' : 'android',
           });
           if (Env.debug) {
-            print('Device registered successfully');
+            debugPrint('Device registered successfully');
           }
         } catch (e) {
           if (Env.debug) {
-            print('Failed to register FCM token: $e');
+            debugPrint('Failed to register FCM token: $e');
           }
         }
       }
@@ -155,7 +168,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     // Handle notification when app is in foreground
     FirebaseMessaging.onMessage.listen((message) {
       if (Env.debug) {
-        print('Foreground message: ${message.notification?.title}');
+        debugPrint('Foreground message: ${message.notification?.title}');
       }
 
       // Show local notification
@@ -173,7 +186,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
 
     if (prCode != null) {
       // Navigate to payment screen
-      _navigatorKey.currentState?.push(
+      globalNavigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (_) => PayScreen(
             prCode: prCode,
@@ -220,7 +233,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
       await dio.post('/auth/logout');
     } catch (e) {
       if (Env.debug) {
-        print('Logout error: $e');
+        debugPrint('Logout error: $e');
       }
     }
 
@@ -246,23 +259,12 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: _navigatorKey,
+      navigatorKey: globalNavigatorKey,
       title: Env.appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF14B8A6), // Teal
-          brightness: Brightness.light,
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF14B8A6),
-          brightness: Brightness.dark,
-        ),
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       home: _isInitializing
           ? const SplashScreen()
           : _authToken != null
@@ -272,33 +274,121 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
   }
 }
 
-/// Splash screen shown during initialization
-class SplashScreen extends StatelessWidget {
+/// Splash screen shown during initialization with animations
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
+      ),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.account_balance_wallet_rounded,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'TogetherPay',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+            ],
+          ),
+        ),
+        child: Center(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.account_balance_wallet_rounded,
+                      size: 60,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
+                  const SizedBox(height: AppTheme.spaceXLarge),
+                  Text(
+                    'TogetherPay',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceSmall),
+                  Text(
+                    'Split bills together',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceXLarge * 2),
+                  const SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 32),
-            const CircularProgressIndicator(),
-          ],
+          ),
         ),
       ),
     );
@@ -414,7 +504,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     } on DioException catch (e) {
       if (Env.debug) {
-        print('Profile load error: ${e.response?.data}');
+        debugPrint('Profile load error: ${e.response?.data}');
       }
 
       setState(() {
@@ -424,7 +514,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     } catch (e) {
       if (Env.debug) {
-        print('Unexpected profile error: $e');
+        debugPrint('Unexpected profile error: $e');
       }
 
       setState(() {

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../utils/theme.dart';
 
-/// Reusable payment request card widget.
+/// Reusable payment request card widget with animations
 ///
 /// Displays payment request details with optional actionable buttons for
 /// paying, nudging, or confirming payments depending on status.
-class PaymentRequestCard extends StatelessWidget {
+class PaymentRequestCard extends StatefulWidget {
   final Map<String, dynamic> paymentRequest;
   final VoidCallback? onTap;
   final VoidCallback? onPay;
@@ -29,239 +30,427 @@ class PaymentRequestCard extends StatelessWidget {
   });
 
   @override
+  State<PaymentRequestCard> createState() => _PaymentRequestCardState();
+}
+
+class _PaymentRequestCardState extends State<PaymentRequestCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    if (widget.onTap != null) {
+      setState(() => _isPressed = true);
+      _controller.forward();
+    }
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  void _handleTapCancel() {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final amount = paymentRequest['amount_display'] as String? ?? '\$0.00';
-    final status = paymentRequest['status'] as String? ?? 'pending';
-    final groupName = paymentRequest['group']?['name'] as String? ?? 'Payment';
-    final dueDate = paymentRequest['due_date'] as String?;
-    final code = paymentRequest['code'] as String? ?? '';
+    final amount = widget.paymentRequest['amount_display'] as String? ?? '\$0.00';
+    final status = widget.paymentRequest['status'] as String? ?? 'pending';
+    final groupName = widget.paymentRequest['group']?['name'] as String? ?? 'Payment';
+    final dueDate = widget.paymentRequest['due_date'] as String?;
+    final code = widget.paymentRequest['code'] as String? ?? '';
 
     // Determine status color and icon
     Color statusColor;
     IconData statusIcon;
     String statusLabel;
+    LinearGradient? statusGradient;
 
     switch (status.toLowerCase()) {
       case 'paid':
       case 'confirmed':
         statusColor = Colors.green;
-        statusIcon = Icons.check_circle;
+        statusIcon = Icons.check_circle_rounded;
         statusLabel = 'Paid';
+        statusGradient = AppTheme.successGradient;
         break;
       case 'member_marked':
         statusColor = Colors.amber.shade800;
-        statusIcon = Icons.hourglass_bottom;
+        statusIcon = Icons.hourglass_bottom_rounded;
         statusLabel = 'Awaiting confirm';
         break;
       case 'failed':
       case 'error':
         statusColor = Colors.red.shade700;
-        statusIcon = Icons.error;
+        statusIcon = Icons.error_rounded;
         statusLabel = 'Failed';
+        statusGradient = AppTheme.errorGradient;
         break;
       case 'overdue':
       case 'late':
         statusColor = Colors.red;
-        statusIcon = Icons.warning;
+        statusIcon = Icons.warning_rounded;
         statusLabel = 'Overdue';
+        statusGradient = AppTheme.errorGradient;
         break;
       case 'sent':
         statusColor = Colors.blue;
-        statusIcon = Icons.send;
+        statusIcon = Icons.send_rounded;
         statusLabel = 'Sent';
         break;
       case 'pending':
       default:
         statusColor = Colors.orange;
-        statusIcon = Icons.pending;
+        statusIcon = Icons.pending_rounded;
         statusLabel = 'Pending';
+        statusGradient = AppTheme.warningGradient;
         break;
     }
 
     final dueDateLabel = _formatDueDateLabel(dueDate);
-    final showPayButton = onPay != null && _canShowPayButton(status);
-    final showNudgeButton = onNudge != null && _canShowNudge(status);
-    final showConfirmButton = onConfirm != null && _canShowConfirm(status);
-    final showRetryButton = onRetry != null && _canShowRetry(status);
+    final showPayButton = widget.onPay != null && _canShowPayButton(status);
+    final showNudgeButton = widget.onNudge != null && _canShowNudge(status);
+    final showConfirmButton = widget.onConfirm != null && _canShowConfirm(status);
+    final showRetryButton = widget.onRetry != null && _canShowRetry(status);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row with amount and status
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Amount
-                  Text(
-                    amount,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-
-                  // Status badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: statusColor.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Card(
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spaceMedium,
+          vertical: AppTheme.spaceSmall,
+        ),
+        elevation: _isPressed ? 2 : 0,
+        shadowColor: Colors.black.withValues(alpha:0.1),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: widget.onTap,
+          onTapDown: _handleTapDown,
+          onTapUp: _handleTapUp,
+          onTapCancel: _handleTapCancel,
+          child: Container(
+            padding: const EdgeInsets.all(AppTheme.spaceMedium),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: statusColor,
+                  width: 4,
+                ),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row with amount and status
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Amount with icon
+                    Row(
                       children: [
-                        Icon(
-                          statusIcon,
-                          size: 16,
-                          color: statusColor,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          statusLabel,
-                          style: TextStyle(
-                            color: statusColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.primaryGradient,
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusSmall),
                           ),
+                          child: const Icon(
+                            Icons.attach_money_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.spaceMedium),
+                        Text(
+                          amount,
+                          style:
+                              Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
+
+                    // Status badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: statusGradient,
+                        color: statusGradient == null
+                            ? statusColor.withValues(alpha:0.1)
+                            : null,
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.radiusMedium),
+                        border: statusGradient == null
+                            ? Border.all(
+                                color: statusColor.withValues(alpha:0.3),
+                                width: 1,
+                              )
+                            : null,
+                        boxShadow: statusGradient != null
+                            ? [
+                                BoxShadow(
+                                  color: statusColor.withValues(alpha:0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            statusIcon,
+                            size: 16,
+                            color: statusGradient != null
+                                ? Colors.white
+                                : statusColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              color: statusGradient != null
+                                  ? Colors.white
+                                  : statusColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
 
               const SizedBox(height: 8),
 
               // Group name
-              Text(
-                groupName,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
-
-              const SizedBox(height: 4),
-
-              // Due date
-              if (dueDateLabel != null) ...[
+                const SizedBox(height: AppTheme.spaceMedium),
                 Row(
                   children: [
                     Icon(
-                      Icons.calendar_today,
-                      size: 14,
-                      color: Colors.grey[600],
+                      Icons.group_outlined,
+                      size: 18,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha:0.6),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Due: $dueDateLabel',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                    const SizedBox(width: AppTheme.spaceSmall),
+                    Expanded(
+                      child: Text(
+                        groupName,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-              ],
 
-              // Payment code
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      code,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontFamily: 'monospace',
-                            color: Colors.grey[500],
-                          ),
-                      overflow: TextOverflow.ellipsis,
+                // Due date
+                if (dueDateLabel != null) ...[
+                  const SizedBox(height: AppTheme.spaceSmall),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 16,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha:0.6),
+                      ),
+                      const SizedBox(width: AppTheme.spaceSmall),
+                      Text(
+                        'Due: $dueDateLabel',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha:0.6),
+                            ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                const SizedBox(height: AppTheme.spaceMedium),
+
+                // Payment code
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.qr_code_rounded,
+                        size: 16,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha:0.5),
+                      ),
+                      const SizedBox(width: AppTheme.spaceSmall),
+                      Expanded(
+                        child: Text(
+                          code,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontFamily: 'monospace',
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha:0.5),
+                                  ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Pay button
+                if (showPayButton) ...[
+                  const SizedBox(height: AppTheme.spaceMedium),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: FilledButton.icon(
+                      onPressed: widget.onPay,
+                      icon: const Icon(Icons.payment_rounded),
+                      label: const Text(
+                        'Pay Now',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusMedium),
+                        ),
+                      ),
                     ),
                   ),
-                  if (showPayButton) ...[
-                    const SizedBox(width: 8),
-                    FilledButton.icon(
-                      onPressed: onPay,
-                      icon: const Icon(Icons.payment, size: 18),
-                      label: const Text('Pay'),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
-              ),
 
-              if (showNudgeButton || showConfirmButton || showRetryButton) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.end,
-                  children: [
-                    if (showRetryButton)
-                      OutlinedButton.icon(
-                        onPressed: isProcessingRetry ? null : onRetry,
-                        icon: isProcessingRetry
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.refresh),
-                        label: const Text('Retry'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.orange,
+                // Action buttons
+                if (showNudgeButton || showConfirmButton || showRetryButton) ...[
+                  const SizedBox(height: AppTheme.spaceMedium),
+                  Row(
+                    children: [
+                      if (showRetryButton)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: widget.isProcessingRetry
+                                ? null
+                                : widget.onRetry,
+                            icon: widget.isProcessingRetry
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.refresh_rounded),
+                            label: const Text('Retry'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.orange,
+                              side: const BorderSide(color: Colors.orange),
+                            ),
+                          ),
                         ),
-                      ),
-                    if (showNudgeButton)
-                      OutlinedButton.icon(
-                        onPressed: isProcessingNudge ? null : onNudge,
-                        icon: isProcessingNudge
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.notifications_active_outlined),
-                        label: const Text('Remind'),
-                      ),
-                    if (showConfirmButton)
-                      FilledButton.icon(
-                        onPressed: isProcessingConfirm ? null : onConfirm,
-                        icon: isProcessingConfirm
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.verified_outlined),
-                        label: const Text('Confirm'),
-                      ),
-                  ],
-                ),
+                      if (showNudgeButton) ...[
+                        if (showRetryButton)
+                          const SizedBox(width: AppTheme.spaceSmall),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: widget.isProcessingNudge
+                                ? null
+                                : widget.onNudge,
+                            icon: widget.isProcessingNudge
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(
+                                    Icons.notifications_active_rounded),
+                            label: const Text('Remind'),
+                          ),
+                        ),
+                      ],
+                      if (showConfirmButton) ...[
+                        if (showNudgeButton || showRetryButton)
+                          const SizedBox(width: AppTheme.spaceSmall),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: widget.isProcessingConfirm
+                                ? null
+                                : widget.onConfirm,
+                            icon: widget.isProcessingConfirm
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.verified_rounded),
+                            label: const Text('Confirm'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.green,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

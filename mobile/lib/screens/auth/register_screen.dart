@@ -76,7 +76,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       dio.options.headers['Authorization'] = 'Bearer $token';
 
       if (Env.debug) {
-        print('Registration successful, token stored');
+        debugPrint('Registration successful, token stored');
       }
 
       if (mounted) {
@@ -96,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } on DioException catch (e) {
       if (Env.debug) {
-        print('Registration error: ${e.response?.data}');
+        debugPrint('Registration error: ${e.response?.data}');
       }
 
       // Extract validation errors if available
@@ -123,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
     } catch (e) {
       if (Env.debug) {
-        print('Unexpected registration error: $e');
+        debugPrint('Unexpected registration error: $e');
       }
 
       setState(() {

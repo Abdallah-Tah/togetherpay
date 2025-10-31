@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 
 import '../../env.dart';
 import '../../main.dart';
+import '../../utils/theme.dart';
 
-/// Bottom sheet used for creating and editing a group.
+/// Full-screen modal for creating and editing a group with animations
 ///
 /// When `group` is provided, the form will update that group; otherwise a new
-/// group is created. The sheet pops with the saved group payload on success.
+/// group is created. Returns the saved group payload on success.
 class GroupFormSheet extends StatefulWidget {
   final Map<String, dynamic>? group;
 
@@ -136,7 +137,7 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
       }
     } on DioException catch (e) {
       if (Env.debug) {
-        print('Group save error: ${e.response?.data}');
+        debugPrint('Group save error: ${e.response?.data}');
       }
 
       setState(() {
@@ -146,7 +147,7 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
       });
     } catch (e) {
       if (Env.debug) {
-        print('Unexpected group save error: $e');
+        debugPrint('Unexpected group save error: $e');
       }
 
       setState(() {
@@ -156,50 +157,142 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
     }
   }
 
+  double get _formProgress {
+    int filledFields = 0;
+    const totalFields = 7;
+
+    if (_nameController.text.trim().isNotEmpty) filledFields++;
+    if (_amountController.text.trim().isNotEmpty) filledFields++;
+    if (_currency.isNotEmpty) filledFields++;
+    if (_timezone.isNotEmpty) filledFields++;
+    if (_cadence.isNotEmpty) filledFields++;
+    if (_dueDay > 0) filledFields++;
+    if (_graceDays >= 0) filledFields++;
+
+    return filledFields / totalFields;
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 600;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        bottom: bottomInset + 24,
-        top: 24,
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        automaticallyImplyLeading: true,
+        leading: IconButton(
+          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+        ),
+        title: Text(widget.isEditing ? 'Edit Group' : 'Create Group'),
+        centerTitle: false,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(4),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: _formProgress),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            builder: (context, value, child) {
+              return LinearProgressIndicator(
+                value: value,
+                backgroundColor: Colors.transparent,
+                minHeight: 4,
+              );
+            },
+          ),
+        ),
       ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
+      body: Form(
+        key: _formKey,
+        onChanged: () {
+          setState(() {}); // Trigger progress update
+        },
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: AppTheme.spaceLarge,
+            right: AppTheme.spaceLarge,
+            top: AppTheme.spaceLarge,
+            bottom: bottomInset + AppTheme.spaceLarge,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
+              // Header with icon
               Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      widget.isEditing ? 'Edit Group' : 'Create Group',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.radiusMedium),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primary.withValues(alpha:0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.groups_rounded,
+                      color: Colors.white,
+                      size: 28,
                     ),
                   ),
-                  IconButton(
-                    onPressed:
-                        _submitting ? null : () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+                  const SizedBox(width: AppTheme.spaceMedium),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.isEditing
+                              ? 'Update group settings'
+                              : 'Set up your group',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.isEditing
+                              ? 'Modify billing details'
+                              : 'Configure billing and schedule',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha:0.6),
+                                  ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppTheme.spaceXLarge),
+
+              // Section: Basic Info
+              _buildSectionHeader('Basic Information', Icons.info_outline),
+              const SizedBox(height: AppTheme.spaceMedium),
 
               TextFormField(
                 controller: _nameController,
                 enabled: !_submitting,
-                decoration: const InputDecoration(
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
                   labelText: 'Group name',
                   hintText: 'e.g. T-Mobile Family Plan',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.group_outlined),
+                  suffixIcon: _nameController.text.trim().isNotEmpty
+                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      : null,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -208,7 +301,7 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppTheme.spaceMedium),
 
               TextFormField(
                 controller: _amountController,
@@ -219,76 +312,39 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
                 decoration: const InputDecoration(
                   labelText: 'Total amount per cycle (optional)',
                   hintText: 'e.g. 120.00',
-                  prefixText: '\$',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.attach_money_rounded),
+                  helperText: 'Leave empty to calculate from member shares',
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppTheme.spaceXLarge),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _currency,
-                      decoration: const InputDecoration(
-                        labelText: 'Currency',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'USD',
-                          child: Text('USD'),
-                        ),
-                      ],
-                      onChanged: _submitting
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                setState(() => _currency = value);
-                              }
-                            },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _timezone,
-                      decoration: const InputDecoration(
-                        labelText: 'Timezone',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: _timezones.entries
-                          .map(
-                            (entry) => DropdownMenuItem(
-                              value: entry.key,
-                              child: Text('${entry.value} (${entry.key})'),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: _submitting
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                setState(() => _timezone = value);
-                              }
-                            },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+              // Section: Schedule
+              _buildSectionHeader('Billing Schedule', Icons.calendar_month_outlined),
+              const SizedBox(height: AppTheme.spaceMedium),
 
               DropdownButtonFormField<String>(
-                value: _cadence,
+                initialValue: _cadence,
                 decoration: const InputDecoration(
                   labelText: 'Collection schedule',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.repeat_rounded),
+                  helperText: 'How often to collect payments',
                 ),
                 items: _cadenceLabels.entries
                     .map(
                       (entry) => DropdownMenuItem(
                         value: entry.key,
-                        child: Text(entry.value),
+                        child: Row(
+                          children: [
+                            Icon(
+                              entry.key == 'MONTHLY'
+                                  ? Icons.calendar_month
+                                  : Icons.calendar_view_week,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(entry.value),
+                          ],
+                        ),
                       ),
                     )
                     .toList(),
@@ -300,104 +356,333 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
                         }
                       },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppTheme.spaceMedium),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      value: _dueDay,
-                      decoration: const InputDecoration(
-                        labelText: 'Due day',
-                        helperText: 'Cycle payment due date',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: List.generate(
-                        28,
-                        (index) => DropdownMenuItem(
-                          value: index + 1,
-                          child: Text('Day ${index + 1}'),
+              // Due day and grace days - responsive layout
+              isSmallScreen
+                  ? Column(
+                      children: [
+                        DropdownButtonFormField<int>(
+                          initialValue: _dueDay,
+                          decoration: const InputDecoration(
+                            labelText: 'Due day',
+                            prefixIcon: Icon(Icons.event_rounded),
+                            helperText: 'Payment due date',
+                          ),
+                          items: List.generate(
+                            28,
+                            (index) => DropdownMenuItem(
+                              value: index + 1,
+                              child: Text('Day ${index + 1}'),
+                            ),
+                          ),
+                          onChanged: _submitting
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _dueDay = value);
+                                  }
+                                },
                         ),
-                      ),
-                      onChanged: _submitting
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                setState(() => _dueDay = value);
-                              }
-                            },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      value: _graceDays,
-                      decoration: const InputDecoration(
-                        labelText: 'Grace days',
-                        helperText: 'Days before marking overdue',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: List.generate(
-                        21,
-                        (index) => DropdownMenuItem(
-                          value: index,
-                          child: Text('$index day${index == 1 ? '' : 's'}'),
+                        const SizedBox(height: AppTheme.spaceMedium),
+                        DropdownButtonFormField<int>(
+                          initialValue: _graceDays,
+                          decoration: const InputDecoration(
+                            labelText: 'Grace days',
+                            prefixIcon: Icon(Icons.hourglass_bottom_rounded),
+                            helperText: 'Before overdue',
+                          ),
+                          items: List.generate(
+                            21,
+                            (index) => DropdownMenuItem(
+                              value: index,
+                              child: Text('$index day${index == 1 ? '' : 's'}'),
+                            ),
+                          ),
+                          onChanged: _submitting
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _graceDays = value);
+                                  }
+                                },
                         ),
-                      ),
-                      onChanged: _submitting
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                setState(() => _graceDays = value);
-                              }
-                            },
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            initialValue: _dueDay,
+                            decoration: const InputDecoration(
+                              labelText: 'Due day',
+                              prefixIcon: Icon(Icons.event_rounded),
+                              helperText: 'Payment due date',
+                            ),
+                            items: List.generate(
+                              28,
+                              (index) => DropdownMenuItem(
+                                value: index + 1,
+                                child: Text('Day ${index + 1}'),
+                              ),
+                            ),
+                            onChanged: _submitting
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      setState(() => _dueDay = value);
+                                    }
+                                  },
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.spaceMedium),
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            initialValue: _graceDays,
+                            decoration: const InputDecoration(
+                              labelText: 'Grace days',
+                              prefixIcon: Icon(Icons.hourglass_bottom_rounded),
+                              helperText: 'Before overdue',
+                            ),
+                            items: List.generate(
+                              21,
+                              (index) => DropdownMenuItem(
+                                value: index,
+                                child: Text('$index day${index == 1 ? '' : 's'}'),
+                              ),
+                            ),
+                            onChanged: _submitting
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      setState(() => _graceDays = value);
+                                    }
+                                  },
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
+              const SizedBox(height: AppTheme.spaceXLarge),
+
+              // Section: Settings
+              _buildSectionHeader('Settings', Icons.settings_outlined),
+              const SizedBox(height: AppTheme.spaceMedium),
+
+              // Currency and timezone - responsive layout
+              isSmallScreen
+                  ? Column(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          initialValue: _currency,
+                          decoration: const InputDecoration(
+                            labelText: 'Currency',
+                            prefixIcon: Icon(Icons.monetization_on_outlined),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'USD',
+                              child: Text('\$ USD - US Dollar'),
+                            ),
+                          ],
+                          onChanged: _submitting
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _currency = value);
+                                  }
+                                },
+                        ),
+                        const SizedBox(height: AppTheme.spaceMedium),
+                        DropdownButtonFormField<String>(
+                          initialValue: _timezone,
+                          decoration: const InputDecoration(
+                            labelText: 'Timezone',
+                            prefixIcon: Icon(Icons.public_rounded),
+                          ),
+                          items: _timezones.entries
+                              .map(
+                                (entry) => DropdownMenuItem(
+                                  value: entry.key,
+                                  child: Text(entry.value),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _submitting
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _timezone = value);
+                                  }
+                                },
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: _currency,
+                            decoration: const InputDecoration(
+                              labelText: 'Currency',
+                              prefixIcon: Icon(Icons.monetization_on_outlined),
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'USD',
+                                child: Text('\$ USD - US Dollar'),
+                              ),
+                            ],
+                            onChanged: _submitting
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      setState(() => _currency = value);
+                                    }
+                                  },
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.spaceMedium),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: _timezone,
+                            decoration: const InputDecoration(
+                              labelText: 'Timezone',
+                              prefixIcon: Icon(Icons.public_rounded),
+                            ),
+                            items: _timezones.entries
+                                .map(
+                                  (entry) => DropdownMenuItem(
+                                    value: entry.key,
+                                    child: Text(entry.value),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: _submitting
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      setState(() => _timezone = value);
+                                    }
+                                  },
+                          ),
+                        ),
+                      ],
+                    ),
 
               if (_error != null) ...[
-                const SizedBox(height: 16),
-                Container(
+                const SizedBox(height: AppTheme.spaceXLarge),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppTheme.spaceMedium),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade100),
+                    gradient: AppTheme.errorGradient,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withValues(alpha:0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Colors.red.shade900,
-                    ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: AppTheme.spaceMedium),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
 
-              const SizedBox(height: 24),
+              const SizedBox(height: AppTheme.spaceXLarge),
 
+              // Submit button
               SizedBox(
                 width: double.infinity,
-                child: FilledButton.icon(
+                height: 56,
+                child: FilledButton(
                   onPressed: _submitting ? null : _handleSubmit,
-                  icon: _submitting
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                    ),
+                  ),
+                  child: _submitting
                       ? const SizedBox(
-                          width: 18,
-                          height: 18,
+                          width: 24,
+                          height: 24,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                            strokeWidth: 3,
                             color: Colors.white,
                           ),
                         )
-                      : const Icon(Icons.save),
-                  label: Text(widget.isEditing ? 'Save changes' : 'Create group'),
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              widget.isEditing
+                                  ? Icons.check_circle_outline_rounded
+                                  : Icons.add_circle_outline_rounded,
+                            ),
+                            const SizedBox(width: AppTheme.spaceSmall),
+                            Text(
+                              widget.isEditing
+                                  ? 'Save Changes'
+                                  : 'Create Group',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: AppTheme.spaceMedium),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+        ),
+      ],
     );
   }
 }

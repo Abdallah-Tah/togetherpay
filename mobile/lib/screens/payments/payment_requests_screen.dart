@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../../env.dart';
 import '../../main.dart';
 import '../../pay_screen.dart';
+import '../../utils/theme.dart';
+import '../../utils/animations.dart';
 import '../../widgets/payment_request_card.dart';
 
 /// Payment requests screen showing all user's payment requests
@@ -91,13 +93,13 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
       });
 
       if (Env.debug) {
-        print('Loaded ${_allRequests.length} payment requests');
-        print(
+        debugPrint('Loaded ${_allRequests.length} payment requests');
+        debugPrint(
             'Pending: ${_pendingRequests.length}, Paid: ${_paidRequests.length}, Overdue: ${_overdueRequests.length}, Failed: ${_failedRequests.length}');
       }
     } on DioException catch (e) {
       if (Env.debug) {
-        print('Error loading payment requests: ${e.response?.data}');
+        debugPrint('Error loading payment requests: ${e.response?.data}');
       }
 
       setState(() {
@@ -107,7 +109,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
       });
     } catch (e) {
       if (Env.debug) {
-        print('Unexpected error loading payment requests: $e');
+        debugPrint('Unexpected error loading payment requests: $e');
       }
 
       setState(() {
@@ -133,7 +135,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(
+      SlidePageRoute(
         builder: (_) => PayScreen(
           prCode: prCode,
           deepLink: paymentRequest['deep_link'] as String?,
@@ -292,20 +294,25 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
               'Failed',
               _failedRequests.length,
               Colors.red.shade700,
-              Icons.error,
+              Icons.error_rounded,
             ),
-            ..._failedRequests.map((request) {
+            ..._failedRequests.asMap().entries.map((entry) {
+              final index = entry.key;
+              final request = entry.value;
               final requestId = request['id']?.toString();
               final isRetrying = requestId == _retryingRequestId;
 
-              return PaymentRequestCard(
-                paymentRequest: request,
-                onTap: () => _navigateToPayScreen(request),
-                onRetry: () => _retryPaymentRequest(request),
-                isProcessingRetry: isRetrying,
+              return _buildAnimatedCard(
+                index: index,
+                child: PaymentRequestCard(
+                  paymentRequest: request,
+                  onTap: () => _navigateToPayScreen(request),
+                  onRetry: () => _retryPaymentRequest(request),
+                  isProcessingRetry: isRetrying,
+                ),
               );
             }),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.spaceMedium),
           ],
 
           // Overdue section
@@ -314,16 +321,22 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
               'Overdue',
               _overdueRequests.length,
               Colors.red,
-              Icons.warning,
+              Icons.warning_rounded,
             ),
-            ..._overdueRequests.map((request) {
-              return PaymentRequestCard(
-                paymentRequest: request,
-                onTap: () => _navigateToPayScreen(request),
-                onPay: () => _navigateToPayScreen(request),
+            ..._overdueRequests.asMap().entries.map((entry) {
+              final index = entry.key;
+              final request = entry.value;
+
+              return _buildAnimatedCard(
+                index: index,
+                child: PaymentRequestCard(
+                  paymentRequest: request,
+                  onTap: () => _navigateToPayScreen(request),
+                  onPay: () => _navigateToPayScreen(request),
+                ),
               );
             }),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.spaceMedium),
           ],
 
           // Pending section
@@ -332,16 +345,22 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
               'Pending',
               _pendingRequests.length,
               Colors.orange,
-              Icons.pending,
+              Icons.pending_rounded,
             ),
-            ..._pendingRequests.map((request) {
-              return PaymentRequestCard(
-                paymentRequest: request,
-                onTap: () => _navigateToPayScreen(request),
-                onPay: () => _navigateToPayScreen(request),
+            ..._pendingRequests.asMap().entries.map((entry) {
+              final index = entry.key;
+              final request = entry.value;
+
+              return _buildAnimatedCard(
+                index: index,
+                child: PaymentRequestCard(
+                  paymentRequest: request,
+                  onTap: () => _navigateToPayScreen(request),
+                  onPay: () => _navigateToPayScreen(request),
+                ),
               );
             }),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.spaceMedium),
           ],
 
           // Paid section
@@ -350,12 +369,18 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
               'Paid',
               _paidRequests.length,
               Colors.green,
-              Icons.check_circle,
+              Icons.check_circle_rounded,
             ),
-            ..._paidRequests.map((request) {
-              return PaymentRequestCard(
-                paymentRequest: request,
-                onTap: () => _navigateToPayScreen(request),
+            ..._paidRequests.asMap().entries.map((entry) {
+              final index = entry.key;
+              final request = entry.value;
+
+              return _buildAnimatedCard(
+                index: index,
+                child: PaymentRequestCard(
+                  paymentRequest: request,
+                  onTap: () => _navigateToPayScreen(request),
+                ),
               );
             }),
           ],
@@ -371,11 +396,23 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
     IconData icon,
   ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: EdgeInsets.fromLTRB(
+        AppTheme.spaceMedium,
+        AppTheme.spaceMedium,
+        AppTheme.spaceMedium,
+        AppTheme.spaceSmall,
+      ),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha:0.1),
+              borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+            ),
+            child: Icon(icon, size: 20, color: color),
+          ),
+          const SizedBox(width: AppTheme.spaceMedium),
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -383,17 +420,29 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
                   color: color,
                 ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppTheme.spaceSmall),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 4,
+            ),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [color, color.withValues(alpha:0.8)],
+              ),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha:0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Text(
               count.toString(),
-              style: TextStyle(
-                color: color,
+              style: const TextStyle(
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -401,6 +450,27 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAnimatedCard({
+    required int index,
+    required Widget child,
+  }) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 350 + (index * 50)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 20 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
     );
   }
 }

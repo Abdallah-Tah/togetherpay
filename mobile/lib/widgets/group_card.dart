@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../utils/theme.dart';
 
 /// Reusable group card widget for displaying group information
 ///
-/// Shows group name, member count, and pending payment count
-class GroupCard extends StatelessWidget {
+/// Shows group name, member count, and pending payment count with animations
+class GroupCard extends StatefulWidget {
   final Map<String, dynamic> group;
   final VoidCallback? onTap;
 
@@ -14,126 +15,298 @@ class GroupCard extends StatelessWidget {
   });
 
   @override
+  State<GroupCard> createState() => _GroupCardState();
+}
+
+class _GroupCardState extends State<GroupCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _controller.forward();
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  void _handleTapCancel() {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final groupName = group['name'] as String? ?? 'Unnamed Group';
-    final memberCount = group['member_count'] as int? ?? 0;
-    final pendingCount = group['pending_payments_count'] as int? ?? 0;
-    final description = group['description'] as String?;
-    final isOwner = group['is_owner'] as bool? ?? false;
+    final groupName = widget.group['name'] as String? ?? 'Unnamed Group';
+    final groupId = widget.group['id'];
+    final memberCount = widget.group['member_count'] as int? ?? 0;
+    final pendingCount = widget.group['pending_payments_count'] as int? ?? 0;
+    final description = widget.group['description'] as String?;
+    final isOwner = widget.group['is_owner'] as bool? ?? false;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Group name and owner badge
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      groupName,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Hero(
+        tag: 'group_card_$groupId',
+        child: Card(
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spaceMedium,
+            vertical: AppTheme.spaceSmall,
+          ),
+          elevation: _isPressed ? 2 : 0,
+          shadowColor: Colors.black.withValues(alpha:0.1),
+          clipBehavior: Clip.antiAlias,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              onTapDown: _handleTapDown,
+              onTapUp: _handleTapUp,
+              onTapCancel: _handleTapCancel,
+              child: Container(
+                padding: const EdgeInsets.all(AppTheme.spaceMedium),
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: isOwner
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.transparent,
+                      width: 4,
                     ),
                   ),
-                  if (isOwner) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'OWNER',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-
-              // Description
-              if (description != null && description.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey,
-                      ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-
-              const SizedBox(height: 12),
-
-              // Stats row
-              Row(
-                children: [
-                  // Member count
-                  Icon(
-                    Icons.people_outline,
-                    size: 18,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$memberCount ${memberCount == 1 ? 'member' : 'members'}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Group name and owner badge
+                    Row(
+                      children: [
+                        // Icon with gradient background
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.primaryGradient,
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusMedium),
+                          ),
+                          child: const Icon(
+                            Icons.groups_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                         ),
-                  ),
-
-                  const SizedBox(width: 16),
-
-                  // Pending payments
-                  if (pendingCount > 0) ...[
-                    Icon(
-                      Icons.payment,
-                      size: 18,
-                      color: Colors.orange[700],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$pendingCount pending',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.orange[700],
-                            fontWeight: FontWeight.w500,
+                        const SizedBox(width: AppTheme.spaceMedium),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                groupName,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (isOwner) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: AppTheme.primaryGradient,
+                                        borderRadius: BorderRadius.circular(
+                                          AppTheme.radiusSmall,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'OWNER',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
                           ),
-                    ),
-                  ] else ...[
-                    Icon(
-                      Icons.check_circle_outline,
-                      size: 18,
-                      color: Colors.green[700],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'All paid',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.green[700],
+                        ),
+                        // Pending count badge
+                        if (pendingCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: AppTheme.warningGradient,
+                              borderRadius:
+                                  BorderRadius.circular(AppTheme.radiusMedium),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.orange.withValues(alpha:0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              '$pendingCount',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
+                      ],
+                    ),
+
+                    // Description
+                    if (description != null && description.isNotEmpty) ...[
+                      const SizedBox(height: AppTheme.spaceMedium),
+                      Text(
+                        description,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha:0.6),
+                            ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+
+                    const SizedBox(height: AppTheme.spaceMedium),
+
+                    // Stats row with enhanced icons
+                    Row(
+                      children: [
+                        // Member count
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusMedium),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.people_outline_rounded,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '$memberCount ${memberCount == 1 ? 'member' : 'members'}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(width: AppTheme.spaceSmall),
+
+                        // Status indicator
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: pendingCount > 0
+                                ? Colors.orange.withValues(alpha:0.1)
+                                : Colors.green.withValues(alpha:0.1),
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusMedium),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                pendingCount > 0
+                                    ? Icons.pending_outlined
+                                    : Icons.check_circle_outline_rounded,
+                                size: 18,
+                                color: pendingCount > 0
+                                    ? Colors.orange[700]
+                                    : Colors.green[700],
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                pendingCount > 0
+                                    ? '$pendingCount pending'
+                                    : 'All paid',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: pendingCount > 0
+                                          ? Colors.orange[700]
+                                          : Colors.green[700],
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ],
+                ),
               ),
-            ],
+            ),
           ),
         ),
       ),

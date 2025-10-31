@@ -72,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
       dio.options.headers['Authorization'] = 'Bearer $token';
 
       if (Env.debug) {
-        print('Login successful, token stored');
+        debugPrint('Login successful, token stored');
       }
 
       if (mounted) {
@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } on DioException catch (e) {
       if (Env.debug) {
-        print('Login error: ${e.response?.data}');
+        debugPrint('Login error: ${e.response?.data}');
       }
 
       setState(() {
@@ -90,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
       });
     } catch (e) {
       if (Env.debug) {
-        print('Unexpected login error: $e');
+        debugPrint('Unexpected login error: $e');
       }
 
       setState(() {
