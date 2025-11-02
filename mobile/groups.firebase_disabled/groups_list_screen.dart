@@ -1,0 +1,349 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+
+import '../../env.dart';
+import '../../services/backend/backend_service.dart';
+import '../../utils/animations.dart';
+import '../../utils/theme.dart';
+import '../../widgets/group_card.dart';
+import 'group_form_sheet.dart';
+import 'group_details_screen.dart';
+
+/// Groups list screen showing user's groups
+///
+/// Displays all groups the user owns or is a member of
+class GroupsListScreen extends StatefulWidget {
+  const GroupsListScreen({super.key});
+
+  @override
+  State<GroupsListScreen> createState() => _GroupsListScreenState();
+}
+
+class _GroupsListScreenState extends State<GroupsListScreen> {
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _groups = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGroups();
+  }
+
+  Future<void> _loadGroups() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final data = await backendService.fetchGroupsOverview();
+
+      final groups = data
+          .map((group) => _normalizeGroup(
+                group,
+                isOwner: group['is_owner'] as bool? ?? false,
+              ))
+          .toList();
+
+      groups.sort((a, b) {
+        final nameA = (a['name'] as String?) ?? '';
+        final nameB = (b['name'] as String?) ?? '';
+        return nameA.toLowerCase().compareTo(nameB.toLowerCase());
+      });
+
+      setState(() {
+        _groups = groups;
+        _loading = false;
+      });
+
+      if (Env.debug) {
+        debugPrint('Loaded ${_groups.length} groups');
+      }
+    } on FirebaseException catch (e) {
+      if (Env.debug) {
+        debugPrint('Error loading groups (Firebase): ${e.message}');
+      }
+
+      setState(() {
+        _error = e.message ?? 'Failed to load groups';
+        _loading = false;
+      });
+    } on DioException catch (e) {
+      if (Env.debug) {
+        debugPrint('Error loading groups: ${e.response?.data}');
+      }
+
+      setState(() {
+        _error = e.response?.data?['message'] as String? ??
+                 'Failed to load groups';
+        _loading = false;
+      });
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Unexpected error loading groups: $e');
+      }
+
+      setState(() {
+        _error = 'An unexpected error occurred';
+        _loading = false;
+      });
+    }
+  }
+
+  Map<String, dynamic> _normalizeGroup(dynamic group, {required bool isOwner}) {
+    final map = Map<String, dynamic>.from(group as Map);
+
+    map['is_owner'] = isOwner || (map['is_owner'] as bool? ?? false);
+
+    if (map['member_count'] == null) {
+      final members = map['members'];
+      if (members is List) {
+        map['member_count'] = members.length;
+      }
+    }
+
+    if (map['pending_payments_count'] == null) {
+      map['pending_payments_count'] = _countPendingRequests(map);
+    }
+
+    return map;
+  }
+
+  int _countPendingRequests(Map<String, dynamic> group) {
+    int count = 0;
+
+    void handleList(List<dynamic> list) {
+      for (final item in list) {
+        if (item is Map<String, dynamic>) {
+          final status = item['status'] as String?;
+          if (_isPendingStatus(status)) {
+            count++;
+          }
+        }
+      }
+    }
+
+    final paymentRequests = group['payment_requests'];
+    if (paymentRequests is List) {
+      handleList(paymentRequests);
+    } else {
+      final cycles = group['cycles'];
+      if (cycles is List) {
+        for (final cycle in cycles) {
+          if (cycle is Map<String, dynamic>) {
+            final cycleRequests = cycle['payment_requests'];
+            if (cycleRequests is List) {
+              handleList(cycleRequests);
+            }
+          }
+        }
+      }
+    }
+
+    return count;
+  }
+
+  bool _isPendingStatus(String? status) {
+    switch ((status ?? '').toLowerCase()) {
+      case 'pending':
+      case 'sent':
+      case 'member_marked':
+      case 'collecting':
+      case 'overdue':
+      case 'late':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  Future<void> _handleRefresh() async {
+    await _loadGroups();
+  }
+
+  void _navigateToGroupDetails(Map<String, dynamic> group) {
+    final groupId = group['id'] as int?;
+
+    if (groupId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid group ID')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      SlidePageRoute(
+        builder: (_) => GroupDetailsScreen(
+          groupId: groupId,
+          initialGroup: group,
+        ),
+      ),
+    ).then((_) {
+      // Refresh groups when returning from details
+      _loadGroups();
+    });
+  }
+
+  Future<void> _showCreateGroupSheet() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      SlidePageRoute(
+        builder: (_) => const GroupFormSheet(),
+      ),
+    );
+
+    if (result != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Group "${result['name'] ?? 'New Group'}" created',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+          ),
+        ),
+      );
+      await _loadGroups();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Groups'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loading ? null : _handleRefresh,
+            tooltip: 'Refresh',
+          ),
+        ],
+      ),
+      body: _buildBody(),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _loading ? null : _showCreateGroupSheet,
+        icon: const Icon(Icons.add),
+        label: const Text('New Group'),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red.shade300,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _error!,
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _loadGroups,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Try Again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_groups.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.groups_outlined,
+                size: 80,
+                color: Colors.grey.shade300,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No groups yet',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.grey,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Create a group to start splitting bills with friends',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              FilledButton.icon(
+                onPressed: _loading ? null : _showCreateGroupSheet,
+                icon: const Icon(Icons.add),
+                label: const Text('Create Your First Group'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      child: ListView.builder(
+        padding: const EdgeInsets.only(top: 8, bottom: 80),
+        itemCount: _groups.length,
+        itemBuilder: (context, index) {
+          final group = _groups[index];
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 350 + (index * 50)),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 20 * (1 - value)),
+                  child: child,
+                ),
+              );
+            },
+            child: GroupCard(
+              group: group,
+              onTap: () => _navigateToGroupDetails(group),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

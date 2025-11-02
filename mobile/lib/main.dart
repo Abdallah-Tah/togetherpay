@@ -1,20 +1,16 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
 
 import 'env.dart';
-import 'pay_screen.dart';
-import 'screens/auth/login_screen.dart';
+// Temporarily disabled screens while converting from Firebase to Laravel API:
+// import 'pay_screen.dart';
 import 'screens/groups/groups_list_screen.dart';
-import 'screens/payments/payment_requests_screen.dart';
+// import 'screens/payments/payment_requests_screen.dart';
+import 'screens/auth/login_screen.dart';
 import 'screens/settings/notification_preferences_screen.dart';
 import 'screens/settings/payment_methods_screen.dart';
 import 'utils/theme.dart';
@@ -30,70 +26,11 @@ final dio = Dio(BaseOptions(
 /// Secure storage for auth tokens
 const storage = FlutterSecureStorage();
 
-/// Local notifications plugin for foreground messages
-final localNotifications = FlutterLocalNotificationsPlugin();
-
-/// Global navigator key for notification navigation
+/// Global navigator key for navigation
 final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>();
-
-/// Background message handler
-/// Must be top-level function for Firebase
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  if (Env.debug) {
-    debugPrint('Background message: ${message.messageId}');
-  }
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize timezone database for scheduled notifications
-  tz.initializeTimeZones();
-  tz.setLocalLocation(tz.getLocation('America/New_York'));
-
-  // Initialize Firebase only on mobile platforms
-  if (!kIsWeb) {
-    try {
-      await Firebase.initializeApp();
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    } catch (e) {
-      if (Env.debug) {
-        debugPrint('Firebase initialization error: $e');
-      }
-    }
-
-    // Initialize local notifications
-    const initSettings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      iOS: DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-      ),
-    );
-
-    await localNotifications.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: (details) {
-        if (Env.debug) {
-          debugPrint('Notification tapped: ${details.payload}');
-        }
-
-        // Navigate to PayScreen when notification is tapped
-        final prCode = details.payload;
-        if (prCode != null && prCode.isNotEmpty) {
-          globalNavigatorKey.currentState?.push(
-            MaterialPageRoute(
-              builder: (_) => PayScreen(prCode: prCode),
-            ),
-          );
-        }
-      },
-    );
-  }
-
   runApp(const TogetherPayApp());
 }
 
@@ -112,7 +49,6 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
   void initState() {
     super.initState();
     _setupApp();
-    _setupPushHandlers();
   }
 
   Future<void> _setupApp() async {
@@ -129,114 +65,6 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     setState(() {
       _isInitializing = false;
     });
-
-    // Request notification permissions (mobile only)
-    if (!kIsWeb) {
-      final messaging = FirebaseMessaging.instance;
-      final settings = await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-
-      if (Env.debug) {
-        debugPrint('Notification permission: ${settings.authorizationStatus}');
-      }
-
-      // Get FCM token and register with backend
-      final fcmToken = await messaging.getToken();
-      if (fcmToken != null) {
-        if (Env.debug) {
-          debugPrint('FCM Token: $fcmToken');
-        }
-
-        // Register device with backend
-        try {
-          await dio.post('/devices/register', data: {
-            'fcm_token': fcmToken,
-            'platform': Platform.isIOS ? 'ios' : 'android',
-          });
-          if (Env.debug) {
-            debugPrint('Device registered successfully');
-          }
-        } catch (e) {
-          if (Env.debug) {
-            debugPrint('Failed to register FCM token: $e');
-          }
-        }
-      }
-
-      // Handle notification that launched the app
-      final initialMessage = await messaging.getInitialMessage();
-      if (initialMessage != null) {
-        _handlePushNotification(initialMessage);
-      }
-    }
-  }
-
-  void _setupPushHandlers() {
-    // Skip push handlers on web platform
-    if (kIsWeb) return;
-
-    // Handle notification when app is in foreground
-    FirebaseMessaging.onMessage.listen((message) {
-      if (Env.debug) {
-        debugPrint('Foreground message: ${message.notification?.title}');
-      }
-
-      // Show local notification
-      _showLocalNotification(message);
-    });
-
-    // Handle notification when app is in background but opened
-    FirebaseMessaging.onMessageOpenedApp.listen(_handlePushNotification);
-  }
-
-  void _handlePushNotification(RemoteMessage message) {
-    final data = message.data;
-    final prCode = data['pr_code'] as String?;
-    final deepLink = data['deep_link'] as String?;
-
-    if (prCode != null) {
-      // Navigate to payment screen
-      globalNavigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (_) => PayScreen(
-            prCode: prCode,
-            deepLink: deepLink,
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _showLocalNotification(RemoteMessage message) async {
-    const androidDetails = AndroidNotificationDetails(
-      'togetherpay_default',
-      'Payment Requests',
-      channelDescription: 'Payment request notifications',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await localNotifications.show(
-      message.hashCode,
-      message.notification?.title ?? 'Payment Request',
-      message.notification?.body ?? 'Tap to view',
-      details,
-      payload: message.data['pr_code'],
-    );
   }
 
   /// Handle logout and clear auth token
@@ -440,8 +268,8 @@ class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
-    GroupsListScreen(),
-    PaymentRequestsScreen(),
+    PlaceholderScreen(title: 'Groups', message: 'Groups screen temporarily disabled while converting from Firebase to Laravel API'),
+    PlaceholderScreen(title: 'Payments', message: 'Payment requests screen temporarily disabled while converting from Firebase to Laravel API'),
     ProfileScreen(),
   ];
 
@@ -808,6 +636,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 32),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Placeholder screen for disabled features
+class PlaceholderScreen extends StatelessWidget {
+  final String title;
+  final String message;
+
+  const PlaceholderScreen({
+    super.key,
+    required this.title,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.construction_rounded,
+                size: 80,
+                color: Colors.orange.shade300,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Coming Soon',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+              ),
+            ],
+          ),
         ),
       ),
     );

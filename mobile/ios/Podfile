@@ -39,8 +39,50 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+
+    # Special handling for BoringSSL-GRPC and gRPC pods
+    if target.name.include?('BoringSSL-GRPC') || target.name.include?('gRPC')
+      target.source_build_phase.files.each do |file|
+        if file.settings && file.settings['COMPILER_FLAGS']
+          flags = file.settings['COMPILER_FLAGS'].split
+          flags.delete_if { |flag| flag == '-G' || flag.start_with?('-G') }
+          file.settings['COMPILER_FLAGS'] = flags.join(' ')
+        end
+      end
+    end
+
     target.build_configurations.each do |config|
+      # Set minimum deployment target
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+
+      # Disable bitcode
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+
+      # Fix gRPC and BoringSSL compilation issues
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'GPB_USE_PROTOBUF_FRAMEWORK_IMPORTS=0'
+
+      # Remove -G flag from all compiler flags
+      ['OTHER_CFLAGS', 'OTHER_CPLUSPLUSFLAGS', 'OTHER_LDFLAGS'].each do |setting|
+        if config.build_settings[setting]
+          if config.build_settings[setting].is_a?(String)
+            config.build_settings[setting] = config.build_settings[setting].gsub(/\s-G\s/, ' ').gsub(/^-G\s/, '').gsub(/\s-G$/, '')
+          elsif config.build_settings[setting].is_a?(Array)
+            config.build_settings[setting].delete('-G')
+            config.build_settings[setting] = config.build_settings[setting].reject { |flag| flag == '-G' || flag.start_with?('-G ') }
+          end
+        end
+      end
+
+      # Set explicit architecture
+      config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
+      config.build_settings['VALID_ARCHS'] = 'arm64'
+
+      # Force use of legacy build system settings
+      config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+
+      # Allow non-modular includes for Firebase (Xcode 16 fix)
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
     end
   end
 end
