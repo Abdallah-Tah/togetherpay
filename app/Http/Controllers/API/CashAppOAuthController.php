@@ -20,7 +20,7 @@ class CashAppOAuthController extends Controller
      *
      * GET /api/v1/cashapp/oauth/authorize
      */
-    public function authorize(Request $request)
+    public function initiateOAuth(Request $request)
     {
         $request->validate([
             'member_id' => 'required|exists:group_members,id',

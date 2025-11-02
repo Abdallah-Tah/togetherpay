@@ -9,6 +9,18 @@ class Env {
     defaultValue: 'https://georgiann-semiacademic-never.ngrok-free.dev/api/v1',
   );
 
+  /// Controls whether to use the Firebase backend instead of Laravel REST API.
+  static const useFirebaseBackend = bool.fromEnvironment(
+    'USE_FIREBASE_BACKEND',
+    defaultValue: false,
+  );
+
+  /// Default Cloud Functions region for callable/scheduled functions.
+  static const firebaseFunctionsRegion = String.fromEnvironment(
+    'FIREBASE_FUNCTIONS_REGION',
+    defaultValue: 'us-central1',
+  );
+
   /// Enable debug logging
   static const debug = bool.fromEnvironment('DEBUG', defaultValue: true);
 

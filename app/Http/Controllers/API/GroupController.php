@@ -26,14 +26,21 @@ class GroupController extends Controller
             ->with(['members.user', 'cycles' => function ($query) {
                 $query->latest()->limit(1);
             }])
-            ->get();
+            ->get()
+            ->map(function ($group) {
+                return $group->toArray();
+            });
 
-        // Groups where user is a member
+        // Groups where user is a member (but NOT owner - avoid duplicates)
         $memberGroups = Group::whereHas('members', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
+            $query->where('user_id', $user->id)->where('status', 'active');
         })
+            ->where('owner_id', '!=', $user->id) // Exclude groups user owns
             ->with(['owner', 'members.user'])
-            ->get();
+            ->get()
+            ->map(function ($group) {
+                return $group->toArray();
+            });
 
         return response()->json([
             'owned_groups' => $ownedGroups,
@@ -63,8 +70,13 @@ class GroupController extends Controller
             $request->user()->update(['role' => 'owner']);
         }
 
+        $group->load(['owner', 'activeMembers.user']);
+        $groupArray = $group->toArray();
+        $groupArray['members'] = $groupArray['active_members'] ?? [];
+        unset($groupArray['active_members']);
+
         return response()->json([
-            'group' => $group->load(['owner', 'members']),
+            'group' => $groupArray,
         ], 201);
     }
 
@@ -77,14 +89,16 @@ class GroupController extends Controller
 
         $group->load([
             'owner',
-            'members.user',
+            'members.user', // Load ALL members (including inactive) for proper filtering in the app
             'cycles' => function ($query) {
                 $query->latest()->with('paymentRequests')->limit(5);
             },
         ]);
 
+        $groupArray = $group->toArray();
+
         return response()->json([
-            'group' => $group,
+            'group' => $groupArray,
         ]);
     }
 
@@ -96,9 +110,14 @@ class GroupController extends Controller
         $this->authorize('update', $group);
 
         $group->update($request->validated());
+        $group->load(['owner', 'activeMembers.user']);
+
+        $groupArray = $group->toArray();
+        $groupArray['members'] = $groupArray['active_members'] ?? [];
+        unset($groupArray['active_members']);
 
         return response()->json([
-            'group' => $group->load(['owner', 'members']),
+            'group' => $groupArray,
         ]);
     }
 
@@ -123,10 +142,18 @@ class GroupController extends Controller
     {
         $this->authorize('update', $group);
 
-        // Find user by email or phone
-        $user = User::where('email', $request->email)
-            ->orWhere('phone', $request->phone)
-            ->first();
+        \Log::info('ADD MEMBER REQUEST', [
+            'group_id' => $group->id,
+            'group_name' => $group->name,
+            'email' => $request->email,
+        ]);
+
+        // Find user by email or phone (only check phone if provided)
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user && $request->phone) {
+            $user = User::where('phone', $request->phone)->first();
+        }
 
         if (!$user) {
             return response()->json([
@@ -134,29 +161,79 @@ class GroupController extends Controller
             ], 404);
         }
 
-        // Check if already a member
-        if ($group->members()->where('user_id', $user->id)->exists()) {
-            return response()->json([
-                'message' => 'User is already a member of this group',
-            ], 422);
+        \Log::info('FOUND USER', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+        ]);
+
+        // Check if user already has a record in this group (including inactive/left members)
+        $existingMember = $group->members()->where('user_id', $user->id)->first();
+
+        if ($existingMember) {
+            \Log::info('EXISTING MEMBER FOUND', [
+                'group_id' => $group->id,
+                'user_id' => $user->id,
+                'current_status' => $existingMember->status,
+            ]);
+
+            // If already active, reject
+            if ($existingMember->status === 'active') {
+                \Log::warning('DUPLICATE ACTIVE MEMBER BLOCKED', [
+                    'group_id' => $group->id,
+                    'user_id' => $user->id,
+                ]);
+                return response()->json([
+                    'message' => 'User is already a member of this group',
+                ], 422);
+            }
+
+            // Reactivate if they left or are paused
+            \Log::info('REACTIVATING MEMBER', [
+                'group_id' => $group->id,
+                'user_id' => $user->id,
+                'previous_status' => $existingMember->status,
+            ]);
+
+            $existingMember->update([
+                'preferred_channel' => $request->preferred_channel ?? $existingMember->preferred_channel,
+                'venmo_username' => $request->venmo_username ?? $existingMember->venmo_username,
+                'cash_tag' => $request->cash_tag ?? $existingMember->cash_tag,
+                'cash_phone' => $request->cash_phone ?? $existingMember->cash_phone,
+                'cash_email' => $request->cash_email ?? $existingMember->cash_email,
+                'share_type' => $request->share_type ?? $existingMember->share_type,
+                'share_value' => $request->share_value ?? $existingMember->share_value,
+                'status' => 'active',
+            ]);
+
+            $member = $existingMember;
+        } else {
+            // Create new member
+            \Log::info('CREATING NEW MEMBER', [
+                'group_id' => $group->id,
+                'user_id' => $user->id,
+            ]);
+
+            $member = GroupMember::create([
+                'group_id' => $group->id,
+                'user_id' => $user->id,
+                'preferred_channel' => $request->preferred_channel ?? 'VENMO',
+                'venmo_username' => $request->venmo_username,
+                'cash_tag' => $request->cash_tag,
+                'cash_phone' => $request->cash_phone,
+                'cash_email' => $request->cash_email,
+                'share_type' => $request->share_type ?? 'AMOUNT',
+                'share_value' => $request->share_value ?? 0,
+                'status' => 'active',
+            ]);
         }
 
-        $member = GroupMember::create([
-            'group_id' => $group->id,
-            'user_id' => $user->id,
-            'preferred_channel' => $request->preferred_channel ?? 'VENMO',
-            'venmo_username' => $request->venmo_username,
-            'cash_tag' => $request->cash_tag,
-            'cash_phone' => $request->cash_phone,
-            'cash_email' => $request->cash_email,
-            'share_type' => $request->share_type ?? 'AMOUNT',
-            'share_value' => $request->share_value ?? 0,
-            'status' => 'active',
-        ]);
+        $message = $existingMember
+            ? 'Member reactivated successfully'
+            : 'Member added successfully';
 
         return response()->json([
             'member' => $member->load('user'),
-            'message' => 'Member added successfully',
+            'message' => $message,
         ], 201);
     }
 

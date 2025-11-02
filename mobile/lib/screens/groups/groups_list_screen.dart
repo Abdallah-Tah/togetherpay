@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../env.dart';
-import '../../main.dart';
+import '../../services/backend/backend_service.dart';
 import '../../utils/animations.dart';
 import '../../utils/theme.dart';
 import '../../widgets/group_card.dart';
@@ -37,39 +38,14 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
     });
 
     try {
-      final response = await dio.get('/groups');
-      final data = response.data;
+      final data = await backendService.fetchGroupsOverview();
 
-      final List<Map<String, dynamic>> groups = [];
-
-      if (data is Map<String, dynamic>) {
-        final owned = data['owned_groups'];
-        final member = data['member_groups'];
-
-        if (owned is List) {
-          for (final group in owned) {
-            groups.add(_normalizeGroup(group, isOwner: true));
-          }
-        }
-
-        if (member is List) {
-          for (final group in member) {
-            groups.add(_normalizeGroup(group, isOwner: false));
-          }
-        }
-
-        if (groups.isEmpty && data['data'] is List) {
-          for (final group in data['data'] as List<dynamic>) {
-            groups.add(_normalizeGroup(group, isOwner: false));
-          }
-        }
-      } else if (data is List) {
-        for (final group in data) {
-          groups.add(_normalizeGroup(group, isOwner: false));
-        }
-      } else {
-        throw Exception('Unexpected response format');
-      }
+      final groups = data
+          .map((group) => _normalizeGroup(
+                group,
+                isOwner: group['is_owner'] as bool? ?? false,
+              ))
+          .toList();
 
       groups.sort((a, b) {
         final nameA = (a['name'] as String?) ?? '';
@@ -85,6 +61,15 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
       if (Env.debug) {
         debugPrint('Loaded ${_groups.length} groups');
       }
+    } on FirebaseException catch (e) {
+      if (Env.debug) {
+        debugPrint('Error loading groups (Firebase): ${e.message}');
+      }
+
+      setState(() {
+        _error = e.message ?? 'Failed to load groups';
+        _loading = false;
+      });
     } on DioException catch (e) {
       if (Env.debug) {
         debugPrint('Error loading groups: ${e.response?.data}');

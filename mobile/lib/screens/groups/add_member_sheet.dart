@@ -1,8 +1,10 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../env.dart';
-import '../../main.dart';
+import '../../services/backend/backend_service.dart';
 import '../../utils/theme.dart';
 
 /// Maps backend share type values to the dropdown options we support.
@@ -94,30 +96,11 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     });
 
     try {
-      // Fetch all groups to find existing members
-      final response = await dio.get('/groups');
-
       if (Env.debug) {
         debugPrint('=== Loading Existing Members ===');
-        debugPrint('Response status: ${response.statusCode}');
-        debugPrint('Response data type: ${response.data.runtimeType}');
-        debugPrint('Response data: ${response.data}');
       }
 
-      // Handle both array and object responses
-      List<dynamic> groups = [];
-      if (response.data is List) {
-        groups = response.data as List;
-      } else if (response.data is Map) {
-        // API returns {owned_groups: [...], member_groups: [...]}
-        final ownedGroups = (response.data['owned_groups'] as List?) ?? [];
-        final memberGroups = (response.data['member_groups'] as List?) ?? [];
-        groups = [...ownedGroups, ...memberGroups];
-
-        if (Env.debug) {
-          debugPrint('Owned groups: ${ownedGroups.length}, Member groups: ${memberGroups.length}');
-        }
-      }
+      final groups = await backendService.fetchGroupsOverview();
 
       if (Env.debug) {
         debugPrint('Total groups found: ${groups.length}');
@@ -127,9 +110,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
       final List<Map<String, dynamic>> members = [];
 
       for (final groupData in groups) {
-        final group = groupData is Map<String, dynamic>
-            ? groupData
-            : Map<String, dynamic>.from(groupData as Map);
+        final group = Map<String, dynamic>.from(groupData);
 
         final groupName = group['name'] as String? ?? 'Unknown Group';
         final groupMembers = (group['members'] as List?) ?? [];
@@ -384,23 +365,10 @@ class _NewMemberTabState extends State<_NewMemberTab> {
         }
       }
 
-      final response = await dio.post(
-        '/groups/${widget.groupId}/members',
-        data: data,
+      final body = await backendService.addMember(
+        groupId: widget.groupId,
+        payload: data,
       );
-
-      final body = response.data;
-      if (body is! Map) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Connection error. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
 
       if (mounted) {
         final message = _extractSuccessMessage(body, 'Member added successfully');
@@ -409,9 +377,34 @@ class _NewMemberTabState extends State<_NewMemberTab> {
           'refresh': true,
         });
       }
+    } on FirebaseFunctionsException catch (e) {
+      if (Env.debug) {
+        debugPrint('Add member error (Firebase Functions): ${e.message}');
+      }
+      if (mounted) {
+        final friendly = e.message ?? 'Failed to add member';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(friendly),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (Env.debug) {
+        debugPrint('Add member error (Firebase Auth): ${e.message}');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'Authentication failed. Please retry.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } on DioException catch (e) {
       if (Env.debug) {
-        debugPrint('Add member error: ${e.response?.data}');
+        debugPrint('Add member error (Laravel): ${e.response?.data}');
       }
 
       if (mounted) {
@@ -455,6 +448,18 @@ class _NewMemberTabState extends State<_NewMemberTab> {
           ),
         );
       }
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Add member error (unexpected): $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unexpected error. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -485,7 +490,7 @@ class _NewMemberTabState extends State<_NewMemberTab> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'The person must have a TogetherPay account to be added.',
+                    'If they are new to TogetherPay we\'ll send an invite automatically.',
                     style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
                   ),
                 ),
@@ -891,7 +896,22 @@ class _ExistingMemberConfirmDialogState
   }
 
   Future<void> _confirmAdd() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (Env.debug) {
+      debugPrint('=== Attempting to add member ===');
+      debugPrint('GROUP ID: ${widget.groupId}'); // ← Added this
+      debugPrint('User Email: ${widget.user['email']}'); // ← Added this
+      debugPrint('Preferred Channel: $_preferredChannel');
+      debugPrint('Venmo Username: ${_venmoUsernameController.text}');
+      debugPrint('Share Type: $_shareType');
+      debugPrint('Share Value: ${_shareValueController.text}');
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      if (Env.debug) {
+        debugPrint('VALIDATION FAILED');
+      }
+      return;
+    }
 
     setState(() {
       _adding = true;
@@ -947,22 +967,17 @@ class _ExistingMemberConfirmDialogState
         return;
       }
 
-      final response = await dio.post(
-        '/groups/${widget.groupId}/members',
-        data: data,
+      if (Env.debug) {
+        debugPrint('Calling API with payload: $data');
+      }
+
+      final body = await backendService.addMember(
+        groupId: widget.groupId,
+        payload: data,
       );
 
-      final body = response.data;
-      if (body is! Map) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Connection error. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
+      if (Env.debug) {
+        debugPrint('API SUCCESS: $body');
       }
 
       if (mounted) {
@@ -972,7 +987,35 @@ class _ExistingMemberConfirmDialogState
           'refresh': true,
         });
       }
+    } on FirebaseFunctionsException catch (e) {
+      if (Env.debug) {
+        debugPrint('FIREBASE ERROR: ${e.message}');
+      }
+      if (mounted) {
+        final message = e.message ?? 'Failed to add member';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (Env.debug) {
+        debugPrint('FIREBASE AUTH ERROR: ${e.message}');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'Authentication failed. Please retry.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } on DioException catch (e) {
+      if (Env.debug) {
+        debugPrint('DIO ERROR: ${e.response?.statusCode} - ${e.response?.data}');
+      }
       if (mounted) {
         String errorMessage = 'Failed to add member';
         final responseData = e.response?.data;
@@ -1008,6 +1051,19 @@ class _ExistingMemberConfirmDialogState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      if (Env.debug) {
+        debugPrint('UNEXPECTED ERROR: $e');
+        debugPrint('Stack trace: $stackTrace');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unexpected error: $e'),
             backgroundColor: Colors.red,
           ),
         );

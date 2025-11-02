@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\PaymentRequest;
 use App\Support\PaymentLinks;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\Request;
 
 class SmartPayController extends Controller
@@ -28,7 +32,25 @@ class SmartPayController extends Controller
             ? PaymentLinks::venmo($member->venmo_username, $request->amount_cents, $note)
             : null;
 
-        return view('smartpay.show', compact('request', 'cashLink', 'venmoLink', 'group'));
+        // Generate QR code for this payment page
+        $qrCode = $this->generateQrCode(url("/pay/{$request->id}"));
+
+        return view('smartpay.show', compact('request', 'cashLink', 'venmoLink', 'group', 'qrCode'));
+    }
+
+    /**
+     * Generate QR code SVG
+     */
+    private function generateQrCode(string $url): string
+    {
+        $renderer = new ImageRenderer(
+            new RendererStyle(200),
+            new SvgImageBackEnd()
+        );
+
+        $writer = new Writer($renderer);
+
+        return $writer->writeString($url);
     }
 
     /**

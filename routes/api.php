@@ -62,7 +62,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
     // Cash App OAuth endpoints
     Route::prefix('cashapp')->group(function () {
-        Route::get('/oauth/authorize', [CashAppOAuthController::class, 'authorize']);
+        Route::get('/oauth/authorize', [CashAppOAuthController::class, 'initiateOAuth']);
         Route::post('/resolve-cashtag', [CashAppOAuthController::class, 'resolveCashtag']);
         Route::delete('/disconnect', [CashAppOAuthController::class, 'disconnect']);
         Route::get('/status', [CashAppOAuthController::class, 'status']);

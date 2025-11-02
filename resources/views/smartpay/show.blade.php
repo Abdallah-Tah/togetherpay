@@ -74,6 +74,47 @@
             </div>
         </div>
 
+        <!-- Mark as Paid Button -->
+        @if($request->status !== 'PAID' && $request->status !== 'confirmed')
+        <div class="mt-6">
+            <button
+                id="markPaidBtn"
+                onclick="markAsPaid()"
+                class="w-full py-4 px-6 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                I've Sent the Payment
+            </button>
+            <p class="text-xs text-gray-500 text-center mt-2">
+                Click after completing the payment
+            </p>
+        </div>
+        @endif
+
+        @if($request->status === 'PAID' || $request->status === 'confirmed')
+        <div class="mt-6 p-4 bg-green-50 rounded-xl text-center">
+            <svg class="w-12 h-12 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-green-700 font-semibold">Payment Completed!</p>
+            <p class="text-sm text-green-600 mt-1">Thank you for your payment</p>
+        </div>
+        @endif
+
+        <!-- QR Code -->
+        <div class="mt-6 border-t pt-6">
+            <p class="text-center text-sm text-gray-600 mb-3">Or scan QR code to pay:</p>
+            <div class="flex justify-center">
+                <div class="bg-white p-4 rounded-xl shadow-md inline-block">
+                    {!! $qrCode !!}
+                </div>
+            </div>
+            <p class="text-center text-xs text-gray-500 mt-2">
+                Share this QR code with the payer
+            </p>
+        </div>
+
         <!-- Help Text -->
         <div class="mt-6 text-center">
             <p class="text-xs text-gray-500">
@@ -81,5 +122,78 @@
             </p>
         </div>
     </div>
+
+    <script>
+        // Mark payment as paid
+        function markAsPaid() {
+            const btn = document.getElementById('markPaidBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+
+            fetch('/api/v1/requests/{{ $request->id }}/mark-paid', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    // Show success message
+                    btn.className = 'w-full py-4 px-6 bg-green-500 text-white font-semibold rounded-xl';
+                    btn.innerHTML = '<svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Payment Marked as Sent!';
+
+                    // Reload after 2 seconds
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    throw new Error(data.message || 'Failed to mark payment');
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> I\'ve Sent the Payment';
+            });
+        }
+
+        // Auto-redirect on mobile devices
+        window.addEventListener('DOMContentLoaded', () => {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const urlParams = new URLSearchParams(window.location.search);
+            const skipAutoOpen = urlParams.get('skip_auto_open') === '1';
+
+            if (isMobile && !skipAutoOpen) {
+                @if($cashLink)
+                    // Show a toast notification
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-teal-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                    toast.textContent = 'Opening Cash App...';
+                    document.body.appendChild(toast);
+
+                    // Auto-open Cash App after 1.5 seconds
+                    setTimeout(() => {
+                        window.location.href = '{{ $cashLink }}';
+                        toast.remove();
+                    }, 1500);
+                @elseif($venmoLink)
+                    // Show a toast notification
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                    toast.textContent = 'Opening Venmo...';
+                    document.body.appendChild(toast);
+
+                    // Auto-open Venmo after 1.5 seconds
+                    setTimeout(() => {
+                        window.location.href = '{{ $venmoLink }}';
+                        toast.remove();
+                    }, 1500);
+                @endif
+            }
+        });
+    </script>
 </body>
 </html>

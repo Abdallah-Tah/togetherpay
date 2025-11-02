@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../env.dart';
 import '../../main.dart';
+import '../../services/backend/backend_service.dart';
 import '../../pay_screen.dart';
 import '../../utils/theme.dart';
 import '../../widgets/payment_request_card.dart';
@@ -59,9 +61,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
     }
 
     try {
-      final response = await dio.get('/groups/${widget.groupId}');
-      final payload = response.data as Map<String, dynamic>;
-      final group = Map<String, dynamic>.from(payload['group'] ?? payload);
+      final group = await backendService.fetchGroup(widget.groupId);
       final wasOwner = _groupData?['is_owner'] as bool? ??
           widget.initialGroup?['is_owner'] as bool? ??
           false;
@@ -81,6 +81,17 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
       if (Env.debug) {
         debugPrint('Loaded group: ${group['name']}');
       }
+    } on FirebaseException catch (e) {
+      if (Env.debug) {
+        debugPrint('Error loading group (Firebase): ${e.message}');
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _error = e.message ?? 'Failed to load group details';
+        _loading = _groupData == null;
+      });
     } on DioException catch (e) {
       if (Env.debug) {
         debugPrint('Error loading group: ${e.response?.data}');
@@ -217,10 +228,17 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
 
   bool get _isOwner => _groupData?['is_owner'] as bool? ?? false;
 
-  List<Map<String, dynamic>> get _members =>
-      (_groupData?['members'] as List<dynamic>?)
-          ?.cast<Map<String, dynamic>>() ??
-      [];
+  List<Map<String, dynamic>> get _members {
+    final allMembers = (_groupData?['members'] as List<dynamic>?)
+            ?.cast<Map<String, dynamic>>() ??
+        [];
+
+    // Only show active members in the UI
+    return allMembers.where((m) {
+      final status = m['status'] as String? ?? 'active';
+      return status == 'active';
+    }).toList();
+  }
 
   void _navigateToPayScreen(Map<String, dynamic> paymentRequest) {
     final prCode = _codeOf(paymentRequest);
@@ -290,6 +308,27 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
               icon: const Icon(Icons.edit_calendar),
               tooltip: 'Edit schedule',
               onPressed: _showEditGroupSheet,
+            ),
+          if (_isOwner)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                if (value == 'delete') {
+                  _confirmDeleteGroup();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete Group', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
         ],
       ),
@@ -554,12 +593,23 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
   }
 
   Future<void> _showAddMemberDialog() async {
-    // Get existing member user IDs to exclude from selection
-    final existingUserIds = ((_groupData?['members'] as List?) ?? [])
+    // Get ALL existing member user IDs (including inactive members) to exclude from selection
+    // This prevents showing members who left/paused in the "existing members" list
+    final allMembers = (_groupData?['members'] as List<dynamic>?)
+            ?.cast<Map<String, dynamic>>() ??
+        [];
+
+    final existingUserIds = allMembers
         .map((m) => (m['user'] as Map?)?['id'] as int?)
         .where((id) => id != null)
         .cast<int>()
         .toList();
+
+    if (Env.debug) {
+      debugPrint('All member user IDs in group ${widget.groupId}: $existingUserIds');
+      debugPrint('Total members (including inactive): ${allMembers.length}');
+      debugPrint('Active members only: ${_members.length}');
+    }
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -668,6 +718,45 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                   ),
             )
           : null,
+      onTap: _isOwner ? () => _showMemberActions(member) : null,
+    );
+  }
+
+  Future<void> _showMemberActions(Map<String, dynamic> member) async {
+    final user = member['user'] as Map<String, dynamic>?;
+    final name = user?['name'] as String? ?? 'this member';
+
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit Member'),
+              onTap: () {
+                Navigator.pop(context);
+                _showEditMemberDialog(member);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_remove, color: Colors.red),
+              title: const Text('Remove Member', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmRemoveMember(member);
+              },
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -901,6 +990,179 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
   bool _isConfirmableStatus(String status) {
     return status.toLowerCase() == 'member_marked';
   }
+
+  Future<void> _showEditMemberDialog(Map<String, dynamic> member) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => _EditMemberDialog(
+        groupId: widget.groupId,
+        member: member,
+      ),
+    );
+
+    if (result == true && mounted) {
+      await _loadGroupDetails();
+    }
+  }
+
+  Future<void> _confirmRemoveMember(Map<String, dynamic> member) async {
+    final user = member['user'] as Map<String, dynamic>?;
+    final name = user?['name'] as String? ?? 'this member';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Member'),
+        content: Text('Are you sure you want to remove $name from this group?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _removeMember(member);
+    }
+  }
+
+  Future<void> _removeMember(Map<String, dynamic> member) async {
+    final memberId = member['id'];
+    if (memberId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid member ID')),
+      );
+      return;
+    }
+
+    try {
+      await dio.delete('/groups/${widget.groupId}/members/$memberId');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Member removed successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadGroupDetails();
+      }
+    } on DioException catch (e) {
+      if (Env.debug) {
+        debugPrint('Remove member error: ${e.response?.data}');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.response?.data?['message'] as String? ?? 'Failed to remove member',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteGroup() async {
+    final groupName = _groupData?['name'] as String? ?? 'this group';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Group'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete "$groupName"?'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.red.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone. All payment requests and history will be deleted.',
+                      style: TextStyle(
+                        color: Colors.red.shade900,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _deleteGroup();
+    }
+  }
+
+  Future<void> _deleteGroup() async {
+    try {
+      await dio.delete('/groups/${widget.groupId}');
+
+      if (mounted) {
+        Navigator.pop(context); // Go back to groups list
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Group deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } on DioException catch (e) {
+      if (Env.debug) {
+        debugPrint('Delete group error: ${e.response?.data}');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.response?.data?['message'] as String? ?? 'Failed to delete group',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 }
 
 /// Action button widget for group actions
@@ -1115,6 +1377,325 @@ class _ManualPaymentDialogState extends State<_ManualPaymentDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Text('Send Request'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Edit member dialog
+class _EditMemberDialog extends StatefulWidget {
+  final int groupId;
+  final Map<String, dynamic> member;
+
+  const _EditMemberDialog({
+    required this.groupId,
+    required this.member,
+  });
+
+  @override
+  State<_EditMemberDialog> createState() => _EditMemberDialogState();
+}
+
+class _EditMemberDialogState extends State<_EditMemberDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _shareValueController = TextEditingController();
+  final _venmoUsernameController = TextEditingController();
+  final _cashTagController = TextEditingController();
+  final _cashPhoneController = TextEditingController();
+  final _cashEmailController = TextEditingController();
+
+  String _shareType = 'AMOUNT';
+  String _preferredChannel = 'VENMO';
+  bool _updating = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Pre-fill with existing member data
+    _shareType = widget.member['share_type'] as String? ?? 'AMOUNT';
+    _preferredChannel = widget.member['preferred_channel'] as String? ?? 'VENMO';
+
+    final shareValue = widget.member['share_value'];
+    _shareValueController.text = shareValue?.toString() ?? '0';
+
+    _venmoUsernameController.text =
+        widget.member['venmo_username']?.toString() ?? '';
+    _cashTagController.text = widget.member['cash_tag']?.toString() ?? '';
+    _cashPhoneController.text = widget.member['cash_phone']?.toString() ?? '';
+    _cashEmailController.text = widget.member['cash_email']?.toString() ?? '';
+  }
+
+  @override
+  void dispose() {
+    _shareValueController.dispose();
+    _venmoUsernameController.dispose();
+    _cashTagController.dispose();
+    _cashPhoneController.dispose();
+    _cashEmailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateMember() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _updating = true;
+    });
+
+    try {
+      final memberId = widget.member['id'];
+      if (memberId == null) {
+        throw Exception('Member ID is missing');
+      }
+
+      final data = <String, dynamic>{
+        'preferred_channel': _preferredChannel,
+        'share_type': _shareType,
+        'share_value': double.parse(_shareValueController.text),
+      };
+
+      // Add payment channel details
+      if (_preferredChannel == 'VENMO') {
+        data['venmo_username'] = _venmoUsernameController.text.trim();
+      } else if (_preferredChannel == 'CASH_APP') {
+        if (_cashTagController.text.trim().isNotEmpty) {
+          data['cash_tag'] = _cashTagController.text.trim();
+        }
+        if (_cashPhoneController.text.trim().isNotEmpty) {
+          data['cash_phone'] = _cashPhoneController.text.trim();
+        }
+        if (_cashEmailController.text.trim().isNotEmpty) {
+          data['cash_email'] = _cashEmailController.text.trim();
+        }
+      }
+
+      await dio.put(
+        '/groups/${widget.groupId}/members/$memberId',
+        data: data,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Member updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } on DioException catch (e) {
+      if (Env.debug) {
+        debugPrint('Update member error: ${e.response?.data}');
+      }
+
+      if (mounted) {
+        String errorMessage = 'Failed to update member';
+
+        if (e.response?.data is Map) {
+          errorMessage = e.response?.data['message'] as String? ?? errorMessage;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _updating = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = widget.member['user'] as Map<String, dynamic>?;
+    final name = user?['name'] as String? ?? 'Member';
+
+    return AlertDialog(
+      title: Text('Edit $name'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+              DropdownButtonFormField<String>(
+                value: _preferredChannel,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Channel',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.payment),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'VENMO',
+                    child: Text('Venmo'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'CASH_APP',
+                    child: Text('Cash App'),
+                  ),
+                ],
+                onChanged: _updating
+                    ? null
+                    : (value) {
+                        if (value != null) {
+                          setState(() {
+                            _preferredChannel = value;
+                          });
+                        }
+                      },
+              ),
+              const SizedBox(height: 16),
+
+              // Payment channel specific fields
+              if (_preferredChannel == 'VENMO') ...[
+                TextFormField(
+                  controller: _venmoUsernameController,
+                  enabled: !_updating,
+                  decoration: const InputDecoration(
+                    labelText: 'Venmo Username',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.alternate_email),
+                    hintText: '@username',
+                  ),
+                  validator: (value) {
+                    if (_preferredChannel == 'VENMO' &&
+                        (value == null || value.trim().isEmpty)) {
+                      return 'Venmo username is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              if (_preferredChannel == 'CASH_APP') ...[
+                TextFormField(
+                  controller: _cashTagController,
+                  enabled: !_updating,
+                  decoration: const InputDecoration(
+                    labelText: 'Cash Tag (optional)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.tag),
+                    hintText: '\$cashtag',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _cashPhoneController,
+                  enabled: !_updating,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Cash App Phone (optional)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _cashEmailController,
+                  enabled: !_updating,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Cash App Email (optional)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _shareType,
+                      decoration: const InputDecoration(
+                        labelText: 'Share Type',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'AMOUNT',
+                          child: Text('Fixed Amount'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'PERCENT',
+                          child: Text('Percentage'),
+                        ),
+                      ],
+                      onChanged: _updating
+                          ? null
+                          : (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _shareType = value;
+                                });
+                              }
+                            },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _shareValueController,
+                      enabled: !_updating,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Share Value',
+                        border: const OutlineInputBorder(),
+                        prefixText: _shareType == 'AMOUNT' ? '\$' : null,
+                        suffixText: _shareType == 'PERCENT' ? '%' : null,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Required';
+                        }
+                        final amount = double.tryParse(value);
+                        if (amount == null || amount <= 0) {
+                          return 'Invalid';
+                        }
+                        if (_shareType == 'PERCENT' && amount > 100) {
+                          return 'Max 100%';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+          ),
+        ),
+      actions: [
+        TextButton(
+          onPressed: _updating ? null : () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _updating ? null : _updateMember,
+          child: _updating
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Update'),
         ),
       ],
     );

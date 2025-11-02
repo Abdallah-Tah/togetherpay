@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.togetherpay.app</string>
+	<string>com.togetherpay.togetherpay</string>
 	<key>PROJECT_ID</key>
 	<string>togetherpay-c11cf</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:496629881813:ios:335957216b0c8482edbb5c</string>
+	<string>1:496629881813:ios:6235b3727f345681edbb5c</string>
 </dict>
 </plist>
