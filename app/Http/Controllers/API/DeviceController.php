@@ -14,7 +14,13 @@ class DeviceController extends Controller
      */
     public function register(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $payload = $request->all();
+
+        if (isset($payload['platform'])) {
+            $payload['platform'] = strtolower((string) $payload['platform']);
+        }
+
+        $validator = Validator::make($payload, [
             'fcm_token' => 'required|string',
             'platform' => 'required|in:ios,android',
             'device_name' => 'nullable|string',
@@ -28,17 +34,24 @@ class DeviceController extends Controller
             ], 422);
         }
 
+        $userId = $request->user()?->id
+            ?? $request->user('sanctum')?->id
+            ?? auth('sanctum')->id();
+
         // Update or create device
         $device = Device::updateOrCreate(
-            ['fcm_token' => $request->fcm_token],
+            ['fcm_token' => $payload['fcm_token']],
             [
-                'user_id' => auth()->id(), // null if not authenticated
-                'platform' => $request->platform,
-                'device_name' => $request->device_name,
-                'app_version' => $request->app_version,
+                'platform' => $payload['platform'],
+                'device_name' => $payload['device_name'] ?? null,
+                'app_version' => $payload['app_version'] ?? null,
                 'last_active_at' => now(),
             ]
         );
+
+        if ($userId && $device->user_id !== $userId) {
+            $device->forceFill(['user_id' => $userId])->save();
+        }
 
         return response()->json([
             'message' => 'Device registered successfully',

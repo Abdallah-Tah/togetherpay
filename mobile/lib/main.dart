@@ -104,6 +104,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
   Future<void> _setupFirebaseMessaging() async {
     try {
       final messaging = FirebaseMessaging.instance;
+      final devicePlatform = _devicePlatformParam();
 
       // Request permission for iOS
       final settings = await messaging.requestPermission(
@@ -129,7 +130,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
           try {
             await dio.post('/devices/register', data: {
               'fcm_token': token,
-              'platform': defaultTargetPlatform.name,
+              'platform': devicePlatform,
             });
             if (Env.debug) {
               debugPrint('FCM token registered with backend');
@@ -149,7 +150,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
           try {
             await dio.post('/devices/register', data: {
               'fcm_token': newToken,
-              'platform': defaultTargetPlatform.name,
+              'platform': devicePlatform,
             });
           } catch (e) {
             if (Env.debug) {
@@ -313,6 +314,17 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     setState(() {
       _authToken = token;
     });
+  }
+
+  String _devicePlatformParam() {
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return 'ios';
+      case TargetPlatform.android:
+        return 'android';
+      default:
+        return 'ios';
+    }
   }
 
   @override

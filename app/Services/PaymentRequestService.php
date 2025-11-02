@@ -6,6 +6,7 @@ use App\Contracts\PaymentRequestDriver;
 use App\Models\BillingCycle;
 use App\Models\GroupMember;
 use App\Models\PaymentRequest;
+use App\Notifications\PaymentRequestNotification;
 use App\Services\PaymentDrivers\CashAppDriver;
 use App\Services\PaymentDrivers\VenmoDriver;
 use App\Support\PRCode;
@@ -97,6 +98,13 @@ class PaymentRequestService
 
         if ($markAsSent) {
             $this->sendRequest($paymentRequest);
+
+            // Ensure related models are available for notification payloads
+            $paymentRequest->loadMissing(['member.user', 'cycle.group']);
+
+            if ($user = $paymentRequest->member?->user) {
+                $user->notify(new PaymentRequestNotification($paymentRequest));
+            }
         }
 
         return $paymentRequest->fresh(['member.user', 'group.owner', 'cycle']);

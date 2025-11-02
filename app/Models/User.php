@@ -3,10 +3,14 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Device;
+use App\Notifications\PaymentLinkNotification;
+use App\Notifications\PaymentRequestNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -94,6 +98,60 @@ class User extends Authenticatable
     public function exports(): HasMany
     {
         return $this->hasMany(Export::class, 'created_by');
+    }
+
+    /**
+     * Registered push-notification devices for the user
+     */
+    public function devices(): HasMany
+    {
+        return $this->hasMany(Device::class);
+    }
+
+    /**
+     * Phone number for Twilio SMS notifications
+     */
+    public function routeNotificationForTwilio(?Notification $notification = null): ?string
+    {
+        $phone = $this->phone;
+
+        if (! $phone && $notification instanceof PaymentRequestNotification) {
+            $phone = $notification->paymentRequest->member?->cash_phone;
+        }
+
+        if (! $phone && $notification instanceof PaymentLinkNotification) {
+            $phone = $notification->paymentRequest->member?->cash_phone;
+        }
+
+        if (empty($phone)) {
+            return null;
+        }
+
+        $raw = trim((string) $phone);
+
+        if ($raw === '') {
+            return null;
+        }
+
+        if (str_starts_with($raw, '+')) {
+            return preg_replace('/[^\+\d]/', '', $raw);
+        }
+
+        $digits = preg_replace('/\D+/', '', $raw);
+
+        if ($digits === '') {
+            return null;
+        }
+
+        if (strlen($digits) === 10) {
+            return '+1'.$digits;
+        }
+
+        if (strlen($digits) === 11 && str_starts_with($digits, '1')) {
+            return '+'.$digits;
+        }
+
+        return '+'.$digits;
     }
 
     /**

@@ -48,4 +48,13 @@ return [
         'api_url' => env('VENMO_API_URL', 'https://api.venmo.com'),
     ],
 
+    'twilio' => [
+        'enabled' => env('TWILIO_ENABLED', false),
+        'sid' => env('TWILIO_SID'),
+        'token' => env('TWILIO_AUTH_TOKEN'),
+        'from' => env('TWILIO_FROM'),
+        'messaging_service_sid' => env('TWILIO_MESSAGING_SERVICE_SID'),
+        'test_recipient' => env('TWILIO_TEST_RECIPIENT'),
+    ],
+
 ];

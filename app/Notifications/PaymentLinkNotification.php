@@ -7,6 +7,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\Twilio\TwilioChannel;
+use NotificationChannels\Twilio\TwilioSmsMessage;
 
 class PaymentLinkNotification extends Notification implements ShouldQueue
 {
@@ -22,11 +24,10 @@ class PaymentLinkNotification extends Notification implements ShouldQueue
      */
     public function via($notifiable): array
     {
-        $channels = ['mail']; // Always send email
+        $channels = ['mail'];
 
-        // Add SMS if phone number exists
-        if ($notifiable->phone) {
-            $channels[] = 'vonage'; // or 'twilio'
+        if (!empty($notifiable->phone) && config('services.twilio.enabled', false)) {
+            $channels[] = TwilioChannel::class;
         }
 
         return $channels;
@@ -37,29 +38,44 @@ class PaymentLinkNotification extends Notification implements ShouldQueue
      */
     public function toMail($notifiable): MailMessage
     {
-        $group = $this->paymentRequest->cycle->group;
+        $cycle = $this->paymentRequest->cycle;
+        $group = $cycle?->group ?? $this->paymentRequest->group;
         $amount = number_format($this->paymentRequest->amount_cents / 100, 2);
+        $timezone = $group?->timezone ?? config('app.timezone');
+        $dueDate = $cycle?->due_at?->timezone($timezone)
+            ?->format('M d, Y') ?? now()->format('M d, Y');
 
         return (new MailMessage)
-            ->subject("Payment Due: \${$amount} - {$group->name}")
+            ->subject("Payment Due: \${$amount}" . ($group ? " - {$group->name}" : ''))
             ->greeting("Hi {$notifiable->name}!")
-            ->line("Your payment for **{$group->name}** is due.")
+            ->line('Your payment is due.')
+            ->when($group, fn (MailMessage $message) => $message->line("**Group:** {$group->name}"))
             ->line("**Amount:** \${$amount}")
-            ->line("**Due Date:** {$this->paymentRequest->due_at->format('M d, Y')}")
+            ->line("**Due Date:** {$dueDate}")
             ->action('Pay Now', $this->link)
             ->line('Click the button above to open your payment app.')
             ->line('Questions? Contact the group owner.');
     }
 
-    /**
-     * Get the Vonage/SMS representation of the notification.
-     */
-    public function toVonage($notifiable): VonageMessage
+    public function toTwilio(object $notifiable): TwilioSmsMessage
     {
-        $group = $this->paymentRequest->cycle->group;
+        $cycle = $this->paymentRequest->cycle;
+        $group = $cycle?->group ?? $this->paymentRequest->group;
         $amount = number_format($this->paymentRequest->amount_cents / 100, 2);
+        $deepLink = $this->link;
+        $groupName = $group?->name ? "{$group->name} " : '';
 
-        return (new VonageMessage)
-            ->content("💰 Payment due: \${$amount} for {$group->name}. Pay now: {$this->link}");
+        $message = "💰 Payment due: \${$amount} {$groupName}- Pay now: {$deepLink}";
+
+        $twilioMessage = (new TwilioSmsMessage())
+            ->content($message);
+
+        if ($messagingService = config('services.twilio.messaging_service_sid')) {
+            $twilioMessage->messagingServiceSid($messagingService);
+        } elseif ($from = config('services.twilio.from')) {
+            $twilioMessage->from($from);
+        }
+
+        return $twilioMessage;
     }
 }
