@@ -25,10 +25,10 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
         //     $channels[] = TwilioChannel::class;
         // }
 
-        // Add push notification if FCM token exists
-        // if ($notifiable->fcm_token) {
-        //     $channels[] = 'fcm';
-        // }
+        // Add push notification if user has registered devices with FCM tokens
+        if ($notifiable->devices()->whereNotNull('fcm_token')->exists()) {
+            $channels[] = 'fcm';
+        }
 
         return $channels;
     }
@@ -86,6 +86,56 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
     //     return (new TwilioSmsMessage())
     //         ->content($message);
     // }
+
+    /**
+     * FCM push notification payload with sound and deep link
+     */
+    public function toFcm(object $notifiable): array
+    {
+        $cycle = $this->paymentRequest->cycle;
+        $group = $cycle->group;
+        $amount = number_format($this->paymentRequest->amount_cents / 100, 2);
+        $dueDate = $cycle->due_at->format('M d, Y');
+
+        // Get the deep link for Cash App or Venmo based on member preference
+        $member = $this->paymentRequest->groupMember;
+        $deepLink = $this->paymentRequest->link ?? '';
+
+        return [
+            'notification' => [
+                'title' => "💰 Payment Due: {$group->name}",
+                'body' => "Your share of \${$amount} is due on {$dueDate}",
+                'sound' => 'default', // Enable notification sound
+            ],
+            'data' => [
+                'pr_code' => $this->paymentRequest->code,
+                'deep_link' => $deepLink,
+                'amount' => $amount,
+                'group_name' => $group->name,
+                'due_date' => $dueDate,
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            ],
+            'android' => [
+                'priority' => 'high',
+                'notification' => [
+                    'channel_id' => 'togetherpay_default',
+                    'sound' => 'default',
+                    'default_sound' => true,
+                    'default_vibrate_timings' => true,
+                    'default_light_settings' => true,
+                ],
+            ],
+            'apns' => [
+                'payload' => [
+                    'aps' => [
+                        'sound' => 'default',
+                        'badge' => 1,
+                        'content-available' => 1,
+                    ],
+                ],
+            ],
+        ];
+    }
 
     public function toArray(object $notifiable): array
     {

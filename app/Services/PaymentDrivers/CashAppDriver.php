@@ -4,72 +4,61 @@ namespace App\Services\PaymentDrivers;
 
 use App\Contracts\PaymentRequestDriver;
 use App\Models\GroupMember;
-
 class CashAppDriver implements PaymentRequestDriver
 {
-    public function buildLink(GroupMember $member, int $amountCents, string $note): string
-    {
-        $handle = $member->cash_tag ?? $member->cash_phone ?? $member->cash_email;
+    public function buildLink(
+        GroupMember $member,
+        int $amountCents,
+        string $prCode,
+        string $note
+    ): array {
+        $handle = $member->cash_tag ?? $member->cash_phone ?? $member->cash_email ?? '';
         $amount = number_format($amountCents / 100, 2, '.', '');
 
-        // Cash App deep-link format varies by recipient type
         if ($member->cash_tag) {
-            // $cashtag format
-            $params = http_build_query([
-                'amount' => $amount,
-                'note' => $note,
-            ]);
-            $cashtag = ltrim($handle, '$');
-            return "https://cash.app/\${$cashtag}/{$amount}";
+            $cashtag = ltrim($member->cash_tag, '$');
+            $uri = sprintf('cashapp://cash/%s?amount=%s&note=%s', $cashtag, $amount, urlencode($note));
+            $webFallback = sprintf('https://cash.app/%s/%s?note=%s&pr=%s', $cashtag, $amount, urlencode($note), urlencode($prCode));
+
+            return [
+                'uri' => $uri,
+                'web_fallback' => $webFallback,
+            ];
         }
 
-        if ($member->cash_phone) {
-            // Phone number format
-            $params = http_build_query([
-                'recipient' => $handle,
-                'amount' => $amount,
-                'note' => $note,
-            ]);
-            return "cashapp://send?{$params}";
-        }
-
-        // Email format
-        $params = http_build_query([
-            'recipient' => $handle,
+        $recipient = $handle;
+        $query = http_build_query([
+            'recipient' => $recipient,
             'amount' => $amount,
             'note' => $note,
         ]);
-        return "cashapp://send?{$params}";
-    }
 
-    public function sendRequest(GroupMember $member, int $amountCents, string $note): array
-    {
-        // API-based requests not implemented in MVP
-        // This will be added when FF_PAYMENT_API is enabled
+        $uri = "cashapp://send?{$query}";
+        $webFallback = sprintf(
+            'https://cash.app/send?recipient=%s&amount=%s&note=%s&pr=%s',
+            urlencode($recipient),
+            $amount,
+            urlencode($note),
+            urlencode($prCode)
+        );
+
         return [
-            'success' => false,
-            'error' => 'API requests not yet supported for Cash App',
+            'uri' => $uri,
+            'web_fallback' => $webFallback,
         ];
     }
 
-    public function verifyHandle(string $handle): bool
+    public function validateAccount(string $account): bool
     {
-        // Cash App $cashtag format
-        if (str_starts_with($handle, '$')) {
-            return preg_match('/^\$[a-zA-Z0-9]{1,20}$/', $handle) === 1;
+        if (str_starts_with($account, '$')) {
+            return preg_match('/^\$[a-zA-Z0-9]{1,20}$/', $account) === 1;
         }
 
-        // Email format
-        if (filter_var($handle, FILTER_VALIDATE_EMAIL)) {
+        if (filter_var($account, FILTER_VALIDATE_EMAIL)) {
             return true;
         }
 
-        // Phone format (basic validation)
-        if (preg_match('/^\+?[1-9]\d{1,14}$/', $handle)) {
-            return true;
-        }
-
-        return false;
+        return preg_match('/^\+?[1-9]\d{1,14}$/', $account) === 1;
     }
 
     public function getName(): string

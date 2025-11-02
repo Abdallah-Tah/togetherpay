@@ -81,11 +81,13 @@ class PaymentRequestService
         ?BillingCycle $cycle = null,
         bool $markAsSent = true
     ): PaymentRequest {
+        $resolvedCycle = $this->resolveCycle($cycle, $member);
+
         $paymentRequest = $this->createRequestRecord(
             $member,
             $amountCents,
             $note,
-            $cycle,
+            $resolvedCycle,
             markAsSent: false,
             extraMetadata: [
                 'note' => $note,
@@ -104,7 +106,7 @@ class PaymentRequestService
     {
         try {
             $driver = $this->getDriver($channel);
-            return $driver->verifyHandle($handle);
+            return $driver->validateAccount($handle);
         } catch (\InvalidArgumentException $e) {
             return false;
         }
@@ -127,14 +129,26 @@ class PaymentRequestService
         bool $markAsSent,
         array $extraMetadata = []
     ): PaymentRequest {
+        if (! $cycle) {
+            $cycle = $this->resolveCycle(null, $member);
+        }
+
         $channel = $member->preferred_channel;
         $driver = $this->getDriver($channel);
 
-        $deepLink = $driver->buildLink($member, $amountCents, $note);
-        $webFallback = $this->buildWebFallbackLink($member);
-
         $cycleTimestamp = $this->resolveCycleTimestamp($cycle);
         $cycleYm = $cycleTimestamp->format('Y-m');
+        $prCode = PRCode::make($member->group_id, $member->id, $cycleYm);
+
+        $linkPayload = $driver->buildLink($member, $amountCents, $prCode, $note);
+
+        if (is_string($linkPayload)) {
+            $deepLink = $linkPayload;
+            $webFallback = $this->buildWebFallbackLink($member);
+        } else {
+            $deepLink = $linkPayload['uri'] ?? $this->buildWebFallbackLink($member);
+            $webFallback = $linkPayload['web_fallback'] ?? $this->buildWebFallbackLink($member);
+        }
 
         $metadata = array_merge([
             'handle' => $member->getPaymentHandle(),
@@ -147,7 +161,7 @@ class PaymentRequestService
             'member_id' => $member->id,
             'amount_cents' => $amountCents,
             'method_hint' => $channel,
-            'pr_code' => PRCode::make($member->group_id, $member->id, $cycleYm),
+            'pr_code' => $prCode,
             'note' => $note,
             'deep_link' => $deepLink,
             'web_fallback_link' => $webFallback,
@@ -155,6 +169,32 @@ class PaymentRequestService
             'initiated_at' => now(),
             'sent_at' => $markAsSent ? now() : null,
             'metadata' => $metadata,
+        ]);
+    }
+
+    protected function resolveCycle(?BillingCycle $cycle, GroupMember $member): BillingCycle
+    {
+        if ($cycle) {
+            return $cycle;
+        }
+
+        $group = $member->group;
+        $current = $group->currentCycle();
+        if ($current) {
+            return $current;
+        }
+
+        $timezone = $group->timezone ?? config('app.timezone');
+        $today = now($timezone)->startOfDay();
+
+        return BillingCycle::create([
+            'group_id' => $group->id,
+            'period_start' => $today,
+            'period_end' => $today,
+            'due_at' => $today,
+            'status' => 'collecting',
+            'total_amount_cents' => $group->total_amount_cents ?? 0,
+            'collected_amount_cents' => 0,
         ]);
     }
 

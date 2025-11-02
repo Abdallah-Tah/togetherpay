@@ -58,6 +58,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/requests/by-code/{prCode}', [PaymentRequestController::class, 'showByCode']);
     Route::post('/requests/by-code/{prCode}/confirm', [PaymentRequestController::class, 'confirmPayment']);
     Route::post('/requests/by-code/{prCode}/nudge', [PaymentRequestController::class, 'nudge']);
+    Route::post('/requests/by-code/{prCode}/cancel', [PaymentRequestController::class, 'cancel']);
     Route::post('/cycles/{cycleId}/bulk-confirm', [PaymentRequestController::class, 'bulkConfirm']);
 
     // Cash App OAuth endpoints

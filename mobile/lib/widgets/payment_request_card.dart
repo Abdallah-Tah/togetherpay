@@ -12,9 +12,11 @@ class PaymentRequestCard extends StatefulWidget {
   final VoidCallback? onNudge;
   final VoidCallback? onConfirm;
   final VoidCallback? onRetry;
+  final VoidCallback? onCancel;
   final bool isProcessingNudge;
   final bool isProcessingConfirm;
   final bool isProcessingRetry;
+  final bool isProcessingCancel;
 
   const PaymentRequestCard({
     super.key,
@@ -24,9 +26,11 @@ class PaymentRequestCard extends StatefulWidget {
     this.onNudge,
     this.onConfirm,
     this.onRetry,
+    this.onCancel,
     this.isProcessingNudge = false,
     this.isProcessingConfirm = false,
     this.isProcessingRetry = false,
+    this.isProcessingCancel = false,
   });
 
   @override
@@ -92,6 +96,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
     switch (status.toLowerCase()) {
       case 'paid':
       case 'confirmed':
+      case 'owner_confirmed':
         statusColor = Colors.green;
         statusIcon = Icons.check_circle_rounded;
         statusLabel = 'Paid';
@@ -135,6 +140,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
     final showNudgeButton = widget.onNudge != null && _canShowNudge(status);
     final showConfirmButton = widget.onConfirm != null && _canShowConfirm(status);
     final showRetryButton = widget.onRetry != null && _canShowRetry(status);
+    final showCancelButton = widget.onCancel != null && _canShowCancel(status);
 
     return ScaleTransition(
       scale: _scaleAnimation,
@@ -375,7 +381,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                 ],
 
                 // Action buttons
-                if (showNudgeButton || showConfirmButton || showRetryButton) ...[
+                if (showNudgeButton || showConfirmButton || showRetryButton || showCancelButton) ...[
                   const SizedBox(height: AppTheme.spaceMedium),
                   Row(
                     children: [
@@ -448,6 +454,32 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                       ],
                     ],
                   ),
+                  // Cancel button (separate row for better UX)
+                  if (showCancelButton) ...[
+                    const SizedBox(height: AppTheme.spaceSmall),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: widget.isProcessingCancel
+                            ? null
+                            : widget.onCancel,
+                        icon: widget.isProcessingCancel
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.cancel_outlined),
+                        label: const Text('Cancel Request'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ],
             ),
@@ -481,6 +513,14 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
   bool _canShowRetry(String status) {
     final normalized = status.toLowerCase();
     return normalized == 'failed' || normalized == 'error';
+  }
+
+  bool _canShowCancel(String status) {
+    final normalized = status.toLowerCase();
+    // Can cancel if pending, sent, or member_marked (before confirmed)
+    return normalized == 'pending' ||
+        normalized == 'sent' ||
+        normalized == 'member_marked';
   }
 
   String? _formatDueDateLabel(String? raw) {

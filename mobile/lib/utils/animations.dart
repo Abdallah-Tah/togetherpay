@@ -187,8 +187,6 @@ class StaggeredAnimationHelper {
     Duration delay = const Duration(milliseconds: 50),
     Duration duration = const Duration(milliseconds: 350),
   }) {
-    final itemDelay = delay.inMilliseconds * index;
-
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: duration,
@@ -411,7 +409,7 @@ class _SuccessAnimationState extends State<SuccessAnimation>
       child: Container(
         width: 80,
         height: 80,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.green,
           shape: BoxShape.circle,
         ),

@@ -56,7 +56,7 @@ class GroupMember extends Model
 
     public function isVerified(): bool
     {
-        return !is_null($this->verified_at);
+        return !is_null($this->verified_at) || !is_null($this->getPaymentHandle());
     }
 
     public function calculateAmount(int $totalCents): int

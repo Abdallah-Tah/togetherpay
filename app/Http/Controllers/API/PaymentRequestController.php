@@ -109,12 +109,6 @@ class PaymentRequestController extends Controller
             ]);
         }
 
-        if (! $member->isVerified()) {
-            throw ValidationException::withMessages([
-                'member' => ['Member must verify their payment details before sending requests.'],
-            ]);
-        }
-
         if (! $member->preferred_channel || ! $member->getPaymentHandle()) {
             throw ValidationException::withMessages([
                 'member' => ['Member is missing payment handle information.'],
@@ -401,6 +395,47 @@ class PaymentRequestController extends Controller
         return response()->json([
             'ok' => true,
             'message' => 'Reminder sent',
+        ]);
+    }
+
+    /**
+     * Owner cancels a payment request (V2 endpoint)
+     *
+     * POST /api/v1/requests/by-code/{prCode}/cancel
+     */
+    public function cancel(string $prCode): JsonResponse
+    {
+        $pr = PaymentRequest::where('pr_code', $prCode)->firstOrFail();
+
+        $this->authorize('manage', $pr);
+
+        // Can only cancel if not already paid/confirmed
+        if (in_array($pr->status, ['paid', 'confirmed', 'owner_confirmed'])) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Cannot cancel a paid or confirmed payment request',
+            ], 422);
+        }
+
+        // Soft delete the payment request
+        $pr->update([
+            'metadata' => array_merge($pr->metadata ?? [], [
+                'cancelled_at' => now()->toIso8601String(),
+                'cancelled_by_user_id' => auth()->id(),
+                'cancelled_reason' => 'Owner cancelled the request',
+            ]),
+        ]);
+
+        $pr->delete(); // Soft delete
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Payment request cancelled',
+            'pr' => [
+                'id' => $pr->id,
+                'pr_code' => $pr->pr_code,
+                'status' => 'cancelled',
+            ],
         ]);
     }
 }

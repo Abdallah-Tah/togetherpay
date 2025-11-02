@@ -19,7 +19,9 @@ dependencies:
   # Deep linking & URL launching (wallet apps)
   url_launcher: ^6.2.2
 
-  # Firebase removed - Push notifications can be added later if needed
+  # Firebase for push notifications
+  firebase_core: ^2.24.2
+  firebase_messaging: ^14.7.10
 
   # UI
   cupertino_icons: ^1.0.6
