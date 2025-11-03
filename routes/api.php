@@ -6,6 +6,7 @@ use App\Http\Controllers\API\DeviceController;
 use App\Http\Controllers\API\GroupController;
 use App\Http\Controllers\API\PaymentRequestController;
 use App\Http\Controllers\CashAppWebhookController;
+use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\SmartPayController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,11 @@ use Illuminate\Support\Facades\Route;
 | API Routes
 |--------------------------------------------------------------------------
 */
+
+// Health check endpoints (no auth required)
+Route::get('/health', [HealthCheckController::class, 'check'])->name('health.check');
+Route::get('/health/alive', [HealthCheckController::class, 'alive'])->name('health.alive');
+Route::get('/health/ready', [HealthCheckController::class, 'ready'])->name('health.ready');
 
 // Webhooks (no auth required)
 Route::post('/webhooks/cashapp', [CashAppWebhookController::class, 'handle'])->name('webhooks.cashapp');
