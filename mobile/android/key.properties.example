@@ -1,0 +1,22 @@
+# Android Release Signing Configuration
+# 
+# IMPORTANT: This file contains sensitive information and should NOT be committed to git.
+# Add this file to .gitignore before configuring.
+#
+# To generate a keystore, run:
+# keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# For more information, see: https://docs.flutter.dev/deployment/android#create-an-upload-keystore
+
+# Your keystore password (enter when generating keystore)
+storePassword=your_store_password_here
+
+# Your key password (can be same as store password)
+keyPassword=your_key_password_here
+
+# The alias you chose when generating (default: upload)
+keyAlias=upload
+
+# Absolute or relative path to your keystore file
+# Recommended: Place keystore in android/app/ directory (but don't commit it!)
+storeFile=upload-keystore.jks
