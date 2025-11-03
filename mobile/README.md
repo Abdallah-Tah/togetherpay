@@ -8,11 +8,12 @@ Complete Flutter mobile app for TogetherPay - P2P bill splitting with authentica
 - 🔐 **Full Authentication System** - Login, registration, secure token storage
 - 👥 **Groups Management** - View groups, group details, members, shares
 - 💰 **Payment Requests** - View all payments organized by status (Overdue, Pending, Paid)
-- 🔔 **Push Notifications** (FCM/APNs) for payment requests
 - 💸 **Deep Link Wallet Launch** (Cash App, Venmo) with prefilled amounts
 - ✅ **Auto-Confirmation Dialog** - Prompts user after returning from wallet app
 - 📱 **iOS + Android** support
 - 🎨 **Material Design 3** - Modern, polished UI
+
+**Note**: Push notifications have been removed from the mobile app. The app now relies entirely on Laravel API for all functionality.
 
 ### User Experience
 - Pull-to-refresh on all list screens
@@ -32,16 +33,15 @@ Complete Flutter mobile app for TogetherPay - P2P bill splitting with authentica
 1. User opens app → Splash screen → Auth check
 2. If not authenticated → Login/Register screen
 3. After login → Groups list (bottom nav: Groups, Payments, Profile)
-4. Push notification arrives → "Pay $50 for T-Mobile"
-5. User taps notification → App opens PayScreen
-6. PayScreen fetches details from API → Auto-launches wallet
-7. User completes payment in Cash App/Venmo
-8. User returns to app → AUTO-DIALOG: "Did you complete the payment?"
+4. PayScreen can be accessed via payment list or direct link
+5. PayScreen fetches details from API → Auto-launches wallet
+6. User completes payment in Cash App/Venmo
+7. User returns to app → AUTO-DIALOG: "Did you complete the payment?"
    - "Yes, I paid" → Calls API to mark as paid → Success → Navigate back
-   - "Remind me later" → Shows reminder message (TODO: schedule notification)
+   - "Remind me later" → Shows reminder message
    - "I'll pay later" → Dismisses, navigates back
-9. Payment status updated to `member_marked` in backend
-10. Owner confirms via web/mobile → Status updated to `confirmed`
+8. Payment status updated to `member_marked` in backend
+9. Owner confirms via web/mobile → Status updated to `confirmed`
 ```
 
 ### App Structure
@@ -60,7 +60,7 @@ TogetherPayApp (root)
 
 ### Key Components
 
-- **`lib/main.dart`** - App entry, auth flow, navigation, FCM setup, profile screen
+- **`lib/main.dart`** - App entry, auth flow, navigation, profile screen
 - **`lib/pay_screen.dart`** - Enhanced payment UI with auto-confirmation dialog
 - **`lib/env.dart`** - Environment configuration
 - **`lib/screens/auth/`** - Login and registration screens
@@ -77,7 +77,6 @@ TogetherPayApp (root)
 - Flutter SDK 3.0+
 - Xcode 14+ (iOS)
 - Android Studio (Android)
-- Firebase project with iOS/Android apps configured
 
 ### 1. Install Dependencies
 
@@ -86,19 +85,7 @@ cd mobile
 flutter pub get
 ```
 
-### 2. Firebase Configuration
-
-#### iOS
-1. Download `GoogleService-Info.plist` from Firebase Console
-2. Place in `ios/Runner/`
-3. Open `ios/Runner.xcworkspace` in Xcode
-4. Add `GoogleService-Info.plist` to the Runner target
-
-#### Android
-1. Download `google-services.json` from Firebase Console
-2. Place in `android/app/`
-
-### 3. Configure API Base URL
+### 2. Configure API Base URL
 
 #### Development (localhost)
 ```bash
@@ -112,14 +99,7 @@ flutter build apk --dart-define=API_BASE=https://api.togetherpay.app/api/v1
 
 Or edit `lib/env.dart` to change the default.
 
-### 4. iOS-Specific Setup
-
-#### Push Notifications
-1. Open `ios/Runner.xcworkspace` in Xcode
-2. Select Runner target → Signing & Capabilities
-3. Add **Push Notifications** capability
-4. Add **Background Modes** → Enable "Remote notifications"
-
+### 3. iOS-Specific Setup
 #### URL Schemes
 Already configured in `Info.plist`:
 - Venmo deep link query: `venmo`
@@ -132,25 +112,7 @@ applinks:tpay.app
 applinks:togetherpay.app
 ```
 
-### 5. Android-Specific Setup
-
-#### Build Configuration
-Edit `android/build.gradle` (project level):
-
-```gradle
-buildscript {
-    dependencies {
-        classpath 'com.google.gms:google-services:4.4.0'
-    }
-}
-```
-
-Already configured in `android/app/build.gradle`:
-```gradle
-plugins {
-    id 'com.google.gms.google-services'
-}
-```
+### 4. Android-Specific Setup
 
 #### Notification Icons
 Place notification icons in:
@@ -198,7 +160,6 @@ flutter build ios --release --dart-define=API_BASE=https://api.togetherpay.app/a
 | `/groups` | GET | List user's groups |
 | `/groups/{id}` | GET | Get group details with members and payment requests |
 | `/payment-requests` | GET | List all user's payment requests |
-| `/devices/register` | POST | Register FCM token for push notifications |
 | `/requests/by-code/{prCode}` | GET | Get payment request details by code |
 | `/requests/by-code/{prCode}/mark` | POST | Member marks payment as completed |
 
@@ -225,51 +186,6 @@ flutter build ios --release --dart-define=API_BASE=https://api.togetherpay.app/a
   "deep_link": "https://cash.app/$JohnDoe/50.00?note=...",
   "web_fallback_link": "https://cash.app/$JohnDoe/50.00?note=..."
 }
-```
-
-#### POST /devices/register
-```json
-{
-  "fcm_token": "cXyz...",
-  "platform": "ios"
-}
-```
-
----
-
-## Push Notification Format
-
-### From Laravel (via FCM)
-
-```json
-{
-  "to": "<FCM_TOKEN>",
-  "notification": {
-    "title": "Pay $50 for T-Mobile",
-    "body": "Due today • Tap to pay"
-  },
-  "data": {
-    "pr_code": "PR_2025-11_G42_M17_a3f9c2",
-    "deep_link": "https://tpay.app/p/abCDef"
-  }
-}
-```
-
-### Handling in Flutter
-
-```dart
-FirebaseMessaging.onMessage.listen((message) {
-  // Foreground: show local notification
-});
-
-FirebaseMessaging.onMessageOpenedApp.listen((message) {
-  // Background: navigate to PayScreen
-  final prCode = message.data['pr_code'];
-  final deepLink = message.data['deep_link'];
-  Navigator.push(context, MaterialPageRoute(
-    builder: (_) => PayScreen(prCode: prCode, deepLink: deepLink)
-  ));
-});
 ```
 
 ---
@@ -309,31 +225,6 @@ if (await canLaunchUrl(uri)) {
 
 ## Testing
 
-### Test Push Notifications
-
-#### Using Firebase Console
-1. Go to Firebase Console → Cloud Messaging
-2. Send test notification to device token
-3. Include custom data: `{ "pr_code": "PR_TEST", "deep_link": "..." }`
-
-#### Using curl (with FCM Server Key)
-```bash
-curl -X POST https://fcm.googleapis.com/fcm/send \
-  -H "Authorization: key=YOUR_SERVER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "to": "FCM_DEVICE_TOKEN",
-    "notification": {
-      "title": "Test Payment",
-      "body": "Tap to test"
-    },
-    "data": {
-      "pr_code": "PR_2025-10_G5_M7_test",
-      "deep_link": "https://cash.app/$TestUser/5.00?note=Test"
-    }
-  }'
-```
-
 ### Test Wallet Launching
 
 ```dart
@@ -353,11 +244,6 @@ ElevatedButton(
 
 ### iOS
 
-#### Push notifications not working
-- Check **Capabilities → Push Notifications** enabled in Xcode
-- Verify APNs key uploaded to Firebase
-- Check device token registered: `print(await FirebaseMessaging.instance.getToken())`
-
 #### Deep links not opening
 - Verify `LSApplicationQueriesSchemes` includes `venmo` in Info.plist
 - Check URL can be opened: `await canLaunchUrl(uri)`
@@ -367,11 +253,6 @@ ElevatedButton(
 - Clean build folder: Product → Clean Build Folder in Xcode
 
 ### Android
-
-#### Push notifications not working
-- Verify `google-services.json` in `android/app/`
-- Check `com.google.gms.google-services` plugin applied
-- Request notification permission for Android 13+
 
 #### Deep links not opening
 - Verify `<queries>` section in AndroidManifest.xml
@@ -398,15 +279,11 @@ flutter pub get
 
 ### iOS
 - [x] Add associated domains for universal links ✓ (configured in Info.plist)
-- [x] Configure entitlements for push notifications ✓ (Runner.entitlements created)
 - [ ] Set up App Store Connect app (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md#app-store-connect-setup))
-- [ ] Configure push notification certificates (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md#push-notification-certificates))
 - [ ] Test on physical device (not simulator)
 - [ ] Verify deep link opens Cash App/Venmo
-- [ ] Test background notification handling
 
 ### Android
-- [x] Upload `google-services.json` ✓ (present in android/app/)
 - [x] Configure signing for release builds ✓ (build.gradle.kts updated)
 - [x] Add ProGuard rules ✓ (proguard-rules.pro created)
 - [ ] Set up Google Play Console app (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md#google-play-console-setup))
@@ -414,7 +291,6 @@ flutter pub get
 - [ ] Configure SHA-256 fingerprints for App Links (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md#configure-sha-256-fingerprints-for-app-links))
 - [ ] Test on physical device
 - [ ] Verify deep link opens Cash App/Venmo
-- [ ] Test notification permissions (Android 13+)
 
 ### Both Platforms
 - [ ] Test payment flow end-to-end (use [TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md))
@@ -473,14 +349,12 @@ mobile/
 │       └── payment_request_card.dart          # Reusable payment request card
 ├── ios/
 │   └── Runner/
-│       ├── Info.plist                         # iOS config, URL schemes
-│       └── GoogleService-Info.plist           # Firebase config (not committed)
+│       └── Info.plist                         # iOS config, URL schemes
 ├── android/
 │   └── app/
-│       ├── build.gradle                       # Firebase plugin config
-│       ├── src/main/
-│       │   └── AndroidManifest.xml           # Permissions, deep links
-│       └── google-services.json               # Firebase config (not committed)
+│       ├── build.gradle                       # App build configuration
+│       └── src/main/
+│           └── AndroidManifest.xml           # Permissions, deep links
 └── pubspec.yaml                               # Dependencies
 ```
 

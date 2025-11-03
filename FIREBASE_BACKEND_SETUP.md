@@ -1,5 +1,11 @@
 # Firebase Backend Setup
 
+**⚠️ IMPORTANT NOTE**: This document describes an **alternative backend implementation** using Firebase Cloud Functions and Firestore, separate from the Laravel API. As of the latest update, the **mobile app has removed Firebase SDK dependencies** and relies entirely on the Laravel REST API. This document is kept for reference only if a Firebase backend alternative is needed in the future.
+
+**Current Status**: The mobile app uses Laravel API exclusively. Firebase SDK has been removed from the mobile app.
+
+---
+
 This repo now supports running the mobile app against either the existing Laravel API or a Firebase backend. The Firebase path relies on Firestore for data storage and Cloud Functions for business logic that used to live in the Laravel scheduler/queues.
 
 ## 1. Enable Firebase services
