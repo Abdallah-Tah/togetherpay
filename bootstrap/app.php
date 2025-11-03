@@ -12,7 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Add security headers middleware
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
+        // Configure CSRF exclusions for API routes
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'webhooks/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
