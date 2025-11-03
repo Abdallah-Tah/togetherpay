@@ -15,10 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Add security headers middleware
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
-        // Configure rate limiting
-        $middleware->throttleApi('api', limit: env('RATE_LIMIT_API', 60));
-
-        // Configure CORS
+        // Configure CSRF exclusions for API routes
         $middleware->validateCsrfTokens(except: [
             'api/*',
             'webhooks/*',

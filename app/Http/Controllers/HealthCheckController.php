@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Storage;
 
 class HealthCheckController extends Controller
 {
@@ -123,13 +124,13 @@ class HealthCheckController extends Controller
             $testFile = '.health_check_'.time();
 
             // Test write
-            \Storage::disk($disk)->put($testFile, 'health_check');
+            Storage::disk($disk)->put($testFile, 'health_check');
 
             // Test read
-            $content = \Storage::disk($disk)->get($testFile);
+            $content = Storage::disk($disk)->get($testFile);
 
             // Cleanup
-            \Storage::disk($disk)->delete($testFile);
+            Storage::disk($disk)->delete($testFile);
 
             return [
                 'status' => 'ok',

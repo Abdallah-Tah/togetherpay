@@ -25,9 +25,12 @@ Route::get('/health/ready', [HealthCheckController::class, 'ready'])->name('heal
 Route::post('/webhooks/cashapp', [CashAppWebhookController::class, 'handle'])->name('webhooks.cashapp');
 
 // Public routes
-Route::prefix('v1')->group(function () {
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
+Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
+    // Authentication routes with stricter rate limiting
+    Route::middleware('throttle:5,1')->group(function () {
+        Route::post('/auth/register', [AuthController::class, 'register']);
+        Route::post('/auth/login', [AuthController::class, 'login']);
+    });
 
     // Device registration (allows both authenticated and guest users)
     Route::post('/devices/register', [DeviceController::class, 'register']);
@@ -40,7 +43,7 @@ Route::prefix('v1')->group(function () {
 });
 
 // Protected routes
-Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);

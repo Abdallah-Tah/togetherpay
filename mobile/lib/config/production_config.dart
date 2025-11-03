@@ -87,9 +87,14 @@ class ProductionConfig {
 
   // Validation
   static bool get isConfigured {
-    if (apiBaseUrl.isEmpty) return false;
+    if (apiBaseUrl.isEmpty) {
+      throw ConfigurationException('API base URL is not configured');
+    }
     if (kReleaseMode && enableCertificatePinning && pinnedCertificates.isEmpty) {
-      return false;
+      throw ConfigurationException(
+        'Certificate pinning is enabled but no certificates are configured. '
+        'Add certificate hashes to pinnedCertificates or disable certificate pinning.'
+      );
     }
     return true;
   }
@@ -107,4 +112,14 @@ class ProductionConfig {
         'buildNumber': buildNumber,
         'versionName': versionName,
       };
+}
+
+/// Exception thrown when configuration is invalid
+class ConfigurationException implements Exception {
+  final String message;
+  
+  ConfigurationException(this.message);
+  
+  @override
+  String toString() => 'ConfigurationException: $message';
 }
