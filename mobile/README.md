@@ -390,29 +390,48 @@ flutter pub get
 
 ## Production Checklist
 
+**📋 For complete production setup instructions, see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)**
+
+**🚀 For quick build commands, see [BUILD_DEPLOY.md](./BUILD_DEPLOY.md)**
+
+**✅ For pre-release testing, see [TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)**
+
 ### iOS
-- [ ] Set up App Store Connect app
-- [ ] Configure push notification certificates
-- [ ] Add associated domains for universal links
+- [x] Add associated domains for universal links ✓ (configured in Info.plist)
+- [x] Configure entitlements for push notifications ✓ (Runner.entitlements created)
+- [ ] Set up App Store Connect app (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md#app-store-connect-setup))
+- [ ] Configure push notification certificates (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md#push-notification-certificates))
 - [ ] Test on physical device (not simulator)
 - [ ] Verify deep link opens Cash App/Venmo
 - [ ] Test background notification handling
 
 ### Android
-- [ ] Set up Google Play Console app
-- [ ] Configure SHA-256 fingerprints for App Links
-- [ ] Upload `google-services.json`
+- [x] Upload `google-services.json` ✓ (present in android/app/)
+- [x] Configure signing for release builds ✓ (build.gradle.kts updated)
+- [x] Add ProGuard rules ✓ (proguard-rules.pro created)
+- [ ] Set up Google Play Console app (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md#google-play-console-setup))
+- [ ] Generate release keystore (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md#generate-upload-key))
+- [ ] Configure SHA-256 fingerprints for App Links (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md#configure-sha-256-fingerprints-for-app-links))
 - [ ] Test on physical device
 - [ ] Verify deep link opens Cash App/Venmo
 - [ ] Test notification permissions (Android 13+)
 
 ### Both Platforms
-- [ ] Test payment flow end-to-end
-- [ ] Verify API base URL is production
+- [ ] Test payment flow end-to-end (use [TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md))
+- [ ] Verify API base URL is production (set via `--dart-define=API_BASE=...`)
 - [ ] Test "Mark as Paid" API call
 - [ ] Verify auth token storage/retrieval
 - [ ] Test offline behavior
 - [ ] Test wallet app not installed scenario
+
+### Quick Build Scripts
+```bash
+# iOS Release Build
+./build_ios_release.sh
+
+# Android Release Build (App Bundle)
+./build_android_release.sh
+```
 
 ---
 
