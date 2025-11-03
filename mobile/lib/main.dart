@@ -1,6 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -28,36 +26,8 @@ const storage = FlutterSecureStorage();
 /// Global navigator key for navigation
 final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Background message handler for FCM (must be top-level function)
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  if (Env.debug) {
-    debugPrint('Background message received: ${message.messageId}');
-    debugPrint('Background message data: ${message.data}');
-  }
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Firebase (skip on web for now)
-  if (!kIsWeb) {
-    try {
-      await Firebase.initializeApp();
-
-      // Set up background message handler
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-      if (Env.debug) {
-        debugPrint('Firebase initialized successfully');
-      }
-    } catch (e) {
-      if (Env.debug) {
-        debugPrint('Firebase initialization error: $e');
-      }
-    }
-  }
 
   runApp(const TogetherPayApp());
 }
@@ -88,202 +58,11 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     if (_authToken != null) {
       // Set authorization header for all API requests
       dio.options.headers['Authorization'] = 'Bearer $_authToken';
-
-      // Setup Firebase Cloud Messaging if authenticated
-      if (!kIsWeb) {
-        await _setupFirebaseMessaging();
-      }
     }
 
     setState(() {
       _isInitializing = false;
     });
-  }
-
-  /// Setup Firebase Cloud Messaging with sound and tap handlers
-  Future<void> _setupFirebaseMessaging() async {
-    try {
-      final messaging = FirebaseMessaging.instance;
-      final devicePlatform = _devicePlatformParam();
-
-      // Request permission for iOS
-      final settings = await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
-
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        if (Env.debug) {
-          debugPrint('User granted notification permission');
-        }
-
-        // Get FCM token
-        final token = await messaging.getToken();
-        if (token != null) {
-          if (Env.debug) {
-            debugPrint('FCM Token: $token');
-          }
-
-          // Register token with backend
-          try {
-            await dio.post('/devices/register', data: {
-              'fcm_token': token,
-              'platform': devicePlatform,
-            });
-            if (Env.debug) {
-              debugPrint('FCM token registered with backend');
-            }
-          } catch (e) {
-            if (Env.debug) {
-              debugPrint('Failed to register FCM token: $e');
-            }
-          }
-        }
-
-        // Listen for token refresh
-        messaging.onTokenRefresh.listen((newToken) async {
-          if (Env.debug) {
-            debugPrint('FCM Token refreshed: $newToken');
-          }
-          try {
-            await dio.post('/devices/register', data: {
-              'fcm_token': newToken,
-              'platform': devicePlatform,
-            });
-          } catch (e) {
-            if (Env.debug) {
-              debugPrint('Failed to register refreshed FCM token: $e');
-            }
-          }
-        });
-
-        // Handle foreground messages (app is open)
-        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-          if (Env.debug) {
-            debugPrint('Foreground message received: ${message.messageId}');
-            debugPrint('Message data: ${message.data}');
-            debugPrint('Notification: ${message.notification?.toMap()}');
-          }
-
-          // Show in-app notification or handle silently
-          if (message.notification != null) {
-            _showInAppNotification(message);
-          }
-        });
-
-        // Handle notification tap when app is in background or terminated
-        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-          if (Env.debug) {
-            debugPrint('Notification tapped (app in background): ${message.messageId}');
-          }
-          _handleNotificationTap(message);
-        });
-
-        // Check if app was opened from a terminated state via notification
-        final initialMessage = await messaging.getInitialMessage();
-        if (initialMessage != null) {
-          if (Env.debug) {
-            debugPrint('App opened from notification (terminated state)');
-          }
-          _handleNotificationTap(initialMessage);
-        }
-      } else {
-        if (Env.debug) {
-          debugPrint('User declined notification permission');
-        }
-      }
-    } catch (e) {
-      if (Env.debug) {
-        debugPrint('Firebase Messaging setup error: $e');
-      }
-    }
-  }
-
-  /// Show in-app notification when app is in foreground
-  void _showInAppNotification(RemoteMessage message) {
-    final notification = message.notification;
-    if (notification == null) return;
-
-    final context = globalNavigatorKey.currentContext;
-    if (context == null || !context.mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (notification.title != null)
-              Text(
-                notification.title!,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            if (notification.body != null)
-              Text(notification.body!),
-          ],
-        ),
-        action: SnackBarAction(
-          label: 'View',
-          onPressed: () => _handleNotificationTap(message),
-        ),
-        duration: const Duration(seconds: 5),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  /// Handle notification tap - open Cash App or payment screen
-  Future<void> _handleNotificationTap(RemoteMessage message) async {
-    final data = message.data;
-
-    // Extract payment request data
-    final prCode = data['pr_code'] as String?;
-    final deepLink = data['deep_link'] as String?;
-
-    if (Env.debug) {
-      debugPrint('Handling notification tap - PR Code: $prCode, Deep Link: $deepLink');
-    }
-
-    if (deepLink != null && deepLink.isNotEmpty) {
-      // Try to open Cash App or Venmo directly
-      try {
-        final uri = Uri.parse(deepLink);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
-          if (Env.debug) {
-            debugPrint('Opened Cash App/Venmo with deep link');
-          }
-          return;
-        }
-      } catch (e) {
-        if (Env.debug) {
-          debugPrint('Failed to open deep link: $e');
-        }
-      }
-    }
-
-    // Fallback: Navigate to payment screen if we have a PR code
-    if (prCode != null && prCode.isNotEmpty) {
-      final context = globalNavigatorKey.currentContext;
-      if (context != null && context.mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => PayScreen(
-              prCode: prCode,
-              deepLink: deepLink,
-            ),
-          ),
-        );
-      }
-    }
   }
 
   /// Handle logout and clear auth token
@@ -314,17 +93,6 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     setState(() {
       _authToken = token;
     });
-  }
-
-  String _devicePlatformParam() {
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.iOS:
-        return 'ios';
-      case TargetPlatform.android:
-        return 'android';
-      default:
-        return 'ios';
-    }
   }
 
   @override
