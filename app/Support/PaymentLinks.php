@@ -8,9 +8,9 @@ class PaymentLinks
      * Generate Cash App universal link (HTTPS)
      * Format: https://cash.app/$<cashtag>/<amount>?note=<encoded_note>
      *
-     * @param string $recipient $cashtag (e.g., $IkramBarkad)
-     * @param int $amountCents Amount in cents
-     * @param string $note Payment note/memo
+     * @param  string  $recipient  $cashtag (e.g., $IkramBarkad)
+     * @param  int  $amountCents  Amount in cents
+     * @param  string  $note  Payment note/memo
      * @return string Universal link URL
      */
     public static function cashApp(string $recipient, int $amountCents, string $note = ''): string
@@ -25,19 +25,20 @@ class PaymentLinks
         $url = "https://cash.app/\${$cashtag}/{$amount}";
 
         // Add note as query parameter if provided
-        if (!empty($note)) {
-            $url .= '?note=' . urlencode($note);
+        if (! empty($note)) {
+            $url .= '?note='.urlencode($note);
         }
 
         return $url;
     }
+
     /**
      * Generate Venmo universal link (HTTPS)
      * Format: https://venmo.com/u/username?amount=X.XX&note=text
      *
-     * @param string $username Venmo username (with or without @)
-     * @param int $amountCents Amount in cents
-     * @param string $note Payment note/memo
+     * @param  string  $username  Venmo username (with or without @)
+     * @param  int  $amountCents  Amount in cents
+     * @param  string  $note  Payment note/memo
      * @return string Universal link URL
      */
     public static function venmo(string $username, int $amountCents, string $note = ''): string
@@ -54,7 +55,7 @@ class PaymentLinks
             'amount' => $amount,
         ];
 
-        if (!empty($note)) {
+        if (! empty($note)) {
             $params['note'] = $note;
         }
 
@@ -66,9 +67,6 @@ class PaymentLinks
 
     /**
      * Generate web fallback URL for Smart Pay page
-     *
-     * @param int $paymentRequestId
-     * @return string
      */
     public static function smartPay(int $paymentRequestId): string
     {

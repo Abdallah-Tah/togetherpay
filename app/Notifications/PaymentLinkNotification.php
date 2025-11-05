@@ -26,7 +26,7 @@ class PaymentLinkNotification extends Notification implements ShouldQueue
     {
         $channels = ['mail'];
 
-        if (!empty($notifiable->phone) && config('services.twilio.enabled', false)) {
+        if (! empty($notifiable->phone) && config('services.twilio.enabled', false)) {
             $channels[] = TwilioChannel::class;
         }
 
@@ -46,7 +46,7 @@ class PaymentLinkNotification extends Notification implements ShouldQueue
             ?->format('M d, Y') ?? now()->format('M d, Y');
 
         return (new MailMessage)
-            ->subject("Payment Due: \${$amount}" . ($group ? " - {$group->name}" : ''))
+            ->subject("Payment Due: \${$amount}".($group ? " - {$group->name}" : ''))
             ->greeting("Hi {$notifiable->name}!")
             ->line('Your payment is due.')
             ->when($group, fn (MailMessage $message) => $message->line("**Group:** {$group->name}"))
@@ -67,7 +67,7 @@ class PaymentLinkNotification extends Notification implements ShouldQueue
 
         $message = "💰 Payment due: \${$amount} {$groupName}- Pay now: {$deepLink}";
 
-        $twilioMessage = (new TwilioSmsMessage())
+        $twilioMessage = (new TwilioSmsMessage)
             ->content($message);
 
         if ($messagingService = config('services.twilio.messaging_service_sid')) {

@@ -66,7 +66,7 @@ class GroupController extends Controller
         ]);
 
         // Update owner role if not already
-        if (!$request->user()->isOwner()) {
+        if (! $request->user()->isOwner()) {
             $request->user()->update(['role' => 'owner']);
         }
 
@@ -151,11 +151,11 @@ class GroupController extends Controller
         // Find user by email or phone (only check phone if provided)
         $user = User::where('email', $request->email)->first();
 
-        if (!$user && $request->phone) {
+        if (! $user && $request->phone) {
             $user = User::where('phone', $request->phone)->first();
         }
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'message' => 'User not found. They need to register first.',
             ], 404);
@@ -182,6 +182,7 @@ class GroupController extends Controller
                     'group_id' => $group->id,
                     'user_id' => $user->id,
                 ]);
+
                 return response()->json([
                     'message' => 'User is already a member of this group',
                 ], 422);

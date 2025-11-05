@@ -1,24 +1,24 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__.'/vendor/autoload.php';
 
-$app = require_once __DIR__ . '/bootstrap/app.php';
+$app = require_once __DIR__.'/bootstrap/app.php';
 $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
-use App\Models\User;
+use App\Models\BillingCycle;
 use App\Models\Group;
 use App\Models\GroupMember;
-use App\Models\BillingCycle;
 use App\Models\PaymentRequest;
-use App\Support\PaymentLinks;
+use App\Models\User;
 use App\Notifications\PaymentLinkNotification;
+use App\Support\PaymentLinks;
 
 echo "🧪 Testing Cash App Payment Request\n";
 echo "=====================================\n\n";
 
 // 1. Get the owner (you)
 $owner = User::where('email', 'abdal_cascad@hotmail.com')->first();
-if (!$owner) {
+if (! $owner) {
     echo "❌ Owner not found!\n";
     exit(1);
 }
@@ -32,7 +32,7 @@ $group = Group::where('owner_id', $owner->id)
     ->where('name', 'T-Mobile Family Plan')
     ->first();
 
-if (!$group) {
+if (! $group) {
     echo "📱 Creating T-Mobile Family Plan group...\n";
     $group = Group::create([
         'owner_id' => $owner->id,
@@ -57,14 +57,14 @@ echo "   Due Date: Day {$group->due_day_of_month} of each month\n\n";
 // 3. Find or create member (Ikram Barkad)
 $member = User::where('cashapp_tag', '$IkramBarkad')->first();
 
-if (!$member) {
+if (! $member) {
     echo "👤 Creating member: Ikram Barkad...\n";
     $member = User::create([
         'name' => 'Ikram Barkad',
         'email' => 'ikram.barkad@test.com',
         'password' => bcrypt('password'),
         'cashapp_tag' => '$IkramBarkad',
-        'cashapp_customer_id' => 'MMI_test_ikram_' . uniqid(), // In production, get from OAuth
+        'cashapp_customer_id' => 'MMI_test_ikram_'.uniqid(), // In production, get from OAuth
         'preferred_payment_method' => 'CASH_APP',
     ]);
     echo "✅ Member created: {$member->name}\n";
@@ -81,7 +81,7 @@ $groupMember = GroupMember::where('group_id', $group->id)
     ->where('user_id', $member->id)
     ->first();
 
-if (!$groupMember) {
+if (! $groupMember) {
     echo "➕ Adding member to group...\n";
     $groupMember = GroupMember::create([
         'group_id' => $group->id,
@@ -105,7 +105,7 @@ $cycle = BillingCycle::where('group_id', $group->id)
     ->where('period_end', '<=', now()->endOfMonth())
     ->first();
 
-if (!$cycle) {
+if (! $cycle) {
     echo "📅 Creating billing cycle...\n";
     $dueDate = now()->setDay($group->due_day_of_month);
     $cycle = BillingCycle::create([
@@ -152,14 +152,14 @@ echo "� Building P2P payment link (no API)...\n";
 echo "────────────────────────────────────────────\n\n";
 
 try {
-    $note = "Group {$group->name} - " . now()->format('M Y') . " cycle - PR#{$paymentRequest->id}";
+    $note = "Group {$group->name} - ".now()->format('M Y')." cycle - PR#{$paymentRequest->id}";
 
     // Choose channel based on member preference
     if ($groupMember->preferred_channel === 'CASH_APP' && $groupMember->cash_tag) {
         $link = PaymentLinks::cashApp($groupMember->cash_tag, $amountCents, $note);
         $channel = 'CASH_APP';
         echo "✅ Cash App deep link generated!\n\n";
-    } elseif ($groupMember->preferred_channel === 'VENMO' && !empty($groupMember->venmo_username)) {
+    } elseif ($groupMember->preferred_channel === 'VENMO' && ! empty($groupMember->venmo_username)) {
         $link = PaymentLinks::venmo($groupMember->venmo_username, $amountCents, $note);
         $channel = 'VENMO';
         echo "✅ Venmo deep link generated!\n\n";
@@ -241,7 +241,7 @@ try {
 } catch (\Exception $e) {
     echo "❌ Error: {$e->getMessage()}\n\n";
     echo "Stack trace:\n";
-    echo $e->getTraceAsString() . "\n\n";
+    echo $e->getTraceAsString()."\n\n";
 }
 
 echo "════════════════════════════════════════════\n";
@@ -271,4 +271,4 @@ echo "3. Member clicks → App opens → Payment sent\n";
 echo "4. Mark as paid in your dashboard\n\n";
 
 echo "💡 Alternative: Visit the Smart Pay page in a browser\n";
-echo "   URL: " . url("/pay/{$paymentRequest->id}") . "\n\n";
+echo '   URL: '.url("/pay/{$paymentRequest->id}")."\n\n";

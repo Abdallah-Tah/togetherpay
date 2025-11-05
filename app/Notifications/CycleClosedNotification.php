@@ -35,8 +35,8 @@ class CycleClosedNotification extends Notification implements ShouldQueue
             ->greeting("Hi {$notifiable->name}!")
             ->line("The billing cycle for **{$group->name}** has been closed.")
             ->line("**Period:** {$this->cycle->period_start->format('M d')} - {$this->cycle->period_end->format('M d, Y')}")
-            ->line("---")
-            ->line("**Collection Summary:**")
+            ->line('---')
+            ->line('**Collection Summary:**')
             ->line("✓ Paid: {$this->metrics['paid_requests']} of {$this->metrics['total_requests']} members ({$collectionRate}%)")
             ->line("💵 Collected: \${$collectedAmount} of \${$totalAmount}");
 

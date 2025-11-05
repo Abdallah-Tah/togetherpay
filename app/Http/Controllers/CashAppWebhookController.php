@@ -14,7 +14,7 @@ class CashAppWebhookController extends Controller
     public function handle(Request $request)
     {
         // Verify webhook signature
-        if (!$this->verifySignature($request)) {
+        if (! $this->verifySignature($request)) {
             return response()->json(['error' => 'Invalid signature'], 401);
         }
 
@@ -54,8 +54,9 @@ class CashAppWebhookController extends Controller
         $cashAppRequestId = $data['request']['id'] ?? null;
         $referenceId = $data['request']['reference_id'] ?? null; // e.g., "PR_123"
 
-        if (!$referenceId) {
+        if (! $referenceId) {
             Log::warning('Cash App webhook missing reference_id', ['data' => $data]);
+
             return;
         }
 
@@ -63,11 +64,12 @@ class CashAppWebhookController extends Controller
         $paymentRequestId = str_replace('PR_', '', $referenceId);
 
         $paymentRequest = PaymentRequest::find($paymentRequestId);
-        if (!$paymentRequest) {
+        if (! $paymentRequest) {
             Log::error('Payment request not found for Cash App webhook', [
                 'reference_id' => $referenceId,
                 'cashapp_request_id' => $cashAppRequestId,
             ]);
+
             return;
         }
 
@@ -94,7 +96,9 @@ class CashAppWebhookController extends Controller
     protected function handlePaymentFailed(array $data): void
     {
         $referenceId = $data['request']['reference_id'] ?? null;
-        if (!$referenceId) return;
+        if (! $referenceId) {
+            return;
+        }
 
         $paymentRequestId = str_replace('PR_', '', $referenceId);
         $paymentRequest = PaymentRequest::find($paymentRequestId);
@@ -118,7 +122,9 @@ class CashAppWebhookController extends Controller
     protected function handleRequestExpired(array $data): void
     {
         $referenceId = $data['request']['reference_id'] ?? null;
-        if (!$referenceId) return;
+        if (! $referenceId) {
+            return;
+        }
 
         $paymentRequestId = str_replace('PR_', '', $referenceId);
         $paymentRequest = PaymentRequest::find($paymentRequestId);
@@ -147,14 +153,16 @@ class CashAppWebhookController extends Controller
         $webhookSecret = config('services.cashapp.webhook_secret');
 
         // If no webhook secret is configured, skip verification in development
-        if (!$webhookSecret) {
+        if (! $webhookSecret) {
             Log::warning('Cash App webhook secret not configured - skipping signature verification');
+
             return config('app.env') !== 'production';
         }
 
         $signature = $request->header('X-CashApp-Signature');
-        if (!$signature) {
+        if (! $signature) {
             Log::warning('Cash App webhook missing signature header');
+
             return false;
         }
 
@@ -165,11 +173,12 @@ class CashAppWebhookController extends Controller
         $expectedSignature = hash_hmac('sha256', $payload, $webhookSecret);
 
         // Compare signatures (timing-safe comparison)
-        if (!hash_equals($expectedSignature, $signature)) {
+        if (! hash_equals($expectedSignature, $signature)) {
             Log::warning('Cash App webhook signature mismatch', [
                 'expected' => $expectedSignature,
                 'received' => $signature,
             ]);
+
             return false;
         }
 

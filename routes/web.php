@@ -1,12 +1,12 @@
 <?php
 
+use App\Http\Controllers\SmartPayController;
 use App\Livewire\Groups\Create as GroupsCreate;
 use App\Livewire\Groups\Index as GroupsIndex;
 use App\Livewire\Groups\Show as GroupsShow;
 use App\Livewire\Members\Index as MembersIndex;
 use App\Livewire\PaymentRequests\Index as PaymentRequestsIndex;
 use App\Livewire\Reports\Index as ReportsIndex;
-use App\Http\Controllers\SmartPayController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
@@ -18,11 +18,18 @@ Route::get('/', function () {
 // Smart Pay - Public payment page (no auth required)
 Route::get('/pay/{request}', [SmartPayController::class, 'show'])->name('smartpay.show');
 
+// Onboarding routes (auth required but no onboarding check)
+Route::middleware(['auth'])->prefix('onboarding')->name('onboarding.')->group(function () {
+    Volt::route('welcome', 'onboarding.welcome')->name('welcome');
+    Volt::route('payment-setup', 'onboarding.payment-setup')->name('payment-setup');
+    Volt::route('complete', 'onboarding.complete')->name('complete');
+});
+
 Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', \App\Http\Middleware\EnsureOnboardingCompleted::class])
     ->name('dashboard');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingCompleted::class])->group(function () {
     // Groups
     Route::get('groups', GroupsIndex::class)->name('app.groups.index');
     Route::get('groups/create', GroupsCreate::class)->name('app.groups.create');

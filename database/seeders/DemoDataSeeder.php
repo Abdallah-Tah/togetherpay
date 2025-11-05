@@ -16,7 +16,7 @@ class DemoDataSeeder extends Seeder
         // Get or create current user
         $owner = User::first();
 
-        if (!$owner) {
+        if (! $owner) {
             $owner = User::factory()->create([
                 'name' => 'Demo Owner',
                 'email' => 'owner@example.com',
@@ -140,7 +140,7 @@ class DemoDataSeeder extends Seeder
             'member_id' => $group1->members->first()->id,
             'amount_cents' => 575,
             'channel' => 'VENMO',
-            'link' => 'venmo://paycharge?txn=pay&recipients=john-smith&amount=5.75&note=Netflix+Premium+-+' . now()->format('M+Y'),
+            'link' => 'venmo://paycharge?txn=pay&recipients=john-smith&amount=5.75&note=Netflix+Premium+-+'.now()->format('M+Y'),
             'status' => 'paid',
             'sent_at' => now()->subDays(10),
             'paid_at' => now()->subDays(8),
@@ -161,7 +161,7 @@ class DemoDataSeeder extends Seeder
             'member_id' => $group1->members->get(2)->id,
             'amount_cents' => 575,
             'channel' => 'VENMO',
-            'link' => 'venmo://paycharge?txn=pay&recipients=bob-j&amount=5.75&note=Netflix+Premium+-+' . now()->format('M+Y'),
+            'link' => 'venmo://paycharge?txn=pay&recipients=bob-j&amount=5.75&note=Netflix+Premium+-+'.now()->format('M+Y'),
             'status' => 'pending',
         ]);
 
@@ -196,7 +196,7 @@ class DemoDataSeeder extends Seeder
         ]);
 
         $this->command->info('✅ Demo data created successfully!');
-        $this->command->info('📧 Login with: ' . $owner->email);
+        $this->command->info('📧 Login with: '.$owner->email);
         $this->command->info('🔑 Password: password');
     }
 }

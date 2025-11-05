@@ -38,7 +38,7 @@ class PaymentReminderNotification extends Notification implements ShouldQueue
                 ->line("A payment in your group **{$group->name}** is {$this->daysSinceDue} days overdue.")
                 ->line("**Member:** {$this->paymentRequest->member->user->name}")
                 ->line("**Amount:** \${$amount}")
-                ->line("You may want to reach out to the member directly.")
+                ->line('You may want to reach out to the member directly.')
                 ->action('View Group', url("/groups/{$group->id}"));
         }
 
@@ -49,8 +49,8 @@ class PaymentReminderNotification extends Notification implements ShouldQueue
         };
 
         $urgency = match ($this->reminderType) {
-            'escalation' => '🚨 **URGENT** - Your payment is now ' . $this->daysSinceDue . ' days overdue.',
-            'reminder' => 'This is a friendly reminder that your payment is ' . ($this->daysSinceDue > 0 ? "{$this->daysSinceDue} days overdue" : 'due soon') . '.',
+            'escalation' => '🚨 **URGENT** - Your payment is now '.$this->daysSinceDue.' days overdue.',
+            'reminder' => 'This is a friendly reminder that your payment is '.($this->daysSinceDue > 0 ? "{$this->daysSinceDue} days overdue" : 'due soon').'.',
             default => 'Your payment is due.',
         };
 

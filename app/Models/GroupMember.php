@@ -11,7 +11,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class GroupMember extends Model
 {
-    use SoftDeletes, LogsActivity;
+    use LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'group_id',
@@ -56,7 +56,7 @@ class GroupMember extends Model
 
     public function isVerified(): bool
     {
-        return !is_null($this->verified_at) || !is_null($this->getPaymentHandle());
+        return ! is_null($this->verified_at) || ! is_null($this->getPaymentHandle());
     }
 
     public function calculateAmount(int $totalCents): int

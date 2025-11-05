@@ -69,6 +69,7 @@ class CreateUpcomingCyclesJob implements ShouldQueue
             if ($start->isPast()) {
                 $start->addMonth();
             }
+
             return $start;
         }
 

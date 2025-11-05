@@ -66,8 +66,8 @@ if (! $member->cash_tag) {
 
 echo "✅ Member: {$member->name}\n";
 echo "   Email: {$member->email}\n";
-echo "   Cash App: ".($member->cash_tag ?: 'Not set')."\n";
-echo "   Venmo: ".($member->venmo_username ?: 'Not set')."\n\n";
+echo '   Cash App: '.($member->cash_tag ?: 'Not set')."\n";
+echo '   Venmo: '.($member->venmo_username ?: 'Not set')."\n\n";
 
 // 3. Create or get group (owned by Ikram)
 $group = Group::where('owner_id', $owner->id)

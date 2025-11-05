@@ -27,11 +27,12 @@ class SendCashAppPaymentRequestJob implements ShouldQueue
                 'payment_request_id' => $this->paymentRequest->id,
                 'payment_method' => $this->paymentRequest->payment_method,
             ]);
+
             return;
         }
 
         $member = $this->paymentRequest->member;
-        if (!$member->cash_app_customer_id) {
+        if (! $member->cash_app_customer_id) {
             Log::warning('Member missing Cash App customer ID', [
                 'member_id' => $member->id,
                 'payment_request_id' => $this->paymentRequest->id,
@@ -41,6 +42,7 @@ class SendCashAppPaymentRequestJob implements ShouldQueue
             $this->paymentRequest->update([
                 'metadata_json->cashapp_error' => 'Missing Cash App customer ID',
             ]);
+
             return;
         }
 
@@ -56,7 +58,7 @@ class SendCashAppPaymentRequestJob implements ShouldQueue
             'requester_name' => $owner->name ?? config('app.name'),
             'requester_logo_url' => $owner->avatar_url ?? null,
             'redirect_url' => route('payment.callback', ['payment_request' => $this->paymentRequest->id]),
-            'idempotency_key' => "PR_{$this->paymentRequest->id}_" . now()->timestamp,
+            'idempotency_key' => "PR_{$this->paymentRequest->id}_".now()->timestamp,
         ]);
 
         if ($result) {

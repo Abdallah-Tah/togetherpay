@@ -9,7 +9,9 @@ use Illuminate\Support\Str;
 class CashAppService
 {
     protected string $apiUrl;
+
     protected string $clientId;
+
     protected string $clientSecret;
 
     public function __construct()
@@ -21,9 +23,6 @@ class CashAppService
 
     /**
      * Create a payment request via Cash App Customer Request API
-     *
-     * @param array $params
-     * @return array|null
      */
     public function createPaymentRequest(array $params): ?array
     {
@@ -39,7 +38,7 @@ class CashAppService
                         'currency' => $params['currency'] ?? 'USD',
                         'scope_id' => $params['scope_id'], // Member's Cash App customer ID
                         'type' => 'ONE_TIME_PAYMENT',
-                    ]
+                    ],
                 ],
                 'channel' => $params['channel'] ?? 'ONLINE',
                 'reference_id' => $params['reference_id'], // Your internal payment request ID
@@ -55,8 +54,8 @@ class CashAppService
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
-                'User-Agent' => config('app.name') . '/1.0',
-                'Authorization' => 'Bearer ' . $this->getAccessToken(),
+                'User-Agent' => config('app.name').'/1.0',
+                'Authorization' => 'Bearer '.$this->getAccessToken(),
             ])->post("{$this->apiUrl}/customer-request/v1/requests", $payload);
 
             if ($response->successful()) {
@@ -88,17 +87,14 @@ class CashAppService
 
     /**
      * Retrieve a payment request status
-     *
-     * @param string $requestId
-     * @return array|null
      */
     public function retrievePaymentRequest(string $requestId): ?array
     {
         try {
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
-                'User-Agent' => config('app.name') . '/1.0',
-                'Authorization' => 'Bearer ' . $this->getAccessToken(),
+                'User-Agent' => config('app.name').'/1.0',
+                'Authorization' => 'Bearer '.$this->getAccessToken(),
             ])->get("{$this->apiUrl}/customer-request/v1/requests/{$requestId}");
 
             if ($response->successful()) {
@@ -119,8 +115,6 @@ class CashAppService
     /**
      * Get OAuth access token for Cash App API
      * (You'll need to implement OAuth2 flow or use a stored token)
-     *
-     * @return string
      */
     protected function getAccessToken(): string
     {
@@ -133,8 +127,6 @@ class CashAppService
 
     /**
      * Fetch a new access token from Cash App OAuth2
-     *
-     * @return string
      */
     protected function fetchAccessToken(): string
     {
@@ -167,10 +159,6 @@ class CashAppService
 
     /**
      * Generate OAuth authorization URL for member onboarding
-     *
-     * @param string $redirectUri
-     * @param string $state
-     * @return string
      */
     public function getAuthorizationUrl(string $redirectUri, string $state): string
     {
@@ -188,8 +176,6 @@ class CashAppService
     /**
      * Exchange authorization code for access token and customer ID
      *
-     * @param string $code
-     * @param string $redirectUri
      * @return array|null Returns ['access_token' => ..., 'customer_id' => ...]
      */
     public function exchangeCodeForTokens(string $code, string $redirectUri): ?array
@@ -236,21 +222,20 @@ class CashAppService
     /**
      * Resolve Cash App $cashtag to customer ID
      *
-     * @param string $cashtag e.g., "$JohnDoe" or "JohnDoe"
-     * @return string|null
+     * @param  string  $cashtag  e.g., "$JohnDoe" or "JohnDoe"
      */
     public function resolveCustomerId(string $cashtag): ?string
     {
         // Ensure cashtag starts with $
-        if (!str_starts_with($cashtag, '$')) {
-            $cashtag = '$' . $cashtag;
+        if (! str_starts_with($cashtag, '$')) {
+            $cashtag = '$'.$cashtag;
         }
 
         try {
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
-                'User-Agent' => config('app.name') . '/1.0',
-                'Authorization' => 'Bearer ' . $this->getAccessToken(),
+                'User-Agent' => config('app.name').'/1.0',
+                'Authorization' => 'Bearer '.$this->getAccessToken(),
             ])->get("{$this->apiUrl}/v1/customers/cashtag/{$cashtag}");
 
             if ($response->successful()) {
@@ -286,9 +271,6 @@ class CashAppService
 
     /**
      * Refresh an expired access token
-     *
-     * @param string $refreshToken
-     * @return array|null
      */
     public function refreshAccessToken(string $refreshToken): ?array
     {

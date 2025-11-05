@@ -20,7 +20,7 @@ class SmartPayController extends Controller
         $member = $request->member; // relation to GroupMember
         $group = $request->cycle->group;
 
-        $note = "Group {$group->name} - " . $request->created_at->format('M Y') . " - PR#{$request->id}";
+        $note = "Group {$group->name} - ".$request->created_at->format('M Y')." - PR#{$request->id}";
 
         // Generate Cash App link if member has cash tag
         $cashLink = $member->cash_tag
@@ -28,7 +28,7 @@ class SmartPayController extends Controller
             : null;
 
         // Generate Venmo link if member has venmo username
-        $venmoLink = !empty($member->venmo_username)
+        $venmoLink = ! empty($member->venmo_username)
             ? PaymentLinks::venmo($member->venmo_username, $request->amount_cents, $note)
             : null;
 
@@ -45,7 +45,7 @@ class SmartPayController extends Controller
     {
         $renderer = new ImageRenderer(
             new RendererStyle(200),
-            new SvgImageBackEnd()
+            new SvgImageBackEnd
         );
 
         $writer = new Writer($renderer);

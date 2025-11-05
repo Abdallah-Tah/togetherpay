@@ -74,7 +74,7 @@ class CashAppOAuthController extends Controller
 
         // Verify state token
         $stateData = cache()->get("cashapp_oauth_state_{$state}");
-        if (!$stateData) {
+        if (! $stateData) {
             return response()->json([
                 'message' => 'Invalid or expired state token',
             ], 400);
@@ -90,7 +90,7 @@ class CashAppOAuthController extends Controller
         $redirectUri = route('api.cashapp.oauth.callback');
         $tokens = $this->cashAppService->exchangeCodeForTokens($code, $redirectUri);
 
-        if (!$tokens || !isset($tokens['customer_id'])) {
+        if (! $tokens || ! isset($tokens['customer_id'])) {
             Log::error('Cash App OAuth failed - no customer ID', [
                 'member_id' => $memberId,
             ]);
@@ -130,6 +130,7 @@ class CashAppOAuthController extends Controller
 
         // Redirect to mobile deep link or web success page
         $deepLink = "togetherpay://cashapp/success?member_id={$memberId}";
+
         return redirect($deepLink);
     }
 
@@ -160,7 +161,7 @@ class CashAppOAuthController extends Controller
         // Resolve cashtag to customer ID
         $customerId = $this->cashAppService->resolveCustomerId($cashtag);
 
-        if (!$customerId) {
+        if (! $customerId) {
             return response()->json([
                 'message' => 'Could not resolve Cash App customer ID from cashtag',
                 'cashtag' => $cashtag,
@@ -254,7 +255,7 @@ class CashAppOAuthController extends Controller
             ], 403);
         }
 
-        $isConnected = !empty($member->cash_app_customer_id);
+        $isConnected = ! empty($member->cash_app_customer_id);
         $metadata = $member->payment_provider_metadata ?? [];
 
         return response()->json([
