@@ -61,7 +61,7 @@ class PaymentRequestController extends Controller
         $isOwner = $paymentRequest->cycle->group->owner_id === $user->id;
         $isMember = $paymentRequest->member->user_id === $user->id;
 
-        if (!$isOwner && !$isMember) {
+        if (! $isOwner && ! $isMember) {
             abort(403, 'Unauthorized');
         }
 
@@ -207,7 +207,7 @@ class PaymentRequestController extends Controller
         $isOwner = $paymentRequest->cycle->group->owner_id === $user->id;
         $isMember = $paymentRequest->member->user_id === $user->id;
 
-        if (!$isOwner && !$isMember) {
+        if (! $isOwner && ! $isMember) {
             abort(403, 'Unauthorized');
         }
 

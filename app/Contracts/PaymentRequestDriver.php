@@ -32,8 +32,6 @@ interface PaymentRequestDriver
 
     /**
      * Get the driver name
-     *
-     * @return string
      */
     public function getName(): string;
 }

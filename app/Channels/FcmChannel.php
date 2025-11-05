@@ -18,6 +18,7 @@ class FcmChannel
 
         if (! $serverKey) {
             Log::warning('FCM server key not configured');
+
             return;
         }
 
@@ -33,6 +34,7 @@ class FcmChannel
 
         if ($devices->isEmpty()) {
             Log::info('No FCM tokens found for user', ['user_id' => $notifiable->id]);
+
             return;
         }
 
@@ -40,7 +42,7 @@ class FcmChannel
         foreach ($devices as $device) {
             try {
                 $response = Http::withHeaders([
-                    'Authorization' => 'key=' . $serverKey,
+                    'Authorization' => 'key='.$serverKey,
                     'Content-Type' => 'application/json',
                 ])->post('https://fcm.googleapis.com/fcm/send', array_merge([
                     'to' => $device->fcm_token,

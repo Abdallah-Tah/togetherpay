@@ -17,7 +17,9 @@ class Index extends Component
     use AuthorizesRequests;
 
     public ?int $selectedGroup = null;
+
     public string $startDate;
+
     public string $endDate;
 
     public function mount(): void
@@ -47,7 +49,7 @@ class Index extends Component
 
         $baseQuery = PaymentRequest::whereHas('cycle', function ($q) use ($group) {
             $q->where('group_id', $group->id)
-              ->whereBetween('period_start', [$this->startDate, $this->endDate]);
+                ->whereBetween('period_start', [$this->startDate, $this->endDate]);
         });
 
         return [

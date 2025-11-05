@@ -39,7 +39,7 @@ class TestPaymentNotification extends Command
         // Create a test user (or use existing)
         $testUser = User::where('email', $email)->first();
 
-        if (!$testUser) {
+        if (! $testUser) {
             $testUser = User::create([
                 'name' => 'Test User',
                 'email' => $email,
@@ -84,7 +84,7 @@ class TestPaymentNotification extends Command
             'status' => 'active',
         ]);
 
-        $this->info("Created test member with share: $50.00");
+        $this->info('Created test member with share: $50.00');
 
         // Create a test billing cycle
         $cycle = BillingCycle::create([
@@ -95,7 +95,7 @@ class TestPaymentNotification extends Command
             'status' => 'draft',
         ]);
 
-        $this->info("Created test billing cycle");
+        $this->info('Created test billing cycle');
 
         // Create a test payment request
         $paymentRequest = PaymentRequest::create([
@@ -107,7 +107,7 @@ class TestPaymentNotification extends Command
             'sent_at' => now(),
         ]);
 
-        $this->info("Created test payment request: $50.00");
+        $this->info('Created test payment request: $50.00');
 
         // Send the notification
         $this->info("Sending payment notification to {$email}...");
@@ -116,19 +116,19 @@ class TestPaymentNotification extends Command
             $testUser->notify(new PaymentRequestNotification($paymentRequest));
             $this->info('✅ Email notification sent successfully!');
             $this->newLine();
-            $this->info('Check your inbox at: ' . $email);
+            $this->info('Check your inbox at: '.$email);
             $this->info('Subject: 💰 Payment Due: Test Group - Family Phone Plan');
             $this->newLine();
-            $this->info('Payment link: ' . url("/pay/{$paymentRequest->id}"));
+            $this->info('Payment link: '.url("/pay/{$paymentRequest->id}"));
         } catch (\Exception $e) {
-            $this->error('❌ Failed to send email: ' . $e->getMessage());
+            $this->error('❌ Failed to send email: '.$e->getMessage());
             $this->newLine();
             $this->error('Check your .env mail configuration:');
-            $this->error('  MAIL_MAILER=' . config('mail.default'));
-            $this->error('  MAIL_HOST=' . config('mail.mailers.smtp.host'));
-            $this->error('  MAIL_PORT=' . config('mail.mailers.smtp.port'));
-            $this->error('  MAIL_USERNAME=' . config('mail.mailers.smtp.username'));
-            $this->error('  MAIL_ENCRYPTION=' . config('mail.mailers.smtp.encryption'));
+            $this->error('  MAIL_MAILER='.config('mail.default'));
+            $this->error('  MAIL_HOST='.config('mail.mailers.smtp.host'));
+            $this->error('  MAIL_PORT='.config('mail.mailers.smtp.port'));
+            $this->error('  MAIL_USERNAME='.config('mail.mailers.smtp.username'));
+            $this->error('  MAIL_ENCRYPTION='.config('mail.mailers.smtp.encryption'));
         }
 
         // Cleanup test data

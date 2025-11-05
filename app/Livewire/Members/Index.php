@@ -6,11 +6,11 @@ use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Validation\Rule;
 
 #[Title('Members')]
 class Index extends Component
@@ -18,21 +18,35 @@ class Index extends Component
     use WithPagination;
 
     public string $search = '';
+
     public bool $showCreateModal = false;
+
     public bool $showEditModal = false;
+
     public bool $showRemoveModal = false;
+
     public ?int $editingMemberId = null;
 
     public ?int $formGroupId = null;
+
     public string $formEmail = '';
+
     public string $formPhone = '';
+
     public string $formPreferredChannel = 'VENMO';
+
     public string $formVenmoUsername = '';
+
     public string $formCashTag = '';
+
     public string $formCashPhone = '';
+
     public string $formCashEmail = '';
+
     public string $formShareType = 'AMOUNT';
+
     public string $formShareValue = '';
+
     public string $formStatus = 'active';
 
     protected $queryString = [
@@ -166,9 +180,10 @@ class Index extends Component
     {
         $this->validate();
 
-        if (!$this->formEmail && !$this->formPhone) {
+        if (! $this->formEmail && ! $this->formPhone) {
             $this->addError('formEmail', 'Provide an email or phone to find a user.');
             $this->addError('formPhone', 'Provide an email or phone to find a user.');
+
             return;
         }
 
@@ -189,13 +204,15 @@ class Index extends Component
 
         $user = $userQuery->first();
 
-        if (!$user) {
+        if (! $user) {
             $this->addError('formEmail', 'We could not find a registered user with that email or phone.');
+
             return;
         }
 
         if ($group->members()->where('user_id', $user->id)->exists()) {
             $this->addError('formEmail', 'This user is already a member of the selected group.');
+
             return;
         }
 
@@ -244,7 +261,7 @@ class Index extends Component
 
     public function updateMember(): void
     {
-        if (!$this->editingMemberId) {
+        if (! $this->editingMemberId) {
             return;
         }
 
@@ -284,7 +301,7 @@ class Index extends Component
 
     public function removeMember(): void
     {
-        if (!$this->editingMemberId) {
+        if (! $this->editingMemberId) {
             return;
         }
 

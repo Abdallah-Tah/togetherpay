@@ -6,7 +6,6 @@ use App\Models\Export;
 use App\Models\Group;
 use App\Models\PaymentRequest;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Storage;
 
 class ExportService
 {
@@ -28,11 +27,11 @@ class ExportService
 
         $requests = $query->orderBy('created_at', 'desc')->get();
 
-        $filename = 'exports/group_' . $group->id . '_' . now()->format('Y-m-d_His') . '.csv';
-        $fullPath = storage_path('app/' . $filename);
+        $filename = 'exports/group_'.$group->id.'_'.now()->format('Y-m-d_His').'.csv';
+        $fullPath = storage_path('app/'.$filename);
 
         // Ensure directory exists
-        if (!file_exists(dirname($fullPath))) {
+        if (! file_exists(dirname($fullPath))) {
             mkdir(dirname($fullPath), 0755, true);
         }
 
@@ -54,10 +53,10 @@ class ExportService
         // CSV Data
         foreach ($requests as $request) {
             fputcsv($handle, [
-                $request->cycle->period_start->format('Y-m-d') . ' to ' . $request->cycle->period_end->format('Y-m-d'),
+                $request->cycle->period_start->format('Y-m-d').' to '.$request->cycle->period_end->format('Y-m-d'),
                 $request->member->user->name,
                 $request->member->user->email,
-                '$' . number_format($request->amount_cents / 100, 2),
+                '$'.number_format($request->amount_cents / 100, 2),
                 $request->channel,
                 ucfirst($request->status),
                 $request->sent_at?->format('Y-m-d H:i:s') ?? '-',
@@ -104,8 +103,8 @@ class ExportService
 
         // Calculate stats
         $stats = [
-            'total_collected' => $requests->where('status', 'paid')->sum(fn($r) => $r->amount_cents / 100),
-            'total_pending' => $requests->whereIn('status', ['pending', 'sent'])->sum(fn($r) => $r->amount_cents / 100),
+            'total_collected' => $requests->where('status', 'paid')->sum(fn ($r) => $r->amount_cents / 100),
+            'total_pending' => $requests->whereIn('status', ['pending', 'sent'])->sum(fn ($r) => $r->amount_cents / 100),
             'paid_count' => $requests->where('status', 'paid')->count(),
             'pending_count' => $requests->whereIn('status', ['pending', 'sent'])->count(),
             'failed_count' => $requests->whereIn('status', ['failed', 'expired'])->count(),
@@ -125,11 +124,11 @@ class ExportService
             'generatedAt' => now(),
         ]);
 
-        $filename = 'exports/group_' . $group->id . '_' . now()->format('Y-m-d_His') . '.pdf';
-        $fullPath = storage_path('app/' . $filename);
+        $filename = 'exports/group_'.$group->id.'_'.now()->format('Y-m-d_His').'.pdf';
+        $fullPath = storage_path('app/'.$filename);
 
         // Ensure directory exists
-        if (!file_exists(dirname($fullPath))) {
+        if (! file_exists(dirname($fullPath))) {
             mkdir(dirname($fullPath), 0755, true);
         }
 

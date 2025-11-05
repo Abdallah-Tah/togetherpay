@@ -10,11 +10,17 @@ use Livewire\Component;
 class Create extends Component
 {
     public string $name = '';
+
     public string $total_amount = '';
+
     public string $cadence = 'MONTHLY';
+
     public int $due_day = 1;
+
     public int $grace_days = 7;
+
     public string $timezone = 'America/New_York';
+
     public string $currency = 'USD';
 
     protected function rules(): array

@@ -22,8 +22,8 @@ class PaymentRequestService
 
     protected function registerDrivers(): void
     {
-        $this->drivers['VENMO'] = new VenmoDriver();
-        $this->drivers['CASH_APP'] = new CashAppDriver();
+        $this->drivers['VENMO'] = new VenmoDriver;
+        $this->drivers['CASH_APP'] = new CashAppDriver;
     }
 
     public function createRequestForMember(BillingCycle $cycle, GroupMember $member): PaymentRequest
@@ -50,7 +50,7 @@ class PaymentRequestService
         $count = 0;
 
         foreach ($members as $member) {
-            if (!$member->isVerified()) {
+            if (! $member->isVerified()) {
                 continue;
             }
 
@@ -114,6 +114,7 @@ class PaymentRequestService
     {
         try {
             $driver = $this->getDriver($channel);
+
             return $driver->validateAccount($handle);
         } catch (\InvalidArgumentException $e) {
             return false;

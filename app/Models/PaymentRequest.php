@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class PaymentRequest extends Model
 {
     use SoftDeletes;
+
     protected $fillable = [
         'group_id',
         'cycle_id',

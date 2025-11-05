@@ -2,13 +2,12 @@
 
 namespace App\Console\Commands;
 
-use App\Models\User;
+use App\Models\BillingCycle;
 use App\Models\Group;
 use App\Models\GroupMember;
-use App\Models\BillingCycle;
 use App\Models\PaymentRequest;
+use App\Models\User;
 use App\Services\CashAppService;
-use App\Jobs\SendCashAppPaymentRequestJob;
 use Illuminate\Console\Command;
 
 class TestCashAppRequest extends Command
@@ -42,8 +41,9 @@ class TestCashAppRequest extends Command
         $ownerEmail = $this->option('owner-email') ?? $this->ask('Owner email address');
         $owner = User::where('email', $ownerEmail)->first();
 
-        if (!$owner) {
+        if (! $owner) {
             $this->error("❌ Owner with email {$ownerEmail} not found!");
+
             return Command::FAILURE;
         }
 
@@ -56,14 +56,14 @@ class TestCashAppRequest extends Command
         // Find or create member user
         $member = User::where('cashapp_tag', $memberCashtag)->first();
 
-        if (!$member) {
+        if (! $member) {
             $this->warn("⚠️  Member with cashtag {$memberCashtag} not found. Creating test member...");
             $member = User::create([
                 'name' => str_replace('$', '', $memberCashtag),
-                'email' => strtolower(str_replace('$', '', $memberCashtag)) . '@test.com',
+                'email' => strtolower(str_replace('$', '', $memberCashtag)).'@test.com',
                 'password' => bcrypt('password'),
                 'cashapp_tag' => $memberCashtag,
-                'cashapp_customer_id' => 'test_customer_' . uniqid(), // In production, this comes from OAuth
+                'cashapp_customer_id' => 'test_customer_'.uniqid(), // In production, this comes from OAuth
             ]);
             $this->info("✅ Created test member: {$member->name}");
         }
@@ -80,11 +80,11 @@ class TestCashAppRequest extends Command
         // Get or create test group
         $group = Group::where('owner_id', $owner->id)->first();
 
-        if (!$group) {
-            $this->warn("⚠️  No group found for owner. Creating test group...");
+        if (! $group) {
+            $this->warn('⚠️  No group found for owner. Creating test group...');
             $group = Group::create([
                 'owner_id' => $owner->id,
-                'name' => 'Test Group - ' . now()->format('M d, Y'),
+                'name' => 'Test Group - '.now()->format('M d, Y'),
                 'total_amount' => $amount * 100, // in cents
                 'currency' => 'USD',
                 'billing_cadence' => 'MONTHLY',
@@ -101,7 +101,7 @@ class TestCashAppRequest extends Command
             ->where('user_id', $member->id)
             ->first();
 
-        if (!$groupMember) {
+        if (! $groupMember) {
             $groupMember = GroupMember::create([
                 'group_id' => $group->id,
                 'user_id' => $member->id,
@@ -111,7 +111,7 @@ class TestCashAppRequest extends Command
                 'share_value' => $amount,
                 'status' => 'ACTIVE',
             ]);
-            $this->info("✅ Added member to group");
+            $this->info('✅ Added member to group');
         }
 
         // Create billing cycle
@@ -119,7 +119,7 @@ class TestCashAppRequest extends Command
             ->where('status', 'PENDING')
             ->first();
 
-        if (!$cycle) {
+        if (! $cycle) {
             $cycle = BillingCycle::create([
                 'group_id' => $group->id,
                 'period_start' => now()->startOfMonth(),
@@ -127,7 +127,7 @@ class TestCashAppRequest extends Command
                 'due_date' => now()->addDays(1),
                 'status' => 'PENDING',
             ]);
-            $this->info("✅ Created billing cycle");
+            $this->info('✅ Created billing cycle');
         }
 
         // Create payment request
@@ -160,7 +160,7 @@ class TestCashAppRequest extends Command
                 'reference_id' => "PR_{$paymentRequest->id}",
                 'requester_name' => $owner->name,
                 'redirect_url' => route('payment.callback', ['payment_request' => $paymentRequest->id]),
-                'idempotency_key' => "TEST_PR_{$paymentRequest->id}_" . time(),
+                'idempotency_key' => "TEST_PR_{$paymentRequest->id}_".time(),
             ]);
 
             if ($result) {
@@ -185,7 +185,7 @@ class TestCashAppRequest extends Command
                         'cashapp_status' => $result['status'],
                         'cashapp_mobile_url' => $result['auth_flow_triggers']['mobile_url'] ?? null,
                         'cashapp_desktop_url' => $result['auth_flow_triggers']['desktop_url'] ?? null,
-                    ]
+                    ],
                 ]);
 
                 $this->newLine();
@@ -195,9 +195,10 @@ class TestCashAppRequest extends Command
                 $this->warn('Check logs for details');
             }
         } catch (\Exception $e) {
-            $this->error('❌ Error: ' . $e->getMessage());
+            $this->error('❌ Error: '.$e->getMessage());
             $this->warn('Stack trace:');
             $this->line($e->getTraceAsString());
+
             return Command::FAILURE;
         }
 

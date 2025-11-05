@@ -22,7 +22,7 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
     {
         $channels = ['mail', 'database'];
 
-        if (!empty($notifiable->phone) && config('services.twilio.enabled', false)) {
+        if (! empty($notifiable->phone) && config('services.twilio.enabled', false)) {
             $channels[] = TwilioChannel::class;
         }
 
@@ -44,7 +44,7 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
         $payLink = url("/pay/{$this->paymentRequest->id}");
 
         $message = (new MailMessage)
-            ->subject('💰 Payment Due' . ($group ? ": {$group->name}" : ''))
+            ->subject('💰 Payment Due'.($group ? ": {$group->name}" : ''))
             ->greeting("Hi {$notifiable->name}! 👋")
             ->line("**💵 Amount:** \${$amount}")
             ->line("**📅 Due Date:** {$dueDate}")
@@ -74,7 +74,7 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
         $deepLink = $this->paymentRequest->deep_link ?? url("/pay/{$this->paymentRequest->id}");
 
         $lines = [
-            '💰 ' . ($group?->name ?? 'Payment due'),
+            '💰 '.($group?->name ?? 'Payment due'),
             "Amount: \${$amount}",
             "Due: {$dueDate}",
             "Pay: {$deepLink}",
@@ -82,7 +82,7 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
 
         $message = implode("\n", $lines);
 
-        $twilioMessage = (new TwilioSmsMessage())
+        $twilioMessage = (new TwilioSmsMessage)
             ->content($message);
 
         if ($messagingService = config('services.twilio.messaging_service_sid')) {
@@ -110,7 +110,7 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
 
         return [
             'notification' => [
-                'title' => '💰 Payment Due' . ($group ? ": {$group->name}" : ''),
+                'title' => '💰 Payment Due'.($group ? ": {$group->name}" : ''),
                 'body' => "Your share of \${$amount} is due on {$dueDate}",
                 'sound' => 'default', // Enable notification sound
             ],

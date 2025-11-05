@@ -69,7 +69,7 @@ class ProcessDunningJob implements ShouldQueue
                     ->where('attempt_no', $attemptNo)
                     ->exists();
 
-                if (!$existingEvent) {
+                if (! $existingEvent) {
                     return array_merge($reminder, ['attempt_no' => $attemptNo]);
                 }
             }
