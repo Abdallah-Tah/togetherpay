@@ -1,8 +1,9 @@
-@php
-    $pageTitle = $title ?? 'Create Group';
-@endphp
+<div>
+    @php
+        $pageTitle = $title ?? 'Create Group';
+    @endphp
 
-<div class="space-y-8">
+    <div class="space-y-8">
     <!-- Hero Section -->
     <div class="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-3xl shadow-xl p-8 text-white">
         <div class="flex items-center justify-between">
@@ -182,5 +183,6 @@
                 </div>
             </form>
         </div>
+    </div>
     </div>
 </div>

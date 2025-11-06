@@ -1,10 +1,11 @@
-@php
-    use Illuminate\Support\Str;
+<div>
+    @php
+        use Illuminate\Support\Str;
 
-    $pageTitle = $title ?? 'Members';
-@endphp
+        $pageTitle = $title ?? 'Members';
+    @endphp
 
-<div class="space-y-8">
+    <div class="space-y-8">
     @if (session('success'))
         <div class="rounded-xl border border-green-200/70 bg-green-50 px-4 py-3 text-sm font-medium text-green-700 dark:border-green-900 dark:bg-green-900/30 dark:text-green-100">
             {{ session('success') }}
@@ -594,4 +595,5 @@
             </div>
         </div>
     @endif
+    </div>
 </div>

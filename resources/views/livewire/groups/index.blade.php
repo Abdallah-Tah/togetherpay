@@ -1,8 +1,9 @@
-@php
-    $pageTitle = $title ?? 'Groups';
-@endphp
+<div>
+    @php
+        $pageTitle = $title ?? 'Groups';
+    @endphp
 
-<div class="space-y-8">
+    <div class="space-y-8">
     <!-- Hero Section -->
     <div class="bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 rounded-3xl shadow-xl p-8 text-white">
         <div class="flex items-center justify-between">
@@ -166,4 +167,5 @@
             </div>
         </div>
     @endif
+    </div>
 </div>

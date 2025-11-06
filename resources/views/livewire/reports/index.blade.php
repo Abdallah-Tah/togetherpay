@@ -1,8 +1,9 @@
-@php
-    $pageTitle = $title ?? 'Reports';
-@endphp
+<div>
+    @php
+        $pageTitle = $title ?? 'Reports';
+    @endphp
 
-<div class="space-y-6">
+    <div class="space-y-6">
         <div>
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ $pageTitle }}</h1>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Generate payout summaries and export data for your groups.</p>
@@ -200,4 +201,5 @@
                 </div>
             </div>
         @endif
+    </div>
 </div>

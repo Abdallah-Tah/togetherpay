@@ -747,7 +747,6 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
 
   Widget _buildGroupInfoCard() {
     final name = _groupData!['name'] as String? ?? 'Unnamed Group';
-    final description = _groupData!['description'] as String?;
     final ownerName = _groupData!['owner']?['name'] as String?;
     final cadence = (_groupData!['cadence'] as String?) ?? 'MONTHLY';
     final dueDay = _groupData!['due_day'] as int?;
@@ -760,20 +759,17 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primaryContainer,
-            Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -781,182 +777,118 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Group name and amount
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                name,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 28,
-                  letterSpacing: -0.5,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              if (ownerName != null)
-                Row(
-                  children: [
-                    Icon(
-                      Icons.person_outline_rounded,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'Owner: $ownerName',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+          // Group name
+          Text(
+            name,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+              fontSize: 28,
+              letterSpacing: -0.5,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
+          const SizedBox(height: 4),
+          // Owner
+          if (ownerName != null)
+            Text(
+              'Owner: $ownerName',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: 13,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          const SizedBox(height: 16),
+          // Amount section
           if (totalAmount != null) ...[
+            Text(
+              'AMOUNT',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '\$${totalAmount.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 42,
+                color: Colors.green.shade600,
+                letterSpacing: -1,
+              ),
+            ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.attach_money_rounded,
-                    size: 24,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                  Text(
-                    '\$${totalAmount.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 32,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                ],
+          ],
+          // Billing info
+          Text(
+            _buildBillingInfoString(cadence, dueDay, graceDays),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (timezone != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Timezone: $timezone',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: 13,
               ),
             ),
           ],
-          if (description != null && description.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                description,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildInfoChip(
-                icon: Icons.calendar_month_rounded,
-                label: 'Cadence',
-                value: cadence == 'EVERY_4_WEEKS'
-                    ? 'Every 4 Weeks'
-                    : 'Monthly',
-              ),
-              if (dueDay != null)
-                _buildInfoChip(
-                  icon: Icons.event_available_rounded,
-                  label: 'Due day',
-                  value: 'Day $dueDay',
-                ),
-              if (graceDays != null)
-                _buildInfoChip(
-                  icon: Icons.hourglass_bottom_rounded,
-                  label: 'Grace',
-                  value: '$graceDays day${graceDays == 1 ? '' : 's'}',
-                ),
-              if (timezone != null)
-                _buildInfoChip(
-                  icon: Icons.public_rounded,
-                  label: 'Timezone',
-                  value: timezone,
-                ),
-            ],
+          const SizedBox(height: 16),
+          Divider(
+            color: Theme.of(context).colorScheme.outline,
+            height: 1,
+            thickness: 1,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoChip({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline,
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 18,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  String _buildBillingInfoString(String cadence, int? dueDay, int? graceDays) {
+    final parts = <String>[];
+
+    // Cadence
+    parts.add(cadence == 'EVERY_4_WEEKS' ? 'Every 4 weeks' : 'Monthly');
+
+    // Due day
+    if (dueDay != null) {
+      parts.add('Due: ${_getDayWithSuffix(dueDay)}');
+    }
+
+    // Grace days
+    if (graceDays != null) {
+      parts.add('Grace: $graceDays day${graceDays == 1 ? '' : 's'}');
+    }
+
+    return parts.join(' • ');
   }
+
+  String _getDayWithSuffix(int day) {
+    if (day >= 11 && day <= 13) {
+      return '${day}th';
+    }
+    switch (day % 10) {
+      case 1:
+        return '${day}st';
+      case 2:
+        return '${day}nd';
+      case 3:
+        return '${day}rd';
+      default:
+        return '${day}th';
+    }
+  }
+
 
   Widget _buildMembersSection() {
     final members = _groupData!['members'];
