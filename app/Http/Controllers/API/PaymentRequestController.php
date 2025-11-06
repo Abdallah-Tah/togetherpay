@@ -9,6 +9,7 @@ use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\PaymentRequest;
 use App\Services\PaymentRequestService;
+use App\Notifications\PaymentRequestEventNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -176,7 +177,7 @@ class PaymentRequestController extends Controller
                 'preferred_channel' => $member->preferred_channel,
             ] : null,
             'amount_cents' => $pr->amount_cents,
-            'amount_display' => '$'.number_format($pr->amount_cents / 100, 2),
+            'amount_display' => '$' . number_format($pr->amount_cents / 100, 2),
             'status' => $pr->status,
             'method_hint' => $pr->method_hint,
             'note' => $pr->note,
@@ -218,6 +219,12 @@ class PaymentRequestController extends Controller
         }
 
         $paymentRequest->markAsPaid();
+
+        // Notify owner that member marked as sent
+        $owner = $paymentRequest->cycle->group->owner;
+        if ($owner) {
+            $owner->notify(new PaymentRequestEventNotification($paymentRequest->fresh(['member.user', 'cycle.group']), 'member_marked'));
+        }
 
         return response()->json([
             'payment_request' => $paymentRequest->fresh(),
@@ -301,6 +308,12 @@ class PaymentRequestController extends Controller
             'evidence_type' => $request->input('evidence_type'),
         ]);
 
+        // Notify owner that member marked as sent
+        $owner = $pr->cycle?->group?->owner ?? $pr->group?->owner;
+        if ($owner) {
+            $owner->notify(new PaymentRequestEventNotification($pr->fresh(['member.user', 'cycle.group']), 'member_marked'));
+        }
+
         return response()->json([
             'ok' => true,
             'message' => 'Payment marked as sent',
@@ -327,6 +340,12 @@ class PaymentRequestController extends Controller
         $this->authorize('confirm', $pr);
 
         $pr->confirmPayment();
+
+        // Notify member that owner confirmed
+        $memberUser = $pr->member?->user;
+        if ($memberUser) {
+            $memberUser->notify(new PaymentRequestEventNotification($pr->fresh(['member.user', 'cycle.group']), 'owner_confirmed'));
+        }
 
         return response()->json([
             'ok' => true,
@@ -368,13 +387,18 @@ class PaymentRequestController extends Controller
             $pr->confirmPayment();
             $confirmed++;
             $totalCents += $pr->amount_cents;
+
+            // Notify member for each confirmed
+            if ($user = $pr->member?->user) {
+                $user->notify(new PaymentRequestEventNotification($pr->fresh(['member.user', 'cycle.group']), 'owner_confirmed'));
+            }
         }
 
         return response()->json([
             'ok' => true,
             'confirmed_count' => $confirmed,
             'total_cents' => $totalCents,
-            'total_display' => '$'.number_format($totalCents / 100, 2),
+            'total_display' => '$' . number_format($totalCents / 100, 2),
         ]);
     }
 

@@ -35,6 +35,9 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     // Device registration (allows both authenticated and guest users)
     Route::post('/devices/register', [DeviceController::class, 'register']);
 
+    // Public payment request lookup by code (for mobile deep links)
+    Route::get('/requests/by-code/{prCode}', [PaymentRequestController::class, 'showByCode']);
+
     // Member marks payment as sent (public endpoint - auth by PR code)
     Route::post('/requests/by-code/{prCode}/mark', [PaymentRequestController::class, 'markByCode']);
 
@@ -47,6 +50,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::put('/auth/me', [AuthController::class, 'updateProfile']);
 
     // Groups
     Route::apiResource('groups', GroupController::class);
@@ -63,8 +67,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
     Route::post('/payment-requests/{paymentRequest}/retry', [PaymentRequestController::class, 'retry']);
     Route::get('/cycles/{cycle}/payment-requests', [PaymentRequestController::class, 'byCycle']);
 
-    // Payment Requests V2 (PR Code based endpoints)
-    Route::get('/requests/by-code/{prCode}', [PaymentRequestController::class, 'showByCode']);
+    // Payment Requests V2 (PR Code based endpoints - authenticated only)
     Route::post('/requests/by-code/{prCode}/confirm', [PaymentRequestController::class, 'confirmPayment']);
     Route::post('/requests/by-code/{prCode}/nudge', [PaymentRequestController::class, 'nudge']);
     Route::post('/requests/by-code/{prCode}/cancel', [PaymentRequestController::class, 'cancel']);

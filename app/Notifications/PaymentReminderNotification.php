@@ -20,7 +20,13 @@ class PaymentReminderNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        $channels = ['mail', 'database'];
+
+        if ($notifiable->devices()->whereNotNull('fcm_token')->exists()) {
+            $channels[] = \App\Channels\FcmChannel::class;
+        }
+
+        return $channels;
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -49,8 +55,8 @@ class PaymentReminderNotification extends Notification implements ShouldQueue
         };
 
         $urgency = match ($this->reminderType) {
-            'escalation' => '🚨 **URGENT** - Your payment is now '.$this->daysSinceDue.' days overdue.',
-            'reminder' => 'This is a friendly reminder that your payment is '.($this->daysSinceDue > 0 ? "{$this->daysSinceDue} days overdue" : 'due soon').'.',
+            'escalation' => '🚨 **URGENT** - Your payment is now ' . $this->daysSinceDue . ' days overdue.',
+            'reminder' => 'This is a friendly reminder that your payment is ' . ($this->daysSinceDue > 0 ? "{$this->daysSinceDue} days overdue" : 'due soon') . '.',
             default => 'Your payment is due.',
         };
 
@@ -73,6 +79,62 @@ class PaymentReminderNotification extends Notification implements ShouldQueue
             'days_since_due' => $this->daysSinceDue,
             'amount' => $this->paymentRequest->amount,
             'group_name' => $this->paymentRequest->cycle->group->name,
+        ];
+    }
+
+    /**
+     * FCM payload for reminders (optional push channel)
+     */
+    public function toFcm(object $notifiable): array
+    {
+        $group = $this->paymentRequest->cycle->group;
+        $amount = number_format($this->paymentRequest->amount, 2);
+        $dueDate = $this->paymentRequest->cycle->due_at?->format('M d, Y');
+
+        $title = match ($this->reminderType) {
+            'owner_escalation' => '⚠️ Overdue Payment Escalated',
+            'escalation' => '🚨 Payment Overdue',
+            'reminder' => '⏰ Payment Reminder',
+            default => 'Payment Due',
+        };
+
+        $body = match ($this->reminderType) {
+            'owner_escalation' => "Member overdue {$this->daysSinceDue}d • $${amount} • {$group->name}",
+            'escalation' => "Overdue {$this->daysSinceDue}d • $${amount} • Due {$dueDate}",
+            'reminder' => "{$group->name}: $${amount} due {$dueDate}",
+            default => "{$group->name}: $${amount} due {$dueDate}",
+        };
+
+        return [
+            'notification' => [
+                'title' => $title,
+                'body' => $body,
+                'sound' => 'default',
+            ],
+            'data' => [
+                'payment_request_id' => (string) $this->paymentRequest->id,
+                'reminder_type' => $this->reminderType,
+                'days_since_due' => (string) $this->daysSinceDue,
+                'amount' => $amount,
+                'group_name' => $group->name,
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            ],
+            'android' => [
+                'priority' => 'high',
+                'notification' => [
+                    'channel_id' => 'togetherpay_default',
+                    'sound' => 'default',
+                ],
+            ],
+            'apns' => [
+                'payload' => [
+                    'aps' => [
+                        'sound' => 'default',
+                        'badge' => 1,
+                        'content-available' => 1,
+                    ],
+                ],
+            ],
         ];
     }
 }

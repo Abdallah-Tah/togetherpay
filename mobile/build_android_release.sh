@@ -11,14 +11,12 @@ NC='\033[0m' # No Color
 
 echo -e "${GREEN}=== TogetherPay Android Release Build ===${NC}\n"
 
-# Check if API_BASE is set
-if [ -z "$API_BASE" ]; then
-    echo -e "${YELLOW}Warning: API_BASE not set. Using default.${NC}"
-    echo -e "${YELLOW}Set with: export API_BASE='https://api.togetherpay.app/api/v1'${NC}\n"
-    API_BASE="https://api.togetherpay.app/api/v1"
-fi
+# Enforce production defines (override if explicitly provided)
+API_BASE=${API_BASE:-"https://api.togetherpay.app/api/v1"}
+DEBUG=${DEBUG:-"false"}
 
-echo -e "API Base URL: ${GREEN}$API_BASE${NC}\n"
+echo -e "API Base URL: ${GREEN}$API_BASE${NC}"
+echo -e "Debug Mode: ${GREEN}$DEBUG${NC}\n"
 
 # Check if key.properties exists
 if [ ! -f "android/key.properties" ]; then
@@ -46,7 +44,9 @@ flutter pub get
 
 # Build Android App Bundle
 echo -e "\n${YELLOW}Building Android App Bundle (AAB)...${NC}"
-flutter build appbundle --release --dart-define=API_BASE="$API_BASE"
+flutter build appbundle --release \
+    --dart-define=API_BASE="$API_BASE" \
+    --dart-define=DEBUG="$DEBUG"
 
 if [ $? -eq 0 ]; then
     echo -e "\n${GREEN}✓ Android build completed successfully!${NC}"
@@ -59,7 +59,7 @@ if [ $? -eq 0 ]; then
     echo -e "2. Select your app → Release → Production"
     echo -e "3. Create new release → Upload the AAB file"
     echo -e "4. Add release notes and submit for review"
-    
+
     # Verify signing
     echo -e "\n${YELLOW}Verifying signing...${NC}"
     jarsigner -verify -verbose -certs build/app/outputs/bundle/release/app-release.aab | grep "Signed by" && echo -e "${GREEN}✓ AAB is properly signed${NC}" || echo -e "${RED}✗ Warning: Signing verification failed${NC}"

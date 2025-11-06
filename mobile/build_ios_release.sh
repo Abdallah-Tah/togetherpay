@@ -11,14 +11,12 @@ NC='\033[0m' # No Color
 
 echo -e "${GREEN}=== TogetherPay iOS Release Build ===${NC}\n"
 
-# Check if API_BASE is set
-if [ -z "$API_BASE" ]; then
-    echo -e "${YELLOW}Warning: API_BASE not set. Using default.${NC}"
-    echo -e "${YELLOW}Set with: export API_BASE='https://api.togetherpay.app/api/v1'${NC}\n"
-    API_BASE="https://api.togetherpay.app/api/v1"
-fi
+# Enforce production defines (override if explicitly provided)
+API_BASE=${API_BASE:-"https://api.togetherpay.app/api/v1"}
+DEBUG=${DEBUG:-"false"}
 
-echo -e "API Base URL: ${GREEN}$API_BASE${NC}\n"
+echo -e "API Base URL: ${GREEN}$API_BASE${NC}"
+echo -e "Debug Mode: ${GREEN}$DEBUG${NC}\n"
 
 # Clean previous builds
 echo -e "${YELLOW}Cleaning previous builds...${NC}"
@@ -37,7 +35,9 @@ flutter pub get
 
 # Build iOS release
 echo -e "\n${YELLOW}Building iOS release...${NC}"
-flutter build ios --release --dart-define=API_BASE="$API_BASE"
+flutter build ios --release \
+    --dart-define=API_BASE="$API_BASE" \
+    --dart-define=DEBUG="$DEBUG"
 
 if [ $? -eq 0 ]; then
     echo -e "\n${GREEN}✓ iOS build completed successfully!${NC}"

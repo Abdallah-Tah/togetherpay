@@ -8,6 +8,7 @@ import 'env.dart';
 import 'pay_screen.dart';
 import 'screens/groups/groups_list_screen.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/payments/payment_requests_screen.dart';
 import 'screens/settings/notification_preferences_screen.dart';
 import 'screens/settings/payment_methods_screen.dart';
 import 'utils/theme.dart';
@@ -267,11 +268,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   final List<Widget> _screens = const [
     GroupsListScreen(),
-    PlaceholderScreen(
-      title: 'Payments',
-      message:
-          'Payment requests screen temporarily disabled while converting from Firebase to Laravel API',
-    ),
+    PaymentRequestsScreen(),
     ProfileScreen(),
   ];
 

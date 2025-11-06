@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\PaymentRequest;
 use App\Notifications\PaymentRequestNotification;
+use App\Notifications\PaymentRequestEventNotification;
 use App\Services\PaymentRequestService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -37,6 +38,12 @@ class SendPaymentRequestsJob implements ShouldQueue
                 $request->member->user->notify(
                     new PaymentRequestNotification($request)
                 );
+
+                // Notify group owner (sender) that request was sent
+                $owner = $request->cycle?->group?->owner ?? $request->group?->owner;
+                if ($owner) {
+                    $owner->notify(new PaymentRequestEventNotification($request, 'created'));
+                }
 
                 // If payment method is Cash App and member has customer ID, send via Cash App API
                 if ($request->payment_method === 'CASH_APP' && $request->member->cash_app_customer_id) {

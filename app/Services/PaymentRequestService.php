@@ -7,6 +7,7 @@ use App\Models\BillingCycle;
 use App\Models\GroupMember;
 use App\Models\PaymentRequest;
 use App\Notifications\PaymentRequestNotification;
+use App\Notifications\PaymentRequestEventNotification;
 use App\Services\PaymentDrivers\CashAppDriver;
 use App\Services\PaymentDrivers\VenmoDriver;
 use App\Support\PRCode;
@@ -105,6 +106,12 @@ class PaymentRequestService
             if ($user = $paymentRequest->member?->user) {
                 $user->notify(new PaymentRequestNotification($paymentRequest));
             }
+
+            // Notify group owner (sender)
+            $owner = $paymentRequest->cycle?->group?->owner ?? $paymentRequest->group?->owner;
+            if ($owner) {
+                $owner->notify(new PaymentRequestEventNotification($paymentRequest, 'created'));
+            }
         }
 
         return $paymentRequest->fresh(['member.user', 'group.owner', 'cycle']);
@@ -161,7 +168,7 @@ class PaymentRequestService
 
         $metadata = array_merge([
             'handle' => $member->getPaymentHandle(),
-            'amount_display' => '$'.number_format($amountCents / 100, 2),
+            'amount_display' => '$' . number_format($amountCents / 100, 2),
         ], $extraMetadata);
 
         return PaymentRequest::create([
@@ -220,10 +227,10 @@ class PaymentRequestService
     {
         return match ($member->preferred_channel) {
             'CASH_APP' => $member->cash_tag
-                ? 'https://cash.app/'.ltrim($member->cash_tag, '$')
+                ? 'https://cash.app/' . ltrim($member->cash_tag, '$')
                 : null,
             'VENMO' => $member->venmo_username
-                ? 'https://venmo.com/'.ltrim($member->venmo_username, '@')
+                ? 'https://venmo.com/' . ltrim($member->venmo_username, '@')
                 : null,
             default => null,
         };

@@ -6,11 +6,11 @@ class Env {
   /// Base URL for the Laravel API
   static const apiBase = String.fromEnvironment(
     'API_BASE',
-    defaultValue: 'https://georgiann-semiacademic-never.ngrok-free.dev/api/v1',
+    defaultValue: 'http://localhost:8000/api/v1',
   );
 
   /// Enable debug logging
-  static const debug = bool.fromEnvironment('DEBUG', defaultValue: true);
+  static const debug = bool.fromEnvironment('DEBUG', defaultValue: false);
 
   /// App name
   static const appName = 'TogetherPay';

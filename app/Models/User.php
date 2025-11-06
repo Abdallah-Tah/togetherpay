@@ -36,6 +36,7 @@ class User extends Authenticatable
         'venmo_customer_id',
         'preferred_payment_method',
         'payment_metadata',
+        'notification_preferences',
     ];
 
     /**
@@ -61,6 +62,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'onboarding_completed_at' => 'datetime',
             'password' => 'hashed',
+            'payment_metadata' => 'array',
+            'notification_preferences' => 'array',
         ];
     }
 
@@ -72,7 +75,7 @@ class User extends Authenticatable
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->map(fn($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
 
@@ -144,14 +147,14 @@ class User extends Authenticatable
         }
 
         if (strlen($digits) === 10) {
-            return '+1'.$digits;
+            return '+1' . $digits;
         }
 
         if (strlen($digits) === 11 && str_starts_with($digits, '1')) {
-            return '+'.$digits;
+            return '+' . $digits;
         }
 
-        return '+'.$digits;
+        return '+' . $digits;
     }
 
     /**

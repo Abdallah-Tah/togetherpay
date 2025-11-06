@@ -93,4 +93,34 @@ class AuthController extends Controller
             'user' => $request->user(),
         ]);
     }
+
+    /**
+     * Update authenticated user profile
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'phone' => 'sometimes|string|nullable',
+            'notification_preferences' => 'sometimes|array',
+            'notification_preferences.email' => 'sometimes|boolean',
+            'notification_preferences.push' => 'sometimes|boolean',
+            'notification_preferences.sms' => 'sometimes|boolean',
+            'notification_preferences.payment_requests' => 'sometimes|boolean',
+            'notification_preferences.payment_reminders' => 'sometimes|boolean',
+            'notification_preferences.payment_confirmations' => 'sometimes|boolean',
+            'notification_preferences.group_invitations' => 'sometimes|boolean',
+            'notification_preferences.cycle_completions' => 'sometimes|boolean',
+        ]);
+
+        $user->update($validated);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user->fresh(),
+        ]);
+    }
 }

@@ -20,15 +20,30 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        $channels = ['mail', 'database'];
+        $channels = [];
+        $prefs = $notifiable->notification_preferences ?? [];
 
-        if (! empty($notifiable->phone) && config('services.twilio.enabled', false)) {
+        // Email channel
+        if (($prefs['email'] ?? true) && ($prefs['payment_requests'] ?? true)) {
+            $channels[] = 'mail';
+        }
+
+        // Database channel (always enabled for in-app notifications)
+        $channels[] = 'database';
+
+        // SMS channel
+        if (! empty($notifiable->phone) && 
+            config('services.twilio.enabled', false) &&
+            ($prefs['sms'] ?? false) && 
+            ($prefs['payment_requests'] ?? true)) {
             $channels[] = TwilioChannel::class;
         }
 
-        // Add push notification if user has registered devices with FCM tokens
-        if ($notifiable->devices()->whereNotNull('fcm_token')->exists()) {
-            $channels[] = 'fcm';
+        // Push notification channel
+        if ($notifiable->devices()->whereNotNull('fcm_token')->exists() &&
+            ($prefs['push'] ?? true) && 
+            ($prefs['payment_requests'] ?? true)) {
+            $channels[] = \App\Channels\FcmChannel::class;
         }
 
         return $channels;
@@ -44,7 +59,7 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
         $payLink = url("/pay/{$this->paymentRequest->id}");
 
         $message = (new MailMessage)
-            ->subject('💰 Payment Due'.($group ? ": {$group->name}" : ''))
+            ->subject('💰 Payment Due' . ($group ? ": {$group->name}" : ''))
             ->greeting("Hi {$notifiable->name}! 👋")
             ->line("**💵 Amount:** \${$amount}")
             ->line("**📅 Due Date:** {$dueDate}")
@@ -74,7 +89,7 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
         $deepLink = $this->paymentRequest->deep_link ?? url("/pay/{$this->paymentRequest->id}");
 
         $lines = [
-            '💰 '.($group?->name ?? 'Payment due'),
+            '💰 ' . ($group?->name ?? 'Payment due'),
             "Amount: \${$amount}",
             "Due: {$dueDate}",
             "Pay: {$deepLink}",
@@ -110,7 +125,7 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
 
         return [
             'notification' => [
-                'title' => '💰 Payment Due'.($group ? ": {$group->name}" : ''),
+                'title' => '💰 Payment Due' . ($group ? ": {$group->name}" : ''),
                 'body' => "Your share of \${$amount} is due on {$dueDate}",
                 'sound' => 'default', // Enable notification sound
             ],
