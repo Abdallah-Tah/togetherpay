@@ -46,8 +46,10 @@ class PaymentRequestEventNotification extends Notification implements ShouldQueu
         $channels[] = 'database';
 
         // Push notification channel
-        if ($notifiable->devices()->whereNotNull('fcm_token')->exists() &&
-            ($prefs['push'] ?? true)) {
+        if (
+            $notifiable->devices()->whereNotNull('fcm_token')->exists() &&
+            ($prefs['push'] ?? true)
+        ) {
             $channels[] = \App\Channels\FcmChannel::class;
         }
 

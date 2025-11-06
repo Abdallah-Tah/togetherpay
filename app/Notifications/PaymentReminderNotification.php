@@ -20,9 +20,27 @@ class PaymentReminderNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        $channels = ['mail', 'database'];
+        $channels = [];
+        $prefs = $notifiable->notification_preferences ?? [];
 
-        if ($notifiable->devices()->whereNotNull('fcm_token')->exists()) {
+        // Check if payment reminders are enabled
+        if (!($prefs['payment_reminders'] ?? true)) {
+            return ['database']; // Always log to database
+        }
+
+        // Email channel
+        if ($prefs['email'] ?? true) {
+            $channels[] = 'mail';
+        }
+
+        // Database channel (always enabled)
+        $channels[] = 'database';
+
+        // Push notification channel
+        if (
+            $notifiable->devices()->whereNotNull('fcm_token')->exists() &&
+            ($prefs['push'] ?? true)
+        ) {
             $channels[] = \App\Channels\FcmChannel::class;
         }
 

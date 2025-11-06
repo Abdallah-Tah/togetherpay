@@ -238,7 +238,7 @@ Test the complete flow:
 6. **Refresh** group details → Shows "Sent" or "Awaiting confirm" status
 7. **Owner confirms** → Status changes to "Paid"
 
-## 🎯 All Features Working
+## ✅ All Features Working
 
 - ✅ Mark as Paid (persists after refresh)
 - ✅ Cancel Request (owners only)
@@ -247,5 +247,65 @@ Test the complete flow:
 - ✅ Deep link to Cash App/Venmo
 - ✅ Owner can edit all members
 - ✅ Cash App inspired UI design
+- ✅ **Notification Preferences** - Users can customize notification channels and types
+- ✅ **Lifecycle Notifications** - Owner notified on request send, member mark paid; Member notified on owner confirm
+
+## 📬 Notification Events & Recipients
+
+### Payment Request Created/Sent
+- **Recipient (Member)**: Gets `PaymentRequestNotification` via email, push, SMS (if enabled)
+- **Sender (Group Owner)**: Gets `PaymentRequestEventNotification` (event: `created`) via email, push, database
+- **Channels**: Respects user's `payment_requests` notification preference
+
+### Member Marks Payment as Sent
+- **Group Owner**: Gets `PaymentRequestEventNotification` (event: `member_marked`) via email, push, database
+- **Channels**: Respects user's `payment_confirmations` notification preference
+
+### Owner Confirms Payment
+- **Member**: Gets `PaymentRequestEventNotification` (event: `owner_confirmed`) via email, push, database
+- **Channels**: Respects user's `payment_confirmations` notification preference
+
+### Payment Reminders
+- **Member**: Gets `PaymentReminderNotification` (reminder, escalation) via email, push, database
+- **Owner**: Gets escalation copy via `PaymentReminderNotification` (event: `owner_escalation`)
+- **Channels**: Respects user's `payment_reminders` notification preference
+
+## 🎛️ Notification Preferences
+
+Users can customize their notification settings via the mobile app's **Notification Preferences** screen:
+
+### Notification Channels
+- **Email Notifications** - Receive via email (default: ON)
+- **Push Notifications** - Receive on mobile device (default: ON)
+- **SMS Notifications** - Receive text messages (default: OFF, requires Twilio)
+
+### Notification Types
+- **Payment Requests** - New payment requests sent to you (default: ON)
+- **Payment Reminders** - Reminders for pending payments (default: ON)
+- **Payment Confirmations** - When payments are marked/confirmed (default: ON)
+- **Group Invitations** - Invitations to join groups (default: ON)
+- **Cycle Completions** - When billing cycles complete (default: OFF)
+
+### Backend Implementation
+Preferences are stored in the `users.notification_preferences` JSON column:
+```json
+{
+  "email": true,
+  "push": true,
+  "sms": false,
+  "payment_requests": true,
+  "payment_reminders": true,
+  "payment_confirmations": true,
+  "group_invitations": true,
+  "cycle_completions": false
+}
+```
+
+All notification classes check these preferences in their `via()` method before sending.
+Database notifications are always logged regardless of preferences for audit trail.
+
+### API Endpoints
+- `GET /api/v1/auth/me` - Retrieve user profile including `notification_preferences`
+- `PUT /api/v1/auth/me` - Update user profile and notification preferences
 
 Need help? Check the Laravel logs and Flutter console for debug output!

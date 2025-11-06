@@ -32,17 +32,21 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
         $channels[] = 'database';
 
         // SMS channel
-        if (! empty($notifiable->phone) && 
+        if (
+            ! empty($notifiable->phone) &&
             config('services.twilio.enabled', false) &&
-            ($prefs['sms'] ?? false) && 
-            ($prefs['payment_requests'] ?? true)) {
+            ($prefs['sms'] ?? false) &&
+            ($prefs['payment_requests'] ?? true)
+        ) {
             $channels[] = TwilioChannel::class;
         }
 
         // Push notification channel
-        if ($notifiable->devices()->whereNotNull('fcm_token')->exists() &&
-            ($prefs['push'] ?? true) && 
-            ($prefs['payment_requests'] ?? true)) {
+        if (
+            $notifiable->devices()->whereNotNull('fcm_token')->exists() &&
+            ($prefs['push'] ?? true) &&
+            ($prefs['payment_requests'] ?? true)
+        ) {
             $channels[] = \App\Channels\FcmChannel::class;
         }
 

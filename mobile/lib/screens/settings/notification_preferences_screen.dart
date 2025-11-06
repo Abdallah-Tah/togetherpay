@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -111,31 +113,63 @@ class _NotificationPreferencesScreenState
         },
       };
 
-      await dio.put('/auth/me', data: data);
+      if (Env.debug) {
+        debugPrint('Saving preferences: ${json.encode(data)}');
+      }
+
+      final response = await dio.put('/auth/me', data: data);
+
+      if (Env.debug) {
+        debugPrint('Save response: ${response.data}');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Notification preferences saved'),
+            content: Text('✓ Notification preferences saved'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
       }
     } on DioException catch (e) {
       if (Env.debug) {
-        debugPrint('Save preferences error: ${e.response?.data}');
+        debugPrint('Save preferences error: ${e.response?.statusCode}');
+        debugPrint('Error data: ${e.response?.data}');
+        debugPrint('Error message: ${e.message}');
       }
 
       if (mounted) {
+        final errorMessage = e.response?.data?['message'] as String? ??
+            'Failed to save preferences. Please try again.';
+
         setState(() {
-          _error = e.response?.data?['message'] as String? ??
-              'Failed to save preferences';
+          _error = errorMessage;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_error!),
+            content: Text('✗ $errorMessage'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Unexpected save error: $e');
+      }
+
+      if (mounted) {
+        setState(() {
+          _error = 'An unexpected error occurred';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✗ An unexpected error occurred'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
           ),
         );
       }
