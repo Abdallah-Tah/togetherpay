@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../env.dart';
 import '../../services/api_service.dart';
+import '../../utils/theme.dart';
+import '../../widgets/app_background.dart';
 import '../../widgets/group_card.dart';
 import 'group_details_screen.dart';
 import 'group_form_sheet.dart';
@@ -226,131 +228,317 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Groups'),
+        title: const Text('Groups'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
             onPressed: _loading ? null : _handleRefresh,
+            icon: const Icon(Icons.refresh),
           ),
           IconButton(
-            icon: const Icon(Icons.add),
             tooltip: 'Create group',
             onPressed: _loading ? null : _showCreateGroupSheet,
+            icon: const Icon(Icons.add),
           ),
+          const SizedBox(width: 8),
         ],
       ),
-      body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _loading ? null : _showCreateGroupSheet,
         icon: const Icon(Icons.group_add_outlined),
-        label: const Text('New Group'),
+        label: const Text('New group'),
+      ),
+      body: AppBackground(
+        child: SafeArea(
+          bottom: false,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            child: _buildBody(),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildBody() {
     if (_loading && _groups.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildInitialLoader();
     }
 
     if (_error != null && _groups.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red.shade300,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: Theme.of(context).textTheme.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: _loadGroups,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Try again'),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildErrorState();
     }
 
     if (_groups.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.groups_outlined,
-                size: 80,
-                color: Colors.grey.shade300,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No groups yet',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.grey,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Create a group to start splitting bills with friends.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              FilledButton.icon(
-                onPressed: _loading ? null : _showCreateGroupSheet,
-                icon: const Icon(Icons.add),
-                label: const Text('Create your first group'),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildEmptyState();
     }
 
-    final body = RefreshIndicator(
-      onRefresh: _handleRefresh,
-      child: ListView.builder(
-        padding: const EdgeInsets.only(top: 8, bottom: 96),
-        itemCount: _groups.length,
-        itemBuilder: (context, index) {
+    final totalPending = _groups.fold<int>(
+      0,
+      (previousValue, element) =>
+          previousValue + (element['pending_payments_count'] as int? ?? 0),
+    );
+    final totalMembers = _groups.fold<int>(
+      0,
+      (previousValue, element) =>
+          previousValue + (element['member_count'] as int? ?? 0),
+    );
+    final ownedGroups =
+        _groups.where((g) => g['is_owner'] as bool? ?? false).length;
+
+    final header = _SummaryHeader(
+      totalGroups: _groups.length,
+      ownedGroups: ownedGroups,
+      totalMembers: totalMembers,
+      totalPending: totalPending,
+    );
+
+    final list = SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
           final group = _groups[index];
-          return GroupCard(
-            group: group,
-            onTap: () => _navigateToGroupDetails(group),
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 200 + (index * 60)),
+            curve: Curves.easeOut,
+            builder: (context, value, child) => Transform.translate(
+              offset: Offset(0, 24 * (1 - value)),
+              child: Opacity(opacity: value, child: child),
+            ),
+            child: GroupCard(
+              group: group,
+              onTap: () => _navigateToGroupDetails(group),
+            ),
           );
         },
+        childCount: _groups.length,
+      ),
+    );
+
+    final content = RefreshIndicator(
+      onRefresh: _handleRefresh,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(child: header),
+          SliverPadding(
+            padding: const EdgeInsets.only(bottom: 120),
+            sliver: list,
+          ),
+        ],
       ),
     );
 
     if (_loading) {
       return Stack(
         children: [
-          body,
+          content,
           const Positioned(
             left: 0,
             right: 0,
-            child: LinearProgressIndicator(minHeight: 3),
+            child: LinearProgressIndicator(minHeight: 2),
           ),
         ],
       );
     }
 
-    return body;
+    return content;
+  }
+
+  Widget _buildInitialLoader() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: CircularProgressIndicator(),
+          ),
+          SizedBox(height: 16),
+          Text('Loading your groups…'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline,
+              size: 48, color: Theme.of(context).colorScheme.error),
+          const SizedBox(height: 12),
+          Text(
+            _error ?? 'Unable to load groups',
+            style: Theme.of(context).textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _loadGroups,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Try again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.groups_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Create your first group',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Invite members, track payments and settle balances from one place.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: _loading ? null : _showCreateGroupSheet,
+            icon: const Icon(Icons.add),
+            label: const Text('Start a group'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryHeader extends StatelessWidget {
+  final int totalGroups;
+  final int ownedGroups;
+  final int totalMembers;
+  final int totalPending;
+
+  const _SummaryHeader({
+    required this.totalGroups,
+    required this.ownedGroups,
+    required this.totalMembers,
+    required this.totalPending,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final stats = [
+      _HighlightStat(label: 'Groups', value: totalGroups.toString()),
+      _HighlightStat(label: 'Owned', value: ownedGroups.toString()),
+      _HighlightStat(label: 'Members', value: totalMembers.toString()),
+      _HighlightStat(label: 'Pending', value: totalPending.toString()),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.6)),
+          boxShadow: AppTheme.cardShadow,
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Group overview',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Stay on top of contributions and pending balances.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                for (int i = 0; i < stats.length; i++) ...[
+                  Expanded(child: stats[i]),
+                  if (i != stats.length - 1)
+                    Container(
+                      height: 38,
+                      width: 1,
+                      margin: const EdgeInsets.symmetric(horizontal: 12),
+                      color: theme.dividerColor.withValues(alpha: 0.6),
+                    ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HighlightStat extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _HighlightStat({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            letterSpacing: 0.2,
+          ),
+        ),
+      ],
+    );
   }
 }

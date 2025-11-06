@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../env.dart';
 import '../../services/api_service.dart';
+import '../../utils/theme.dart';
 import '../../widgets/payment_request_card.dart';
 import '../../pay_screen.dart';
 import 'add_member_sheet.dart';
@@ -583,23 +584,14 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Cash App inspired colors
-    const cashGreen = Color(0xFF00D632);
-
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
         title: Text(
           _groupData?['name'] as String? ?? 'Group Details',
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            color: Colors.white,
           ),
         ),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -615,7 +607,6 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
           if (_isOwner)
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert_rounded),
-              color: const Color(0xFF2C2C2E),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -630,17 +621,14 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'add_member',
                   child: ListTile(
                     leading: Icon(
                       Icons.person_add_alt_1_rounded,
-                      color: cashGreen,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: Text(
-                      'Add member',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    title: const Text('Add member'),
                     contentPadding: EdgeInsets.zero,
                     dense: true,
                   ),
@@ -779,20 +767,16 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
             ? (_groupData!['total_amount_cents'] as num) / 100
             : null);
 
-    // Cash App inspired colors
-    const cashGreen = Color(0xFF00D632);
-    const cashDark = Color(0xFF1C1C1E);
-    const cashLightText = Color(0xFFE5E5EA);
-
     return Container(
       decoration: BoxDecoration(
-        color: cashDark,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: -2,
           ),
         ],
       ),
@@ -800,45 +784,17 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Group name and amount
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  color: Colors.white,
+          // Group name
+          Text(
+            name,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: 28,
                   letterSpacing: -0.5,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              if (ownerName != null)
-                Row(
-                  children: [
-                    Icon(
-                      Icons.person_outline_rounded,
-                      size: 16,
-                      color: cashLightText,
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'Owner: $ownerName',
-                        style: TextStyle(
-                          color: cashLightText,
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
+
           if (totalAmount != null) ...[
             const SizedBox(height: 16),
             Container(
@@ -847,23 +803,35 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                 vertical: 12,
               ),
               decoration: BoxDecoration(
-                color: cashGreen,
+                gradient: AppTheme.successGradient,
                 borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.attach_money_rounded,
-                    size: 24,
-                    color: Colors.black,
+                  const Text(
+                    '\$',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      color: Colors.white,
+                      letterSpacing: -1,
+                    ),
                   ),
+                  const SizedBox(width: 4),
                   Text(
-                    '\$${totalAmount.toStringAsFixed(2)}',
+                    totalAmount.toStringAsFixed(2),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 32,
-                      color: Colors.black,
+                      color: Colors.white,
                       letterSpacing: -1,
                     ),
                   ),
@@ -871,24 +839,31 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
               ),
             ),
           ],
+
           if (description != null && description.isNotEmpty) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 description,
-                style: TextStyle(
-                  color: cashLightText,
-                  fontSize: 14,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.7),
+                    ),
               ),
             ),
           ],
+
           const SizedBox(height: 20),
+
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -897,8 +872,8 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                 icon: Icons.calendar_month_rounded,
                 label: 'Cadence',
                 value: cadence == 'EVERY_4_WEEKS'
-                    ? 'Every 4 Weeks'
-                    : 'Monthly',
+                    ? 'Monthly'
+                    : 'Every 4 weeks',
               ),
               if (dueDay != null)
                 _buildInfoChip(
@@ -910,13 +885,13 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                 _buildInfoChip(
                   icon: Icons.hourglass_bottom_rounded,
                   label: 'Grace',
-                  value: '$graceDays day${graceDays == 1 ? '' : 's'}',
+                  value: '$graceDays days',
                 ),
               if (timezone != null)
                 _buildInfoChip(
                   icon: Icons.public_rounded,
                   label: 'Timezone',
-                  value: timezone,
+                  value: timezone.replaceAll('_', '/'),
                 ),
             ],
           ),
@@ -930,18 +905,13 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
     required String label,
     required String value,
   }) {
-    const cashGreen = Color(0xFF00D632);
-    const cashLightText = Color(0xFFE5E5EA);
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: cashGreen.withValues(alpha: 0.3),
-          width: 1,
-        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -949,7 +919,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
           Icon(
             icon,
             size: 18,
-            color: cashGreen,
+            color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: 8),
           Column(
@@ -958,20 +928,21 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: cashLightText.withValues(alpha: 0.7),
-                  letterSpacing: 0.5,
-                ),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
+                      letterSpacing: 0.5,
+                    ),
               ),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
               ),
             ],
           ),

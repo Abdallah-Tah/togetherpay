@@ -1,16 +1,18 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'env.dart';
-import 'pay_screen.dart';
 import 'screens/groups/groups_list_screen.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/settings/notification_preferences_screen.dart';
-import 'screens/settings/payment_methods_screen.dart';
+import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/profile/profile_screen.dart';
+import 'services/fcm_service.dart';
 import 'utils/theme.dart';
+import 'widgets/app_background.dart';
 
 /// Global Dio instance for API calls
 final dio = Dio(BaseOptions(
@@ -29,6 +31,25 @@ final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>()
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize Firebase (skip on web)
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+
+      // Set up background message handler
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+      if (Env.debug) {
+        debugPrint('Firebase initialized successfully');
+      }
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Firebase initialization failed: $e');
+        debugPrint('Push notifications will be disabled. Add google-services.json to enable.');
+      }
+    }
+  }
+
   runApp(const TogetherPayApp());
 }
 
@@ -42,6 +63,7 @@ class TogetherPayApp extends StatefulWidget {
 class _TogetherPayAppState extends State<TogetherPayApp> {
   String? _authToken;
   bool _isInitializing = true;
+  bool _hasCompletedOnboarding = false;
 
   @override
   void initState() {
@@ -50,6 +72,15 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
   }
 
   Future<void> _setupApp() async {
+    // Check if onboarding has been completed
+    if (!kIsWeb) {
+      final onboardingCompleted = await storage.read(key: 'onboarding_completed');
+      _hasCompletedOnboarding = onboardingCompleted == 'true';
+    } else {
+      // Skip onboarding on web
+      _hasCompletedOnboarding = true;
+    }
+
     // Load auth token from secure storage
     if (!kIsWeb) {
       _authToken = await storage.read(key: 'auth_token');
@@ -58,6 +89,11 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     if (_authToken != null) {
       // Set authorization header for all API requests
       dio.options.headers['Authorization'] = 'Bearer $_authToken';
+
+      // Initialize FCM for push notifications (only when authenticated)
+      if (!kIsWeb) {
+        await FCMService.initialize();
+      }
     }
 
     setState(() {
@@ -65,9 +101,21 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     });
   }
 
+  /// Handle onboarding completion
+  void _handleOnboardingComplete() {
+    setState(() {
+      _hasCompletedOnboarding = true;
+    });
+  }
+
   /// Handle logout and clear auth token
   Future<void> _handleLogout() async {
     try {
+      // Delete FCM token
+      if (!kIsWeb) {
+        await FCMService.deleteToken();
+      }
+
       // Call logout API
       await dio.post('/auth/logout');
     } catch (e) {
@@ -90,6 +138,12 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
   /// Handle successful login/registration
   Future<void> _handleAuthSuccess() async {
     final token = await storage.read(key: 'auth_token');
+
+    // Initialize FCM for push notifications after successful login
+    if (token != null && !kIsWeb) {
+      await FCMService.initialize();
+    }
+
     setState(() {
       _authToken = token;
     });
@@ -106,9 +160,11 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
       themeMode: ThemeMode.system,
       home: _isInitializing
           ? const SplashScreen()
-          : _authToken != null
-              ? MainScaffold(onLogout: _handleLogout)
-              : LoginScreenWrapper(onAuthSuccess: _handleAuthSuccess),
+          : !_hasCompletedOnboarding
+              ? OnboardingScreen(onComplete: _handleOnboardingComplete)
+              : _authToken != null
+                  ? MainScaffold(onLogout: _handleLogout)
+                  : LoginScreenWrapper(onAuthSuccess: _handleAuthSuccess),
     );
   }
 }
@@ -251,7 +307,7 @@ class LoginScreenWrapper extends StatelessWidget {
 
 /// Main scaffold with bottom navigation
 class MainScaffold extends StatefulWidget {
-  final VoidCallback onLogout;
+  final Future<void> Function() onLogout;
 
   const MainScaffold({
     super.key,
@@ -265,379 +321,63 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    GroupsListScreen(),
-    PlaceholderScreen(
-      title: 'Payments',
-      message:
-          'Payment requests screen temporarily disabled while converting from Firebase to Laravel API',
-    ),
-    ProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final screens = [
+      const GroupsListScreen(),
+      const PlaceholderScreen(
+        title: 'Payments',
+        message:
+            'Payment requests screen temporarily disabled while converting from Firebase to Laravel API',
+      ),
+      ProfileScreen(onLogout: widget.onLogout),
+    ];
+
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: screens,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.groups_outlined),
-            selectedIcon: Icon(Icons.groups),
-            label: 'Groups',
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            boxShadow: AppTheme.cardShadow,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.payment_outlined),
-            selectedIcon: Icon(Icons.payment),
-            label: 'Payments',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            child: NavigationBar(
+              height: 68,
+              backgroundColor: theme.colorScheme.surface,
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.groups_outlined),
+                  selectedIcon: Icon(Icons.groups),
+                  label: 'Groups',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.payment_outlined),
+                  selectedIcon: Icon(Icons.payment),
+                  label: 'Payments',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person_outline),
+                  selectedIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
+              selectedIndex: _currentIndex,
+              onDestinationSelected: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Profile screen with settings and logout
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
-
-  @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  bool _loading = true;
-  String? _error;
-  Map<String, dynamic>? _user;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      final response = await dio.get('/auth/me');
-      final data = response.data as Map<String, dynamic>;
-      final userData = data['user'] ?? data;
-
-      setState(() {
-        _user = Map<String, dynamic>.from(userData as Map);
-        _loading = false;
-      });
-    } on DioException catch (e) {
-      if (Env.debug) {
-        debugPrint('Profile load error: ${e.response?.data}');
-      }
-
-      setState(() {
-        _error = e.response?.data?['message'] as String? ??
-            'Failed to load profile';
-        _loading = false;
-      });
-    } catch (e) {
-      if (Env.debug) {
-        debugPrint('Unexpected profile error: $e');
-      }
-
-      setState(() {
-        _error = 'An unexpected error occurred';
-        _loading = false;
-      });
-    }
-  }
-
-  String _initials(String name) {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) return '?';
-
-    final parts = trimmed.split(RegExp(r'\s+'));
-    final buffer = StringBuffer();
-
-    if (parts.isNotEmpty && parts.first.isNotEmpty) {
-      buffer.write(parts.first[0].toUpperCase());
-    }
-
-    if (parts.length > 1 && parts.last.isNotEmpty) {
-      buffer.write(parts.last[0].toUpperCase());
-    }
-
-    return buffer.isEmpty ? '?' : buffer.toString();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final rawName = (_user?['name'] as String?)?.trim();
-    final name = (rawName != null && rawName.isNotEmpty)
-        ? rawName
-        : (_loading ? 'Loading...' : 'Unknown user');
-
-    final rawEmail = (_user?['email'] as String?)?.trim();
-    final email = (rawEmail != null && rawEmail.isNotEmpty)
-        ? rawEmail
-        : (_loading ? '' : 'No email on file');
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: _loading ? null : _loadProfile,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadProfile,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            if (_loading)
-              const LinearProgressIndicator(minHeight: 2),
-            const SizedBox(height: 16),
-
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline, color: Colors.orange.shade700),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: TextStyle(color: Colors.orange.shade900),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: _loadProfile,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // User info section
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor:
-                            Theme.of(context).colorScheme.primaryContainer,
-                        child: Text(
-                          _initials(name),
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        name,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      if (email.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          email,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey,
-                              ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Settings section
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                'Settings',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.notifications_outlined),
-              title: const Text('Notifications'),
-              subtitle: const Text('Manage notification preferences'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const NotificationPreferencesScreen(),
-                  ),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.payment_outlined),
-              title: const Text('Payment Methods'),
-              subtitle: const Text('Manage Cash App and Venmo'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const PaymentMethodsScreen(),
-                  ),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.security_outlined),
-              title: const Text('Security'),
-              subtitle: const Text('Password and authentication'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Coming soon')),
-                );
-              },
-            ),
-
-            const Divider(),
-
-            // About section
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('About'),
-              subtitle: const Text('Version 1.0.0'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                showAboutDialog(
-                  context: context,
-                  applicationName: 'TogetherPay',
-                  applicationVersion: '1.0.0',
-                  applicationIcon: Icon(
-                    Icons.account_balance_wallet_rounded,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  children: const [
-                    Text('Split bills together with ease'),
-                  ],
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.privacy_tip_outlined),
-              title: const Text('Privacy Policy'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Coming soon')),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.description_outlined),
-              title: const Text('Terms of Service'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Coming soon')),
-                );
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            // Logout button
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Logout'),
-                      content: const Text(
-                        'Are you sure you want to logout?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Logout'),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirmed == true && context.mounted) {
-                    final mainScaffold =
-                        context.findAncestorStateOfType<_TogetherPayAppState>();
-                    if (mainScaffold != null) {
-                      await mainScaffold._handleLogout();
-                    }
-                  }
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
-                ),
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
-              ),
-            ),
-
-            const SizedBox(height: 32),
-          ],
         ),
       ),
     );
