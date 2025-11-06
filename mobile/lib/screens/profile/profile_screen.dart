@@ -50,8 +50,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       setState(() {
-        _error = e.response?.data?['message'] as String? ??
-            'Failed to load profile';
+        _error =
+            e.response?.data?['message'] as String? ?? 'Failed to load profile';
         _loading = false;
       });
     } catch (e) {
@@ -113,7 +113,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 if (_loading) const LinearProgressIndicator(minHeight: 2),
                 const SizedBox(height: 24),
-                if (_error != null) _ErrorBanner(message: _error!, onRetry: _loadProfile),
+                if (_error != null)
+                  _ErrorBanner(message: _error!, onRetry: _loadProfile),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: _ProfileHeader(
@@ -161,7 +162,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     subtitle: 'Two-factor & password',
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Security settings coming soon.')),
+                        const SnackBar(
+                            content: Text('Security settings coming soon.')),
                       );
                     },
                   ),
@@ -205,14 +207,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.privacy_tip_outlined,
                     title: 'Privacy policy',
                     onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Privacy policy coming soon.')),
+                      const SnackBar(
+                          content: Text('Privacy policy coming soon.')),
                     ),
                   ),
                   _SettingsTile(
                     icon: Icons.description_outlined,
                     title: 'Terms of service',
                     onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Terms of service coming soon.')),
+                      const SnackBar(
+                          content: Text('Terms of service coming soon.')),
                     ),
                   ),
                 ]),
@@ -226,14 +230,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               context: context,
                               builder: (context) => AlertDialog(
                                 title: const Text('Logout'),
-                                content: const Text('Are you sure you want to logout?'),
+                                content: const Text(
+                                    'Are you sure you want to logout?'),
                                 actions: [
                                   TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
                                     child: const Text('Cancel'),
                                   ),
                                   FilledButton(
-                                    onPressed: () => Navigator.pop(context, true),
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
                                     child: const Text('Logout'),
                                   ),
                                 ],
@@ -241,7 +248,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             );
 
                             if (confirmed == true && context.mounted) {
-                              await widget.onLogout();
+                              widget.onLogout();
                             }
                           },
                     style: OutlinedButton.styleFrom(
@@ -316,8 +323,8 @@ class _ProfileHeader extends StatelessWidget {
                     child: Text(
                       email!,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.65),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.65),
                       ),
                     ),
                   ),
@@ -339,15 +346,18 @@ class _SummaryStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = <_SummaryTile>[
       _SummaryTile(title: 'Groups', value: '${user?['groups_count'] ?? '--'}'),
-      _SummaryTile(title: 'Pending', value: '${user?['pending_count'] ?? '--'}'),
-      _SummaryTile(title: 'Completed', value: '${user?['completed_count'] ?? '--'}'),
+      _SummaryTile(
+          title: 'Pending', value: '${user?['pending_count'] ?? '--'}'),
+      _SummaryTile(
+          title: 'Completed', value: '${user?['completed_count'] ?? '--'}'),
     ];
 
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.6)),
+        border: Border.all(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.6)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       child: Row(
@@ -435,8 +445,7 @@ class _Section extends StatelessWidget {
                   if (i != children.length - 1)
                     Divider(
                       height: 1,
-                      color:
-                          theme.dividerColor.withValues(alpha: 0.6),
+                      color: theme.dividerColor.withValues(alpha: 0.6),
                     ),
                 ],
               ],
@@ -485,7 +494,8 @@ class _SettingsEntry extends StatelessWidget {
       ),
       title: Text(
         tile.title,
-        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        style:
+            theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
       ),
       subtitle: tile.subtitle != null
           ? Text(
@@ -516,7 +526,8 @@ class _ErrorBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.errorContainer,
           borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-          border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.3)),
+          border:
+              Border.all(color: theme.colorScheme.error.withValues(alpha: 0.3)),
         ),
         padding: const EdgeInsets.all(16),
         child: Row(
