@@ -19,7 +19,7 @@ class CashAppDriver implements PaymentRequestDriver
         if ($member->cash_tag) {
             $cashtag = ltrim($member->cash_tag, '$');
             $uri = sprintf('cashapp://cash/%s?amount=%s&note=%s', $cashtag, $amount, urlencode($note));
-            $webFallback = sprintf('https://cash.app/%s/%s?note=%s&pr=%s', $cashtag, $amount, urlencode($note), urlencode($prCode));
+            $webFallback = sprintf('https://cash.app/$%s/%s?note=%s&pr=%s', $cashtag, $amount, urlencode($note), urlencode($prCode));
 
             return [
                 'uri' => $uri,

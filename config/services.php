@@ -57,4 +57,9 @@ return [
         'test_recipient' => env('TWILIO_TEST_RECIPIENT'),
     ],
 
+    'fcm' => [
+        'project_id' => env('FCM_PROJECT_ID', 'togetherpay-c11cf'),
+        'service_account_path' => env('FCM_SERVICE_ACCOUNT_PATH', storage_path('app/firebase-service-account.json')),
+    ],
+
 ];

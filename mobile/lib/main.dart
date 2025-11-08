@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -11,6 +13,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/payments/payment_requests_screen.dart';
 import 'screens/settings/notification_preferences_screen.dart';
 import 'screens/settings/payment_methods_screen.dart';
+import 'services/push_notifications_service.dart';
 import 'utils/theme.dart';
 
 /// Global Dio instance for API calls
@@ -18,6 +21,7 @@ final dio = Dio(BaseOptions(
   baseUrl: Env.apiBase,
   headers: {
     'ngrok-skip-browser-warning': 'true', // Bypass ngrok warning page
+    'Accept': 'application/json',
   },
 ));
 
@@ -25,10 +29,22 @@ final dio = Dio(BaseOptions(
 const storage = FlutterSecureStorage();
 
 /// Global navigator key for navigation
-final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> globalNavigatorKey =
+    GlobalKey<NavigatorState>();
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android)) {
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  }
 
   runApp(const TogetherPayApp());
 }
@@ -59,6 +75,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     if (_authToken != null) {
       // Set authorization header for all API requests
       dio.options.headers['Authorization'] = 'Bearer $_authToken';
+      await PushNotificationsService.instance.syncDeviceRegistration(dio);
     }
 
     setState(() {
@@ -82,6 +99,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
 
     // Clear auth header
     dio.options.headers.remove('Authorization');
+    PushNotificationsService.instance.clearCachedAuthState();
 
     setState(() {
       _authToken = null;
@@ -91,6 +109,10 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
   /// Handle successful login/registration
   Future<void> _handleAuthSuccess() async {
     final token = await storage.read(key: 'auth_token');
+    if (token != null) {
+      dio.options.headers['Authorization'] = 'Bearer $token';
+      await PushNotificationsService.instance.syncDeviceRegistration(dio);
+    }
     setState(() {
       _authToken = token;
     });
@@ -186,7 +208,8 @@ class _SplashScreenState extends State<SplashScreen>
                     height: 120,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.radiusXLarge),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.2),
@@ -348,8 +371,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       setState(() {
-        _error = e.response?.data?['message'] as String? ??
-            'Failed to load profile';
+        _error =
+            e.response?.data?['message'] as String? ?? 'Failed to load profile';
         _loading = false;
       });
     } catch (e) {
@@ -410,8 +433,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            if (_loading)
-              const LinearProgressIndicator(minHeight: 2),
+            if (_loading) const LinearProgressIndicator(minHeight: 2),
             const SizedBox(height: 16),
 
             if (_error != null)
@@ -477,9 +499,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 4),
                         Text(
                           email,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey,
+                                  ),
                         ),
                       ],
                     ],

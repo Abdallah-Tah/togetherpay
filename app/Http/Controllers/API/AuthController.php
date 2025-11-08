@@ -105,6 +105,11 @@ class AuthController extends Controller
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'phone' => 'sometimes|string|nullable',
+            'cash_tag' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^\$?[A-Za-z0-9_-]+$/'],
+            'cash_phone' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'cash_email' => ['sometimes', 'nullable', 'email', 'max:255'],
+            'venmo_username' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^@?[A-Za-z0-9_-]+$/'],
+            'preferred_payment_method' => ['sometimes', 'in:CASH_APP,VENMO,CARD'],
             'notification_preferences' => 'sometimes|array',
             'notification_preferences.email' => 'sometimes|boolean',
             'notification_preferences.push' => 'sometimes|boolean',
@@ -114,6 +119,9 @@ class AuthController extends Controller
             'notification_preferences.payment_confirmations' => 'sometimes|boolean',
             'notification_preferences.group_invitations' => 'sometimes|boolean',
             'notification_preferences.cycle_completions' => 'sometimes|boolean',
+        ], [
+            'cash_tag.regex' => 'Cash App tag may optionally start with $, e.g. $JohnDoe',
+            'venmo_username.regex' => 'Venmo username may start with @ and can only include letters, numbers, dashes, or underscores',
         ]);
 
         $user->update($validated);

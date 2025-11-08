@@ -227,6 +227,7 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: _currency,
                       decoration: const InputDecoration(
                         labelText: 'Currency',
@@ -250,6 +251,7 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: _timezone,
                       decoration: const InputDecoration(
                         labelText: 'Timezone',
@@ -276,6 +278,7 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: _cadence,
                 decoration: const InputDecoration(
                   labelText: 'Collection schedule',
@@ -302,6 +305,7 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<int>(
+                      isExpanded: true,
                       initialValue: _dueDay,
                       decoration: const InputDecoration(
                         labelText: 'Due day',
@@ -327,6 +331,7 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<int>(
+                      isExpanded: true,
                       initialValue: _graceDays,
                       decoration: const InputDecoration(
                         labelText: 'Grace days',

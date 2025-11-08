@@ -4,6 +4,7 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CashAppOAuthController;
 use App\Http\Controllers\API\DeviceController;
 use App\Http\Controllers\API\GroupController;
+use App\Http\Controllers\API\GroupInvitationController;
 use App\Http\Controllers\API\PaymentRequestController;
 use App\Http\Controllers\CashAppWebhookController;
 use App\Http\Controllers\HealthCheckController;
@@ -35,6 +36,9 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     // Device registration (allows both authenticated and guest users)
     Route::post('/devices/register', [DeviceController::class, 'register']);
 
+    // Public invitation endpoints (no auth required to view invitation)
+    Route::get('/invitations/{token}', [GroupInvitationController::class, 'show']);
+
     // Public payment request lookup by code (for mobile deep links)
     Route::get('/requests/by-code/{prCode}', [PaymentRequestController::class, 'showByCode']);
 
@@ -58,6 +62,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
     Route::put('/groups/{group}/members/{member}', [GroupController::class, 'updateMember']);
     Route::delete('/groups/{group}/members/{member}', [GroupController::class, 'removeMember']);
     Route::post('/groups/{group}/members/{member}/payment-requests', [PaymentRequestController::class, 'storeManual']);
+
+    // Group Invitations
+    Route::post('/groups/{group}/invitations', [GroupInvitationController::class, 'store']);
+    Route::post('/invitations/{token}/accept', [GroupInvitationController::class, 'accept']);
+    Route::delete('/groups/{group}/invitations/{invitation}', [GroupInvitationController::class, 'destroy']);
 
     // Payment Requests (Existing endpoints)
     Route::get('/payment-requests', [PaymentRequestController::class, 'index']);

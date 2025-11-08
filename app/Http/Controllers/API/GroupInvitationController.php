@@ -1,0 +1,219 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Group;
+use App\Models\GroupInvitation;
+use App\Models\GroupMember;
+use App\Models\User;
+use App\Notifications\GroupInvitationNotification;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
+
+class GroupInvitationController extends Controller
+{
+    /**
+     * Send invitation to join group
+     */
+    public function store(Request $request, Group $group)
+    {
+        // Only group owner can invite
+        $this->authorize('update', $group);
+
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'phone' => 'nullable|string',
+            'name' => 'required|string|max:255',
+            'share_count' => 'required|integer|min:1',
+            'venmo_username' => 'nullable|string',
+            'cashapp_cashtag' => 'nullable|string',
+        ]);
+
+        // Check if user is already a member
+        $existingMember = $group->members()
+            ->whereHas('user', function ($query) use ($validated) {
+                $query->where('email', $validated['email']);
+            })
+            ->first();
+
+        if ($existingMember) {
+            throw ValidationException::withMessages([
+                'email' => ['This email is already a member of this group.'],
+            ]);
+        }
+
+        // Check if there's already a pending invitation
+        $existingInvitation = GroupInvitation::where('group_id', $group->id)
+            ->where('email', $validated['email'])
+            ->pending()
+            ->first();
+
+        if ($existingInvitation) {
+            throw ValidationException::withMessages([
+                'email' => ['An invitation has already been sent to this email.'],
+            ]);
+        }
+
+        // Create invitation
+        $invitation = GroupInvitation::create([
+            'group_id' => $group->id,
+            'invited_by_user_id' => auth()->id(),
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'token' => GroupInvitation::generateToken(),
+            'expires_at' => now()->addDays(7),
+            'member_data' => [
+                'name' => $validated['name'],
+                'share_count' => $validated['share_count'],
+                'venmo_username' => $validated['venmo_username'] ?? null,
+                'cashapp_cashtag' => $validated['cashapp_cashtag'] ?? null,
+            ],
+        ]);
+
+        // Send invitation email
+        Notification::route('mail', $invitation->email)
+            ->notify(new GroupInvitationNotification($invitation));
+
+        return response()->json([
+            'message' => 'Invitation sent successfully',
+            'invitation' => [
+                'id' => $invitation->id,
+                'email' => $invitation->email,
+                'status' => $invitation->status,
+                'expires_at' => $invitation->expires_at,
+                'invitation_url' => url("/accept-invitation/{$invitation->token}"),
+            ],
+        ], 201);
+    }
+
+    /**
+     * Get invitation details by token
+     */
+    public function show(string $token)
+    {
+        $invitation = GroupInvitation::where('token', $token)
+            ->with(['group', 'invitedBy'])
+            ->firstOrFail();
+
+        if ($invitation->isExpired()) {
+            $invitation->update(['status' => 'expired']);
+        }
+
+        return response()->json([
+            'invitation' => [
+                'id' => $invitation->id,
+                'group' => [
+                    'id' => $invitation->group->id,
+                    'name' => $invitation->group->name,
+                ],
+                'invited_by' => [
+                    'name' => $invitation->invitedBy->name,
+                ],
+                'email' => $invitation->email,
+                'status' => $invitation->status,
+                'expires_at' => $invitation->expires_at,
+                'is_valid' => $invitation->isValid(),
+                'member_data' => $invitation->member_data,
+            ],
+        ]);
+    }
+
+    /**
+     * Accept invitation and join group
+     */
+    public function accept(Request $request, string $token)
+    {
+        $validated = $request->validate([
+            'accept' => 'required|boolean',
+        ]);
+
+        $invitation = GroupInvitation::where('token', $token)
+            ->with('group')
+            ->firstOrFail();
+
+        // Check if invitation is valid
+        if (!$invitation->isValid()) {
+            return response()->json([
+                'message' => 'This invitation is no longer valid or has expired.',
+            ], 422);
+        }
+
+        if (!$validated['accept']) {
+            $invitation->update(['status' => 'cancelled']);
+
+            return response()->json([
+                'message' => 'Invitation declined',
+            ]);
+        }
+
+        $user = auth()->user();
+
+        // Check if user's email matches invitation email
+        if ($user->email !== $invitation->email) {
+            return response()->json([
+                'message' => 'This invitation was sent to a different email address.',
+            ], 403);
+        }
+
+        // Check if user is already a member
+        $existingMember = $invitation->group->members()
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($existingMember) {
+            $invitation->markAsAccepted($user);
+
+            return response()->json([
+                'message' => 'You are already a member of this group',
+                'member' => $existingMember,
+            ]);
+        }
+
+        // Add user to group
+        DB::transaction(function () use ($invitation, $user) {
+            // Create group member
+            $member = GroupMember::create([
+                'group_id' => $invitation->group_id,
+                'user_id' => $user->id,
+                'name' => $invitation->member_data['name'],
+                'email' => $user->email,
+                'phone' => $invitation->phone ?? $user->phone,
+                'share_count' => $invitation->member_data['share_count'],
+                'venmo_username' => $invitation->member_data['venmo_username'] ?? null,
+                'cashapp_cashtag' => $invitation->member_data['cashapp_cashtag'] ?? null,
+            ]);
+
+            // Mark invitation as accepted
+            $invitation->markAsAccepted($user);
+        });
+
+        $member = $invitation->group->members()->where('user_id', $user->id)->first();
+
+        return response()->json([
+            'message' => 'Successfully joined the group!',
+            'member' => $member->load('user'),
+            'group' => $invitation->group,
+        ]);
+    }
+
+    /**
+     * Cancel invitation (owner only)
+     */
+    public function destroy(Group $group, GroupInvitation $invitation)
+    {
+        $this->authorize('update', $group);
+
+        if ($invitation->group_id !== $group->id) {
+            abort(404);
+        }
+
+        $invitation->update(['status' => 'cancelled']);
+
+        return response()->json([
+            'message' => 'Invitation cancelled successfully',
+        ]);
+    }
+}

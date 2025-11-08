@@ -8,6 +8,8 @@ import '../../main.dart';
 import '../../env.dart';
 import '../../utils/theme.dart';
 
+enum _PaymentAction { markPaid, reminder, cancel }
+
 /// Payment Request Details Bottom Sheet
 class PaymentRequestDetailsSheet extends StatefulWidget {
   final Map<String, dynamic> paymentRequest;
@@ -24,7 +26,9 @@ class PaymentRequestDetailsSheet extends StatefulWidget {
 
 class _PaymentRequestDetailsSheetState
     extends State<PaymentRequestDetailsSheet> {
-  bool _processing = false;
+  _PaymentAction? _processingAction;
+
+  bool get _isProcessing => _processingAction != null;
 
   Future<void> _markAsPaid() async {
     final confirmed = await showDialog<bool>(
@@ -47,10 +51,10 @@ class _PaymentRequestDetailsSheetState
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     setState(() {
-      _processing = true;
+      _processingAction = _PaymentAction.markPaid;
     });
 
     try {
@@ -85,7 +89,7 @@ class _PaymentRequestDetailsSheetState
     } finally {
       if (mounted) {
         setState(() {
-          _processing = false;
+          _processingAction = null;
         });
       }
     }
@@ -93,7 +97,7 @@ class _PaymentRequestDetailsSheetState
 
   Future<void> _sendReminder() async {
     setState(() {
-      _processing = true;
+      _processingAction = _PaymentAction.reminder;
     });
 
     try {
@@ -127,7 +131,100 @@ class _PaymentRequestDetailsSheetState
     } finally {
       if (mounted) {
         setState(() {
-          _processing = false;
+          _processingAction = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _cancelRequest() async {
+    final prCode = widget.paymentRequest['pr_code'] as String?;
+    if (prCode == null || prCode.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Missing payment code; unable to cancel request'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Payment Request?'),
+        content: const Text(
+          'Cancelling will archive this request so the member no longer sees it.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep Request'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _processingAction = _PaymentAction.cancel;
+    });
+
+    try {
+      await dio.post('/requests/by-code/$prCode/cancel');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment request cancelled'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } on DioException catch (e) {
+      if (Env.debug) {
+        debugPrint('Cancel error: ${e.response?.data}');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.response?.data?['message'] as String? ??
+                  'Failed to cancel payment request',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Unexpected cancel error: $e');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('An unexpected error occurred'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _processingAction = null;
         });
       }
     }
@@ -146,30 +243,53 @@ class _PaymentRequestDetailsSheetState
 
     final amount = (widget.paymentRequest['amount_cents'] as int? ?? 0) / 100.0;
     final amountStr = amount.toStringAsFixed(2);
+    final prCode = widget.paymentRequest['pr_code'] as String? ?? '';
+    final note = 'Payment for ${widget.paymentRequest['group']?['name'] ?? 'TogetherPay'}';
 
-    Uri? uri;
+    Uri? deepLinkUri;
+    Uri? fallbackUri;
+
     if (app == 'Cash App') {
       // Clean the cashtag (remove $ if present)
       final cashtag = handle.startsWith('\$') ? handle.substring(1) : handle;
-      uri = Uri.parse('https://cash.app/\$$cashtag/$amountStr');
+      // Use deep link for Cash App
+      deepLinkUri = Uri.parse('cashapp://cash/$cashtag?amount=$amountStr&note=${Uri.encodeComponent(note)}');
+      // Web fallback
+      fallbackUri = Uri.parse('https://cash.app/\$$cashtag/$amountStr?note=${Uri.encodeComponent(note)}&pr=${Uri.encodeComponent(prCode)}');
     } else if (app == 'Venmo') {
       // Clean the username (remove @ if present)
       final username = handle.startsWith('@') ? handle.substring(1) : handle;
-      uri = Uri.parse('venmo://paycharge?txn=pay&recipients=$username&amount=$amountStr');
+      // Use deep link for Venmo
+      deepLinkUri = Uri.parse('venmo://paycharge?txn=pay&recipients=$username&amount=$amountStr&note=${Uri.encodeComponent(note)}');
+      // Web fallback
+      fallbackUri = Uri.parse('https://venmo.com/$username?txn=pay&amount=$amountStr&note=${Uri.encodeComponent(note)}');
     }
 
-    if (uri != null) {
+    if (deepLinkUri != null) {
       try {
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('$app is not installed'),
-                backgroundColor: Colors.orange,
-              ),
-            );
+        // Try deep link first
+        bool launched = false;
+        try {
+          launched = await launchUrl(deepLinkUri, mode: LaunchMode.externalApplication);
+        } catch (e) {
+          if (Env.debug) {
+            debugPrint('Deep link failed, trying fallback: $e');
+          }
+        }
+
+        // If deep link failed, try web fallback
+        if (!launched && fallbackUri != null) {
+          if (await canLaunchUrl(fallbackUri)) {
+            await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$app is not installed'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
           }
         }
       } catch (e) {
@@ -191,9 +311,13 @@ class _PaymentRequestDetailsSheetState
   @override
   Widget build(BuildContext context) {
     final pr = widget.paymentRequest;
-    final memberName = pr['member']?['name'] as String? ?? 'Unknown Member';
-    final memberEmail = pr['member']?['email'] as String?;
-    final memberPhone = pr['member']?['phone'] as String?;
+    final memberName = pr['member']?['name'] as String? ??
+        pr['member']?['user']?['name'] as String? ??
+        'Unknown Member';
+    final memberEmail = pr['member']?['email'] as String? ??
+        pr['member']?['user']?['email'] as String?;
+    final memberPhone = pr['member']?['phone'] as String? ??
+        pr['member']?['user']?['phone'] as String?;
     final cashAppHandle = pr['member']?['cashapp_cashtag'] as String?;
     final venmoHandle = pr['member']?['venmo_username'] as String?;
     final groupName = pr['cycle']?['group']?['name'] as String? ??
@@ -202,10 +326,19 @@ class _PaymentRequestDetailsSheetState
     final amountCents = pr['amount_cents'] as int? ?? 0;
     final amount = amountCents / 100.0;
     final status = pr['status'] as String? ?? 'pending';
+    final normalizedStatus = status.toLowerCase();
+    final isPaid = normalizedStatus == 'paid' ||
+        normalizedStatus == 'owner_confirmed' ||
+        normalizedStatus == 'auto_verified';
+    final isAwaitingConfirm = normalizedStatus == 'member_marked';
     final prCode = pr['pr_code'] as String?;
     final dueDateStr = pr['due_date'] as String?;
     final paidAtStr = pr['paid_at'] as String?;
     final sentAtStr = pr['sent_at'] as String?;
+    final isProcessing = _isProcessing;
+    final canCancelRequest =
+        prCode != null && _canCancelStatus(status);
+    final showStandardActions = !isPaid && !isAwaitingConfirm;
 
     DateTime? dueDate;
     DateTime? paidAt;
@@ -215,7 +348,9 @@ class _PaymentRequestDetailsSheetState
     if (dueDateStr != null) {
       try {
         dueDate = DateTime.parse(dueDateStr);
-        if (status != 'paid' && dueDate.isBefore(DateTime.now())) {
+        if (!isPaid &&
+            !isAwaitingConfirm &&
+            dueDate.isBefore(DateTime.now())) {
           isOverdue = true;
         }
       } catch (e) {
@@ -361,16 +496,20 @@ class _PaymentRequestDetailsSheetState
                     // Status info
                     _buildInfoRow(
                       'Status',
-                      status == 'paid'
+                      isPaid
                           ? 'Paid'
-                          : isOverdue
-                              ? 'Overdue'
-                              : 'Pending',
-                      status == 'paid'
+                          : isAwaitingConfirm
+                              ? 'Awaiting Confirmation'
+                              : isOverdue
+                                  ? 'Overdue'
+                                  : 'Pending',
+                      isPaid
                           ? Colors.green
-                          : isOverdue
-                              ? Colors.red
-                              : Colors.orange,
+                          : isAwaitingConfirm
+                              ? Colors.blue
+                              : isOverdue
+                                  ? Colors.red
+                                  : Colors.orange,
                     ),
                     if (dueDate != null)
                       _buildInfoRow(
@@ -430,10 +569,10 @@ class _PaymentRequestDetailsSheetState
                     const SizedBox(height: AppTheme.spaceLarge),
 
                     // Actions
-                    if (status != 'paid') ...[
+                    if (showStandardActions) ...[
                       FilledButton.icon(
-                        onPressed: _processing ? null : _markAsPaid,
-                        icon: _processing
+                        onPressed: isProcessing ? null : _markAsPaid,
+                        icon: _processingAction == _PaymentAction.markPaid
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
@@ -448,14 +587,44 @@ class _PaymentRequestDetailsSheetState
                       ),
                       const SizedBox(height: AppTheme.spaceSmall),
                       OutlinedButton.icon(
-                        onPressed: _processing ? null : _sendReminder,
-                        icon: const Icon(Icons.notifications),
+                        onPressed: isProcessing ? null : _sendReminder,
+                        icon: _processingAction == _PaymentAction.reminder
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.notifications),
                         label: const Text('Send Reminder'),
+                      ),
+                    ],
+                    if (canCancelRequest) ...[
+                      const SizedBox(height: AppTheme.spaceSmall),
+                      OutlinedButton.icon(
+                        onPressed: isProcessing ? null : _cancelRequest,
+                        icon: _processingAction == _PaymentAction.cancel
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(Colors.red),
+                                ),
+                              )
+                            : const Icon(Icons.cancel_outlined),
+                        label: const Text('Cancel Request'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
                       ),
                     ],
 
                     // Quick payment buttons
-                    if (status != 'paid' &&
+                    if (showStandardActions &&
                         (cashAppHandle != null || venmoHandle != null)) ...[
                       const SizedBox(height: AppTheme.spaceMedium),
                       Text(
@@ -589,5 +758,13 @@ class _PaymentRequestDetailsSheetState
         ),
       ),
     );
+  }
+
+  bool _canCancelStatus(String? status) {
+    if (status == null) return false;
+    final normalized = status.toLowerCase();
+    return normalized == 'pending' ||
+        normalized == 'sent' ||
+        normalized == 'member_marked';
   }
 }

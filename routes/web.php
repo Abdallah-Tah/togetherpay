@@ -18,6 +18,9 @@ Route::get('/', function () {
 // Smart Pay - Public payment page (no auth required)
 Route::get('/pay/{request}', [SmartPayController::class, 'show'])->name('smartpay.show');
 
+// Invitation acceptance - Public page (no auth required to view)
+Volt::route('/accept-invitation/{token}', 'accept-invitation')->name('invitations.accept');
+
 // Onboarding routes (auth required but no onboarding check)
 Route::middleware(['auth'])->prefix('onboarding')->name('onboarding.')->group(function () {
     Volt::route('welcome', 'onboarding.welcome')->name('welcome');

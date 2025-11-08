@@ -14,6 +14,12 @@ class DeviceController extends Controller
      */
     public function register(Request $request)
     {
+        \Log::info('Device registration attempt', [
+            'headers' => $request->headers->all(),
+            'payload' => $request->except(['fcm_token']),
+            'has_fcm_token' => $request->has('fcm_token'),
+        ]);
+
         $payload = $request->all();
 
         if (isset($payload['platform'])) {
@@ -28,6 +34,10 @@ class DeviceController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Device registration validation failed', [
+                'errors' => $validator->errors(),
+            ]);
+
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
@@ -37,6 +47,11 @@ class DeviceController extends Controller
         $userId = $request->user()?->id
             ?? $request->user('sanctum')?->id
             ?? auth('sanctum')->id();
+
+        \Log::info('Device registration user context', [
+            'user_id' => $userId,
+            'has_token' => $request->bearerToken() !== null,
+        ]);
 
         // Update or create device
         $device = Device::updateOrCreate(
@@ -52,6 +67,12 @@ class DeviceController extends Controller
         if ($userId && $device->user_id !== $userId) {
             $device->forceFill(['user_id' => $userId])->save();
         }
+
+        \Log::info('Device registered successfully', [
+            'device_id' => $device->id,
+            'user_id' => $device->user_id,
+            'platform' => $device->platform,
+        ]);
 
         return response()->json([
             'message' => 'Device registered successfully',

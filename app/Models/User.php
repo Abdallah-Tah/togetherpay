@@ -31,12 +31,26 @@ class User extends Authenticatable
         'role',
         'password',
         'cashapp_tag',
+        'cash_tag',
+        'cash_phone',
+        'cash_email',
         'cashapp_customer_id',
         'venmo_username',
         'venmo_customer_id',
         'preferred_payment_method',
         'payment_metadata',
         'notification_preferences',
+    ];
+
+    /**
+     * Attributes that should be appended when serializing.
+     *
+     * @var list<string>
+     */
+    protected $appends = [
+        'cash_tag',
+        'cash_phone',
+        'cash_email',
     ];
 
     /**
@@ -65,6 +79,70 @@ class User extends Authenticatable
             'payment_metadata' => 'array',
             'notification_preferences' => 'array',
         ];
+    }
+
+    public function getCashTagAttribute(): ?string
+    {
+        return $this->attributes['cashapp_tag'] ?? null;
+    }
+
+    public function setCashTagAttribute(?string $value): void
+    {
+        if ($value === null || trim($value) === '') {
+            $this->attributes['cashapp_tag'] = null;
+            return;
+        }
+
+        $raw = trim($value);
+        $normalized = Str::startsWith($raw, '$') ? $raw : '$' . ltrim($raw, '$');
+        $this->attributes['cashapp_tag'] = $normalized;
+    }
+
+    public function getCashPhoneAttribute(): ?string
+    {
+        $metadata = $this->payment_metadata ?? [];
+        return $metadata['cash_phone'] ?? null;
+    }
+
+    public function setCashPhoneAttribute(?string $value): void
+    {
+        $this->setPaymentMetadataValue('cash_phone', $value);
+    }
+
+    public function getCashEmailAttribute(): ?string
+    {
+        $metadata = $this->payment_metadata ?? [];
+        return $metadata['cash_email'] ?? null;
+    }
+
+    public function setCashEmailAttribute(?string $value): void
+    {
+        $this->setPaymentMetadataValue('cash_email', $value);
+    }
+
+    public function setVenmoUsernameAttribute(?string $value): void
+    {
+        if ($value === null || trim($value) === '') {
+            $this->attributes['venmo_username'] = null;
+            return;
+        }
+
+        $normalized = '@' . ltrim($value, '@');
+        $this->attributes['venmo_username'] = $normalized;
+    }
+
+    protected function setPaymentMetadataValue(string $key, ?string $value): void
+    {
+        $metadata = $this->payment_metadata ?? [];
+
+        if ($value === null || trim($value) === '') {
+            unset($metadata[$key]);
+        } else {
+            $metadata[$key] = $value;
+        }
+
+        $this->attributes['payment_metadata'] =
+            empty($metadata) ? null : json_encode($metadata);
     }
 
     /**

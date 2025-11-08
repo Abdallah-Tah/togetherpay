@@ -20,7 +20,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _paymentRequests = [];
-  Map<String, dynamic>? _stats;
+  Map<String, int>? _stats;
   String _filterStatus = 'all'; // all, pending, paid, overdue
   late TabController _tabController;
 
@@ -64,21 +64,12 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
     });
 
     try {
-      // Load payment requests and stats in parallel
-      final results = await Future.wait([
-        dio.get('/payment-requests'),
-        dio.get('/payment-requests/stats'),
-      ]);
-
-      final requestsData = results[0].data as Map<String, dynamic>;
-      final statsData = results[1].data as Map<String, dynamic>;
-
+      final response = await dio.get('/payment-requests');
+      final requestsResponse = response.data;
+      
       setState(() {
-        _paymentRequests = List<Map<String, dynamic>>.from(
-          (requestsData['data'] ?? requestsData['payment_requests'] ?? [])
-              as List,
-        );
-        _stats = statsData['data'] ?? statsData;
+        _paymentRequests = _parsePaymentRequests(requestsResponse);
+        _stats = _buildStats(_paymentRequests);
         _loading = false;
       });
     } on DioException catch (e) {
@@ -86,9 +77,10 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
         debugPrint('Payment requests load error: ${e.response?.data}');
       }
 
+      final message = _extractErrorMessage(e.response?.data);
+
       setState(() {
-        _error = e.response?.data?['message'] as String? ??
-            'Failed to load payment requests';
+        _error = message ?? 'Failed to load payment requests';
         _loading = false;
       });
     } catch (e) {
@@ -108,23 +100,9 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
       return _paymentRequests;
     }
 
-    return _paymentRequests.where((pr) {
-      final status = pr['status'] as String?;
-      final dueDate = pr['due_date'] as String?;
-
-      if (_filterStatus == 'overdue') {
-        if (status == 'paid') return false;
-        if (dueDate == null) return false;
-        try {
-          final due = DateTime.parse(dueDate);
-          return due.isBefore(DateTime.now());
-        } catch (e) {
-          return false;
-        }
-      }
-
-      return status == _filterStatus;
-    }).toList();
+    return _paymentRequests
+        .where((pr) => _matchesFilter(pr, _filterStatus))
+        .toList();
   }
 
   void _showPaymentRequestDetails(Map<String, dynamic> pr) {
@@ -152,7 +130,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          isScrollable: false,
+          isScrollable: true,
           tabs: [
             Tab(
               child: Row(
@@ -161,7 +139,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
                   const Text('All'),
                   if (_stats != null) ...[
                     const SizedBox(width: 4),
-                    _buildBadge(_stats!['total'] as int? ?? 0, Colors.grey),
+                    _buildBadge(_stats!['total'] ?? 0, Colors.grey),
                   ],
                 ],
               ),
@@ -173,8 +151,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
                   const Text('Pending'),
                   if (_stats != null) ...[
                     const SizedBox(width: 4),
-                    _buildBadge(
-                        _stats!['pending'] as int? ?? 0, Colors.orange),
+                    _buildBadge(_stats!['pending'] ?? 0, Colors.orange),
                   ],
                 ],
               ),
@@ -186,7 +163,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
                   const Text('Paid'),
                   if (_stats != null) ...[
                     const SizedBox(width: 4),
-                    _buildBadge(_stats!['paid'] as int? ?? 0, Colors.green),
+                    _buildBadge(_stats!['paid'] ?? 0, Colors.green),
                   ],
                 ],
               ),
@@ -198,7 +175,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
                   const Text('Overdue'),
                   if (_stats != null) ...[
                     const SizedBox(width: 4),
-                    _buildBadge(_stats!['overdue'] as int? ?? 0, Colors.red),
+                    _buildBadge(_stats!['overdue'] ?? 0, Colors.red),
                   ],
                 ],
               ),
@@ -329,7 +306,9 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
 
   Widget _buildPaymentRequestCard(Map<String, dynamic> pr) {
     final prCode = pr['pr_code'] as String?;
-    final memberName = pr['member']?['name'] as String? ?? 'Unknown Member';
+    final memberName = pr['member']?['name'] as String? ??
+        pr['member']?['user']?['name'] as String? ??
+        'Unknown Member';
     final groupName = pr['cycle']?['group']?['name'] as String? ??
         pr['group']?['name'] as String? ??
         'Unknown Group';
@@ -343,10 +322,15 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
     DateTime? paidAt;
     bool isOverdue = false;
 
+    final isPaid = _isPaidStatus(status);
+    final isAwaitingConfirm = _isAwaitingConfirmationStatus(status);
+
     if (dueDateStr != null) {
       try {
         dueDate = DateTime.parse(dueDateStr);
-        if (status != 'paid' && dueDate.isBefore(DateTime.now())) {
+        if (!isPaid &&
+            !isAwaitingConfirm &&
+            dueDate.isBefore(DateTime.now())) {
           isOverdue = true;
         }
       } catch (e) {
@@ -370,10 +354,14 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
     IconData statusIcon;
     String statusText;
 
-    if (status == 'paid') {
+    if (isPaid) {
       statusColor = Colors.green;
       statusIcon = Icons.check_circle;
       statusText = 'Paid';
+    } else if (isAwaitingConfirm) {
+      statusColor = Colors.blue;
+      statusIcon = Icons.hourglass_top;
+      statusText = 'Awaiting Confirm';
     } else if (isOverdue) {
       statusColor = Colors.red;
       statusIcon = Icons.warning;
@@ -490,7 +478,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
                   ),
                   // Date info
                   Text(
-                    status == 'paid' && paidAt != null
+                    isPaid && paidAt != null
                         ? 'Paid ${_formatDate(paidAt)}'
                         : dueDate != null
                             ? 'Due ${_formatDate(dueDate)}'
@@ -521,6 +509,29 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
     );
   }
 
+  String? _extractErrorMessage(dynamic payload) {
+    if (payload == null) {
+      return null;
+    }
+
+    if (payload is String && payload.isNotEmpty) {
+      return payload;
+    }
+
+    if (payload is Map) {
+      final message = payload['message'];
+      if (message is String && message.isNotEmpty) {
+        return message;
+      }
+      final error = payload['error'];
+      if (error is String && error.isNotEmpty) {
+        return error;
+      }
+    }
+
+    return null;
+  }
+
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = date.difference(now);
@@ -537,6 +548,106 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
       return '${difference.inDays.abs()} days ago';
     } else {
       return DateFormat('MMM d, yyyy').format(date);
+    }
+  }
+  
+  List<Map<String, dynamic>> _parsePaymentRequests(dynamic payload) {
+    final list = _extractRequestList(payload);
+
+    return list
+        .map((item) =>
+            item is Map ? Map<String, dynamic>.from(item) : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  List<dynamic> _extractRequestList(dynamic payload) {
+    if (payload is List) {
+      return payload;
+    }
+
+    if (payload is Map<String, dynamic>) {
+      final candidates = [
+        payload['data'],
+        payload['payment_requests'],
+        payload['items'],
+      ];
+
+      for (final candidate in candidates) {
+        if (candidate is List) {
+          return candidate;
+        }
+      }
+    }
+
+    return const <dynamic>[];
+  }
+
+  Map<String, int> _buildStats(
+    List<Map<String, dynamic>> requests,
+  ) {
+    return <String, int>{
+      'total': requests.length,
+      'pending': _countWhere(requests, (pr) => _matchesFilter(pr, 'pending')),
+      'paid': _countWhere(requests, (pr) => _matchesFilter(pr, 'paid')),
+      'overdue': _countWhere(requests, (pr) => _matchesFilter(pr, 'overdue')),
+    };
+  }
+
+  int _countWhere(
+    List<Map<String, dynamic>> source,
+    bool Function(Map<String, dynamic>) predicate,
+  ) {
+    var count = 0;
+    for (final item in source) {
+      if (predicate(item)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  bool _matchesFilter(Map<String, dynamic> pr, String filter) {
+    switch (filter) {
+      case 'pending':
+        return _isPendingStatus(pr['status']) && !_isOverdueRequest(pr);
+      case 'paid':
+        return _isPaidStatus(pr['status']);
+      case 'overdue':
+        return _isOverdueRequest(pr);
+      default:
+        return true;
+    }
+  }
+
+  bool _isPendingStatus(dynamic statusValue) {
+    final status = (statusValue as String?)?.toLowerCase() ?? '';
+    return status == 'pending' ||
+        status == 'sent' ||
+        status == 'member_marked';
+  }
+
+  bool _isAwaitingConfirmationStatus(dynamic statusValue) {
+    final status = (statusValue as String?)?.toLowerCase();
+    return status == 'member_marked';
+  }
+
+  bool _isPaidStatus(dynamic statusValue) {
+    final status = (statusValue as String?)?.toLowerCase();
+    return status == 'paid' ||
+        status == 'owner_confirmed' ||
+        status == 'auto_verified';
+  }
+
+  bool _isOverdueRequest(Map<String, dynamic> pr) {
+    if (_isPaidStatus(pr['status'])) return false;
+    final dueDateStr = pr['due_date'] as String?;
+    if (dueDateStr == null || dueDateStr.isEmpty) return false;
+    try {
+      final dueDate = DateTime.parse(dueDateStr);
+      return dueDate.isBefore(DateTime.now());
+    } catch (_) {
+      return false;
     }
   }
 }

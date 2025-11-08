@@ -15,13 +15,15 @@ use Illuminate\Http\Request;
 class GroupController extends Controller
 {
     /**
-     * Display a listing of groups (owned or member of)
+     * Display a listing of groups (owned by user only)
+     * Members should NOT see groups they're part of - they only see their payment requests
      */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        // Groups owned by user
+        // Only return groups owned by user
+        // Members can view their payment requests but not browse groups
         $ownedGroups = $user->ownedGroups()
             ->with(['members.user', 'cycles' => function ($query) {
                 $query->latest()->limit(1);
@@ -31,20 +33,10 @@ class GroupController extends Controller
                 return $group->toArray();
             });
 
-        // Groups where user is a member (but NOT owner - avoid duplicates)
-        $memberGroups = Group::whereHas('members', function ($query) use ($user) {
-            $query->where('user_id', $user->id)->where('status', 'active');
-        })
-            ->where('owner_id', '!=', $user->id) // Exclude groups user owns
-            ->with(['owner', 'members.user'])
-            ->get()
-            ->map(function ($group) {
-                return $group->toArray();
-            });
-
         return response()->json([
             'owned_groups' => $ownedGroups,
-            'member_groups' => $memberGroups,
+            // Intentionally empty - members don't see groups list
+            'member_groups' => [],
         ]);
     }
 

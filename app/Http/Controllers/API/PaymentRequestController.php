@@ -28,7 +28,7 @@ class PaymentRequestController extends Controller
 
         // Get payment requests for user's memberships
         $requests = PaymentRequest::whereIn('member_id', $memberIds)
-            ->with(['cycle.group', 'member'])
+            ->with(['cycle.group', 'member.user'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 

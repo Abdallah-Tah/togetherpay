@@ -76,7 +76,7 @@ class PaymentRequestEventNotification extends Notification implements ShouldQueu
         $mail->subject($subject)
             ->greeting("Hi {$notifiable->name}!")
             ->line("Group: **{$group?->name}**")
-            ->line("Amount: **${$amount}**");
+            ->line("Amount: **\${$amount}**");
 
         if ($dueDate) {
             $mail->line("Due Date: {$dueDate}");
@@ -110,17 +110,16 @@ class PaymentRequestEventNotification extends Notification implements ShouldQueu
         };
 
         $body = match ($this->event) {
-            'created' => "Sent to {$memberUser?->name}: $${amount}" . ($dueDate ? " • Due {$dueDate}" : ''),
-            'member_marked' => "{$memberUser?->name} marked $${amount} as sent" . ($dueDate ? " • Due {$dueDate}" : ''),
-            'owner_confirmed' => "Confirmed: $${amount}" . ($group?->name ? " • {$group->name}" : ''),
-            default => "Update: $${amount}",
+            'created' => "Sent to {$memberUser?->name}: \${$amount}" . ($dueDate ? " • Due {$dueDate}" : ''),
+            'member_marked' => "{$memberUser?->name} marked \${$amount} as sent" . ($dueDate ? " • Due {$dueDate}" : ''),
+            'owner_confirmed' => "Confirmed: \${$amount}" . ($group?->name ? " • {$group->name}" : ''),
+            default => "Update: \${$amount}",
         };
 
         return [
             'notification' => [
                 'title' => $title,
                 'body' => $body,
-                'sound' => 'default',
             ],
             'data' => [
                 'event' => $this->event,
@@ -128,7 +127,7 @@ class PaymentRequestEventNotification extends Notification implements ShouldQueu
                 'pr_code' => $pr->pr_code,
                 'group_name' => $group?->name ?? '',
                 'amount' => $amount,
-                'due_date' => $dueDate,
+                'due_date' => $dueDate ?? '',
                 'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
             ],
             'android' => [
