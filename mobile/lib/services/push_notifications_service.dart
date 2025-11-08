@@ -236,10 +236,31 @@ class PushNotificationsService {
       iOS: iosSettings,
     );
 
-    await _localNotifications.initialize(settings);
+    await _localNotifications.initialize(
+      settings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
+    );
 
     if (Env.debug) {
       debugPrint('Local notifications initialized');
+    }
+  }
+
+  /// Handle notification tap
+  void _onNotificationTapped(NotificationResponse response) {
+    if (Env.debug) {
+      debugPrint('Notification tapped with payload: ${response.payload}');
+    }
+
+    // The payload contains the payment_request_id
+    // You can use this to navigate to the payment details screen
+    // For now, we'll just log it - navigation will be handled by the app
+    if (response.payload != null) {
+      // TODO: Navigate to payment request details screen
+      // This would typically use a navigation service or stream
+      if (Env.debug) {
+        debugPrint('Should navigate to payment request: ${response.payload}');
+      }
     }
   }
 

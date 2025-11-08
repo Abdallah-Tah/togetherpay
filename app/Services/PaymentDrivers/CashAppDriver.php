@@ -18,8 +18,15 @@ class CashAppDriver implements PaymentRequestDriver
 
         if ($member->cash_tag) {
             $cashtag = ltrim($member->cash_tag, '$');
-            $uri = sprintf('cashapp://cash/%s?amount=%s&note=%s', $cashtag, $amount, urlencode($note));
-            $webFallback = sprintf('https://cash.app/$%s/%s?note=%s&pr=%s', $cashtag, $amount, urlencode($note), urlencode($prCode));
+            $recipient = '$' . $cashtag;
+            $uri = $this->buildSendUri($recipient, $amount, $note);
+            $webFallback = sprintf(
+                'https://cash.app/$%s/%s?note=%s&pr=%s',
+                $cashtag,
+                $amount,
+                urlencode($note),
+                urlencode($prCode)
+            );
 
             return [
                 'uri' => $uri,
@@ -28,13 +35,7 @@ class CashAppDriver implements PaymentRequestDriver
         }
 
         $recipient = $handle;
-        $query = http_build_query([
-            'recipient' => $recipient,
-            'amount' => $amount,
-            'note' => $note,
-        ]);
-
-        $uri = "cashapp://send?{$query}";
+        $uri = $this->buildSendUri($recipient, $amount, $note);
         $webFallback = sprintf(
             'https://cash.app/send?recipient=%s&amount=%s&note=%s&pr=%s',
             urlencode($recipient),
@@ -65,5 +66,16 @@ class CashAppDriver implements PaymentRequestDriver
     public function getName(): string
     {
         return 'cash_app';
+    }
+
+    protected function buildSendUri(string $recipient, string $amount, string $note): string
+    {
+        $query = http_build_query([
+            'recipient' => $recipient,
+            'amount' => $amount,
+            'note' => $note,
+        ], '', '&', PHP_QUERY_RFC3986);
+
+        return "cashapp://send?{$query}";
     }
 }

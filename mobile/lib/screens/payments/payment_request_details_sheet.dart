@@ -252,10 +252,10 @@ class _PaymentRequestDetailsSheetState
     if (app == 'Cash App') {
       // Clean the cashtag (remove $ if present)
       final cashtag = handle.startsWith('\$') ? handle.substring(1) : handle;
-      // Use deep link for Cash App
-      deepLinkUri = Uri.parse('cashapp://cash/$cashtag?amount=$amountStr&note=${Uri.encodeComponent(note)}');
-      // Web fallback
+      // Cash App doesn't have a reliable deep link for payment requests
+      // Use web URL which will prompt to open in app if installed
       fallbackUri = Uri.parse('https://cash.app/\$$cashtag/$amountStr?note=${Uri.encodeComponent(note)}&pr=${Uri.encodeComponent(prCode)}');
+      deepLinkUri = fallbackUri; // Use same URL for both
     } else if (app == 'Venmo') {
       // Clean the username (remove @ if present)
       final username = handle.startsWith('@') ? handle.substring(1) : handle;

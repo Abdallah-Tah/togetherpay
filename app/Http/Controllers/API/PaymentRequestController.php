@@ -78,13 +78,15 @@ class PaymentRequestController extends Controller
      *
      * GET /api/v1/requests/by-code/{prCode}
      */
-    public function showByCode(string $prCode): JsonResponse
+    public function showByCode(Request $request, string $prCode): JsonResponse
     {
         $pr = PaymentRequest::where('pr_code', $prCode)
             ->with(['group.owner', 'member.user', 'cycle'])
             ->firstOrFail();
 
-        $this->authorize('view', $pr);
+        if ($request->user()) {
+            $this->authorize('view', $pr);
+        }
 
         return response()->json($this->transformPaymentRequest($pr));
     }
@@ -174,6 +176,11 @@ class PaymentRequestController extends Controller
                 'id' => $member->id,
                 'name' => $member->user?->name,
                 'email' => $member->user?->email,
+                'cash_tag' => $member->cash_tag,
+                'cashapp_cashtag' => $member->cash_tag,
+                'cash_phone' => $member->cash_phone,
+                'cash_email' => $member->cash_email,
+                'venmo_username' => $member->venmo_username,
                 'preferred_channel' => $member->preferred_channel,
             ] : null,
             'amount_cents' => $pr->amount_cents,
