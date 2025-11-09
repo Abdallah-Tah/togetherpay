@@ -23,11 +23,22 @@ class PaymentRequestController extends Controller
     {
         $user = $request->user();
 
-        // Get user's group memberships
+        // Get user's group memberships (where they are a member)
         $memberIds = $user->groupMemberships()->pluck('id');
 
-        // Get payment requests for user's memberships
-        $requests = PaymentRequest::whereIn('member_id', $memberIds)
+        // Get user's owned groups
+        $ownedGroupIds = $user->ownedGroups()->pluck('id');
+
+        // Get payment requests where user is either:
+        // 1. A member receiving the request
+        // 2. Owner of the group (can see all requests for their groups)
+        $requests = PaymentRequest::query()
+            ->where(function ($query) use ($memberIds, $ownedGroupIds) {
+                $query->whereIn('member_id', $memberIds)
+                    ->orWhereHas('cycle', function ($q) use ($ownedGroupIds) {
+                        $q->whereIn('group_id', $ownedGroupIds);
+                    });
+            })
             ->with(['cycle.group', 'member.user'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
