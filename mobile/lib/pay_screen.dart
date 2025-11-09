@@ -147,9 +147,37 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
         if (match != null) {
           final cashtag = match.group(1);
           final amount = match.group(2);
+
+          // Get note from payment data (group name + note)
+          final groupName = _paymentData?['group']?['name'] as String? ?? 'Payment';
+          final paymentNote = _paymentData?['note'] as String?;
+          final note = paymentNote != null && paymentNote.isNotEmpty
+              ? '$groupName - $paymentNote'
+              : groupName;
+
+          if (Env.debug) {
+            debugPrint('=== NOTE DEBUG ===');
+            debugPrint('Group name: $groupName');
+            debugPrint('Payment note: $paymentNote');
+            debugPrint('Combined note: $note');
+            debugPrint('Payment data keys: ${_paymentData?.keys}');
+            debugPrint('Full payment data: $_paymentData');
+          }
+
           // Use redirect page instead of direct Cash App URL
           final baseUrl = Env.apiBase.replaceAll('/api/v1', '');
-          targetUri = Uri.parse('$baseUrl/redirect/cashapp?cashtag=$cashtag&amount=$amount');
+          final encodedNote = Uri.encodeComponent(note);
+
+          if (Env.debug) {
+            debugPrint('Encoded note: $encodedNote');
+            debugPrint('Base URL: $baseUrl');
+          }
+
+          targetUri = Uri.parse('$baseUrl/redirect/cashapp?cashtag=$cashtag&amount=$amount&note=$encodedNote');
+
+          if (Env.debug) {
+            debugPrint('Final redirect URL: $targetUri');
+          }
         }
       }
 

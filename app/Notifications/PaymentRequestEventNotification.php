@@ -33,7 +33,7 @@ class PaymentRequestEventNotification extends Notification implements ShouldQueu
             default => true,
         };
 
-        if (!$typeEnabled) {
+        if (! $typeEnabled) {
             return ['database']; // Always log to database
         }
 
@@ -64,7 +64,7 @@ class PaymentRequestEventNotification extends Notification implements ShouldQueu
         $amount = number_format($pr->amount_cents / 100, 2);
         $dueDate = $pr->cycle?->due_at?->timezone($group->timezone ?? config('app.timezone'))?->format('M d, Y');
 
-        $mail = new MailMessage();
+        $mail = new MailMessage;
 
         $subject = match ($this->event) {
             'created' => "Payment Request Sent: {$group?->name}",
@@ -89,7 +89,7 @@ class PaymentRequestEventNotification extends Notification implements ShouldQueu
             default => 'Payment status updated.',
         });
 
-        $mail->action('View Request', url('/pay/' . $pr->id));
+        $mail->action('View Request', url('/pay/'.$pr->id));
 
         return $mail;
     }
@@ -110,9 +110,9 @@ class PaymentRequestEventNotification extends Notification implements ShouldQueu
         };
 
         $body = match ($this->event) {
-            'created' => "Sent to {$memberUser?->name}: \${$amount}" . ($dueDate ? " • Due {$dueDate}" : ''),
-            'member_marked' => "{$memberUser?->name} marked \${$amount} as sent" . ($dueDate ? " • Due {$dueDate}" : ''),
-            'owner_confirmed' => "Confirmed: \${$amount}" . ($group?->name ? " • {$group->name}" : ''),
+            'created' => "Sent to {$memberUser?->name}: \${$amount}".($dueDate ? " • Due {$dueDate}" : ''),
+            'member_marked' => "{$memberUser?->name} marked \${$amount} as sent".($dueDate ? " • Due {$dueDate}" : ''),
+            'owner_confirmed' => "Confirmed: \${$amount}".($group?->name ? " • {$group->name}" : ''),
             default => "Update: \${$amount}",
         };
 
@@ -152,6 +152,7 @@ class PaymentRequestEventNotification extends Notification implements ShouldQueu
     public function toArray(object $notifiable): array
     {
         $pr = $this->paymentRequest;
+
         return [
             'payment_request_id' => $pr->id,
             'event' => $this->event,

@@ -6,8 +6,8 @@ use App\Contracts\PaymentRequestDriver;
 use App\Models\BillingCycle;
 use App\Models\GroupMember;
 use App\Models\PaymentRequest;
-use App\Notifications\PaymentRequestNotification;
 use App\Notifications\PaymentRequestEventNotification;
+use App\Notifications\PaymentRequestNotification;
 use App\Services\PaymentDrivers\CashAppDriver;
 use App\Services\PaymentDrivers\VenmoDriver;
 use App\Support\PRCode;
@@ -168,7 +168,7 @@ class PaymentRequestService
 
         $metadata = array_merge([
             'handle' => $member->getPaymentHandle(),
-            'amount_display' => '$' . number_format($amountCents / 100, 2),
+            'amount_display' => '$'.number_format($amountCents / 100, 2),
         ], $extraMetadata);
 
         return PaymentRequest::create([
@@ -227,10 +227,10 @@ class PaymentRequestService
     {
         return match ($member->preferred_channel) {
             'CASH_APP' => $member->cash_tag
-                ? 'https://cash.app/' . ltrim($member->cash_tag, '$')
+                ? 'https://cash.app/'.ltrim($member->cash_tag, '$')
                 : null,
             'VENMO' => $member->venmo_username
-                ? 'https://venmo.com/' . ltrim($member->venmo_username, '@')
+                ? 'https://venmo.com/'.ltrim($member->venmo_username, '@')
                 : null,
             default => null,
         };

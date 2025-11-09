@@ -7,8 +7,10 @@ use App\Http\Requests\API\AddMemberRequest;
 use App\Http\Requests\API\CreateGroupRequest;
 use App\Http\Requests\API\UpdateGroupRequest;
 use App\Models\Group;
+use App\Models\GroupInvitation;
 use App\Models\GroupMember;
 use App\Models\User;
+use App\Notifications\GroupInvitationNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -148,6 +150,7 @@ class GroupController extends Controller
         }
 
         // If user doesn't exist, create a placeholder/invited user
+        $isNewInvitation = false;
         if (! $user) {
             \Log::info('USER NOT FOUND - CREATING INVITATION', [
                 'email' => $request->email,
@@ -156,11 +159,12 @@ class GroupController extends Controller
 
             $user = User::create([
                 'name' => $request->email ? explode('@', $request->email)[0] : 'Invited User',
-                'email' => $request->email ?? $request->phone . '@placeholder.local',
+                'email' => $request->email ?? $request->phone.'@placeholder.local',
                 'phone' => $request->phone,
                 'password' => \Hash::make(\Str::random(32)), // Random password until they register
                 'role' => 'member',
                 'email_verified_at' => null, // Not verified yet
+                'is_placeholder' => true, // Mark as placeholder until they accept invitation
             ]);
 
             \Log::info('INVITATION USER CREATED', [
@@ -168,8 +172,7 @@ class GroupController extends Controller
                 'email' => $user->email,
             ]);
 
-            // TODO: Send invitation email/SMS to the user
-            // This should be implemented as a notification or job
+            $isNewInvitation = true;
         }
 
         \Log::info('FOUND USER', [
@@ -239,13 +242,50 @@ class GroupController extends Controller
             ]);
         }
 
+        // Send invitation if this is a new user we just created
+        if ($isNewInvitation && $request->email) {
+            $invitation = GroupInvitation::create([
+                'group_id' => $group->id,
+                'invited_by_user_id' => $request->user()->id,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'token' => GroupInvitation::generateToken(),
+                'status' => 'pending',
+                'expires_at' => now()->addDays(7),
+                'member_data' => [
+                    'preferred_channel' => $request->preferred_channel ?? 'CASH_APP',
+                    'venmo_username' => $request->venmo_username,
+                    'cash_tag' => $request->cash_tag,
+                    'cash_phone' => $request->cash_phone,
+                    'cash_email' => $request->cash_email,
+                    'share_type' => $request->share_type ?? 'AMOUNT',
+                    'share_value' => $request->share_value ?? 0,
+                ],
+            ]);
+
+            // Send invitation notification
+            try {
+                $user->notify(new GroupInvitationNotification($invitation));
+                \Log::info('INVITATION EMAIL SENT', [
+                    'invitation_id' => $invitation->id,
+                    'email' => $request->email,
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('FAILED TO SEND INVITATION EMAIL', [
+                    'invitation_id' => $invitation->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $message = $existingMember
             ? 'Member reactivated successfully'
-            : 'Member added successfully';
+            : ($isNewInvitation ? 'Invitation sent successfully' : 'Member added successfully');
 
         return response()->json([
             'member' => $member->load('user'),
             'message' => $message,
+            'invitation_sent' => $isNewInvitation,
         ], 201);
     }
 

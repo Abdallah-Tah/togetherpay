@@ -3,8 +3,8 @@
 namespace App\Jobs;
 
 use App\Models\PaymentRequest;
-use App\Notifications\PaymentRequestNotification;
 use App\Notifications\PaymentRequestEventNotification;
+use App\Notifications\PaymentRequestNotification;
 use App\Services\PaymentRequestService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;

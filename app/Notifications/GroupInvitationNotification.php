@@ -28,17 +28,17 @@ class GroupInvitationNotification extends Notification implements ShouldQueue
         $invitedBy = $invitation->invitedBy;
 
         $invitationUrl = config('app.frontend_url')
-            ? config('app.frontend_url') . "/accept-invitation/{$invitation->token}"
+            ? config('app.frontend_url')."/accept-invitation/{$invitation->token}"
             : url("/accept-invitation/{$invitation->token}");
 
         return (new MailMessage)
             ->subject("You've been invited to join {$group->name}")
-            ->greeting("Hi there!")
+            ->greeting('Hi there!')
             ->line("{$invitedBy->name} has invited you to join their group **{$group->name}** on TogetherPay.")
             ->line("TogetherPay makes it easy to split recurring bills with your group. You'll be able to:")
-            ->line("• Receive payment requests automatically")
-            ->line("• Pay via Venmo or Cash App")
-            ->line("• Track your payment history")
+            ->line('• Receive payment requests automatically')
+            ->line('• Pay via Venmo or Cash App')
+            ->line('• Track your payment history')
             ->action('Accept Invitation', $invitationUrl)
             ->line("This invitation will expire on {$invitation->expires_at->format('F j, Y')}.")
             ->line("If you don't have a TogetherPay account, you'll be prompted to create one when you accept the invitation.");

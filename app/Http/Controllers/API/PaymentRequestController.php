@@ -8,8 +8,8 @@ use App\Models\BillingCycle;
 use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\PaymentRequest;
-use App\Services\PaymentRequestService;
 use App\Notifications\PaymentRequestEventNotification;
+use App\Services\PaymentRequestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -184,7 +184,7 @@ class PaymentRequestController extends Controller
                 'preferred_channel' => $member->preferred_channel,
             ] : null,
             'amount_cents' => $pr->amount_cents,
-            'amount_display' => '$' . number_format($pr->amount_cents / 100, 2),
+            'amount_display' => '$'.number_format($pr->amount_cents / 100, 2),
             'status' => $pr->status,
             'method_hint' => $pr->method_hint,
             'note' => $pr->note,
@@ -405,7 +405,7 @@ class PaymentRequestController extends Controller
             'ok' => true,
             'confirmed_count' => $confirmed,
             'total_cents' => $totalCents,
-            'total_display' => '$' . number_format($totalCents / 100, 2),
+            'total_display' => '$'.number_format($totalCents / 100, 2),
         ]);
     }
 

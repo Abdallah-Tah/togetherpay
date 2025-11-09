@@ -32,7 +32,7 @@ class FcmChannel
 
         // Get OAuth2 access token
         try {
-            $tokenGenerator = new FcmTokenGenerator();
+            $tokenGenerator = new FcmTokenGenerator;
             $accessToken = $tokenGenerator->getAccessToken();
         } catch (\Exception $e) {
             Log::error('Failed to generate FCM access token', [

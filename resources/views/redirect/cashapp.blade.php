@@ -66,6 +66,21 @@
         <div class="amount">${{ number_format($amount, 2) }}</div>
         <p>You will be redirected to Cash App to send payment to <strong>{{ $cashtag }}</strong></p>
 
+        <!-- Debug info (visible in production for now) -->
+        <div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 11px;">
+            <strong>DEBUG:</strong><br>
+            Note value: "{{ $note }}"<br>
+            Note empty?: {{ empty($note) ? 'YES' : 'NO' }}<br>
+            Note isset?: {{ isset($note) ? 'YES' : 'NO' }}<br>
+            Note length: {{ strlen($note) }}
+        </div>
+
+        @if(!empty($note))
+            <p style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                <small><strong>For:</strong> {{ $note }}</small>
+            </p>
+        @endif
+
         <div class="fallback">
             <p><small>If Cash App doesn't open automatically, tap the button below:</small></p>
             <a href="{{ $cashAppUrl }}" style="display: inline-block; background: white; color: #00D54B; padding: 12px 24px; border-radius: 25px; text-decoration: none; font-weight: bold; margin-top: 10px;">

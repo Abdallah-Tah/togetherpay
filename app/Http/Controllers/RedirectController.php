@@ -14,6 +14,7 @@ class RedirectController extends Controller
     {
         $cashtag = $request->input('cashtag');
         $amount = $request->input('amount', 0);
+        $note = $request->input('note', '');
 
         // Clean cashtag (remove $ if present)
         $cashtag = ltrim($cashtag, '$');
@@ -24,6 +25,7 @@ class RedirectController extends Controller
         return view('redirect.cashapp', [
             'cashtag' => "\${$cashtag}",
             'amount' => $amount,
+            'note' => $note,
             'cashAppUrl' => $cashAppUrl,
         ]);
     }

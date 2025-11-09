@@ -95,7 +95,7 @@ class GroupInvitation extends Model
     public function scopePending($query)
     {
         return $query->where('status', 'pending')
-                    ->where('expires_at', '>', now());
+            ->where('expires_at', '>', now());
     }
 
     public function scopeForEmail($query, string $email)

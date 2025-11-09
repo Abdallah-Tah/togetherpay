@@ -122,7 +122,77 @@ class GroupInvitationController extends Controller
     }
 
     /**
-     * Accept invitation and join group
+     * Magic link: Accept invitation and setup account (for new users)
+     * This allows users without accounts to accept invitations via magic link
+     */
+    public function acceptMagicLink(Request $request, string $token)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'password' => 'required|string|min:8|confirmed',
+            'cash_tag' => 'nullable|string',
+            'venmo_username' => 'nullable|string',
+        ]);
+
+        $invitation = GroupInvitation::where('token', $token)
+            ->with('group')
+            ->firstOrFail();
+
+        // Check if invitation is valid
+        if (! $invitation->isValid()) {
+            return response()->json([
+                'message' => 'This invitation is no longer valid or has expired.',
+            ], 422);
+        }
+
+        // Find the placeholder user by email
+        $user = User::where('email', $invitation->email)
+            ->where('is_placeholder', true)
+            ->first();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'No pending invitation found for this email.',
+            ], 404);
+        }
+
+        // Activate the user account with their chosen password
+        DB::transaction(function () use ($user, $validated, $invitation) {
+            $user->update([
+                'name' => $validated['name'],
+                'password' => \Hash::make($validated['password']),
+                'cash_tag' => $validated['cash_tag'] ?? null,
+                'venmo_username' => $validated['venmo_username'] ?? null,
+                'is_placeholder' => false,
+                'email_verified_at' => now(),
+                'invitation_accepted_at' => now(),
+                'invitation_token' => null,
+            ]);
+
+            // Mark invitation as accepted
+            $invitation->markAsAccepted($user);
+        });
+
+        // Create auth token for immediate login
+        $token = $user->createToken('mobile-app')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Account activated successfully! Welcome to TogetherPay.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'onboarding_completed' => $user->hasCompletedOnboarding(),
+            ],
+            'token' => $token,
+            'group' => $invitation->group,
+        ], 200);
+    }
+
+    /**
+     * Accept invitation and join group (for authenticated users)
      */
     public function accept(Request $request, string $token)
     {
@@ -135,13 +205,13 @@ class GroupInvitationController extends Controller
             ->firstOrFail();
 
         // Check if invitation is valid
-        if (!$invitation->isValid()) {
+        if (! $invitation->isValid()) {
             return response()->json([
                 'message' => 'This invitation is no longer valid or has expired.',
             ], 422);
         }
 
-        if (!$validated['accept']) {
+        if (! $validated['accept']) {
             $invitation->update(['status' => 'cancelled']);
 
             return response()->json([

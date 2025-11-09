@@ -38,6 +38,7 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
 
     // Public invitation endpoints (no auth required to view invitation)
     Route::get('/invitations/{token}', [GroupInvitationController::class, 'show']);
+    Route::post('/invitations/{token}/accept-magic-link', [GroupInvitationController::class, 'acceptMagicLink']);
 
     // Public payment request lookup by code (for mobile deep links)
     Route::get('/requests/by-code/{prCode}', [PaymentRequestController::class, 'showByCode']);

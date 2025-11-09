@@ -24,7 +24,7 @@ class PaymentReminderNotification extends Notification implements ShouldQueue
         $prefs = $notifiable->notification_preferences ?? [];
 
         // Check if payment reminders are enabled
-        if (!($prefs['payment_reminders'] ?? true)) {
+        if (! ($prefs['payment_reminders'] ?? true)) {
             return ['database']; // Always log to database
         }
 
@@ -73,8 +73,8 @@ class PaymentReminderNotification extends Notification implements ShouldQueue
         };
 
         $urgency = match ($this->reminderType) {
-            'escalation' => '🚨 **URGENT** - Your payment is now ' . $this->daysSinceDue . ' days overdue.',
-            'reminder' => 'This is a friendly reminder that your payment is ' . ($this->daysSinceDue > 0 ? "{$this->daysSinceDue} days overdue" : 'due soon') . '.',
+            'escalation' => '🚨 **URGENT** - Your payment is now '.$this->daysSinceDue.' days overdue.',
+            'reminder' => 'This is a friendly reminder that your payment is '.($this->daysSinceDue > 0 ? "{$this->daysSinceDue} days overdue" : 'due soon').'.',
             default => 'Your payment is due.',
         };
 

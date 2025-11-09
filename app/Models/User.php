@@ -40,6 +40,10 @@ class User extends Authenticatable
         'preferred_payment_method',
         'payment_metadata',
         'notification_preferences',
+        'invitation_token',
+        'invitation_sent_at',
+        'invitation_accepted_at',
+        'is_placeholder',
     ];
 
     /**
@@ -75,6 +79,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'onboarding_completed_at' => 'datetime',
+            'invitation_sent_at' => 'datetime',
+            'invitation_accepted_at' => 'datetime',
+            'is_placeholder' => 'boolean',
             'password' => 'hashed',
             'payment_metadata' => 'array',
             'notification_preferences' => 'array',
@@ -90,17 +97,19 @@ class User extends Authenticatable
     {
         if ($value === null || trim($value) === '') {
             $this->attributes['cashapp_tag'] = null;
+
             return;
         }
 
         $raw = trim($value);
-        $normalized = Str::startsWith($raw, '$') ? $raw : '$' . ltrim($raw, '$');
+        $normalized = Str::startsWith($raw, '$') ? $raw : '$'.ltrim($raw, '$');
         $this->attributes['cashapp_tag'] = $normalized;
     }
 
     public function getCashPhoneAttribute(): ?string
     {
         $metadata = $this->payment_metadata ?? [];
+
         return $metadata['cash_phone'] ?? null;
     }
 
@@ -112,6 +121,7 @@ class User extends Authenticatable
     public function getCashEmailAttribute(): ?string
     {
         $metadata = $this->payment_metadata ?? [];
+
         return $metadata['cash_email'] ?? null;
     }
 
@@ -124,10 +134,11 @@ class User extends Authenticatable
     {
         if ($value === null || trim($value) === '') {
             $this->attributes['venmo_username'] = null;
+
             return;
         }
 
-        $normalized = '@' . ltrim($value, '@');
+        $normalized = '@'.ltrim($value, '@');
         $this->attributes['venmo_username'] = $normalized;
     }
 
@@ -153,7 +164,7 @@ class User extends Authenticatable
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn($word) => Str::substr($word, 0, 1))
+            ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
 
@@ -225,14 +236,14 @@ class User extends Authenticatable
         }
 
         if (strlen($digits) === 10) {
-            return '+1' . $digits;
+            return '+1'.$digits;
         }
 
         if (strlen($digits) === 11 && str_starts_with($digits, '1')) {
-            return '+' . $digits;
+            return '+'.$digits;
         }
 
-        return '+' . $digits;
+        return '+'.$digits;
     }
 
     /**
@@ -273,5 +284,56 @@ class User extends Authenticatable
     public function completeOnboarding(): void
     {
         $this->update(['onboarding_completed_at' => now()]);
+    }
+
+    /**
+     * Generate and assign invitation token
+     */
+    public function generateInvitationToken(): string
+    {
+        $token = Str::random(64);
+        $this->update([
+            'invitation_token' => $token,
+            'invitation_sent_at' => now(),
+        ]);
+
+        return $token;
+    }
+
+    /**
+     * Accept invitation and mark user as active
+     */
+    public function acceptInvitation(): void
+    {
+        $this->update([
+            'invitation_token' => null,
+            'invitation_accepted_at' => now(),
+            'is_placeholder' => false,
+        ]);
+    }
+
+    /**
+     * Check if user needs to complete invitation setup
+     */
+    public function needsInvitationSetup(): bool
+    {
+        return $this->is_placeholder && $this->invitation_token !== null;
+    }
+
+    /**
+     * Check if invitation token is valid
+     */
+    public function isInvitationTokenValid(string $token): bool
+    {
+        if ($this->invitation_token !== $token) {
+            return false;
+        }
+
+        // Token expires after 7 days
+        if ($this->invitation_sent_at && $this->invitation_sent_at->addDays(7)->isPast()) {
+            return false;
+        }
+
+        return true;
     }
 }

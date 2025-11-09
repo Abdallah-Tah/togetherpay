@@ -27,7 +27,7 @@ class PaymentLinks
 
         // Build clean URL with only cashtag and amount
         // Format: https://cash.app/$IkramBarkad/5.00
-        return 'https://cash.app/$' . $cashtag . '/' . $amount;
+        return 'https://cash.app/$'.$cashtag.'/'.$amount;
     }
 
     /**

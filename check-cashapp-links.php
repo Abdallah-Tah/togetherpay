@@ -1,12 +1,12 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__.'/vendor/autoload.php';
 
-$app = require_once __DIR__ . '/bootstrap/app.php';
+$app = require_once __DIR__.'/bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
 echo "\n📋 Latest Cash App Payment Requests:\n";
-echo str_repeat('=', 70) . "\n\n";
+echo str_repeat('=', 70)."\n\n";
 
 $prs = \App\Models\PaymentRequest::where('method_hint', 'CASH_APP')
     ->whereNotNull('deep_link')
@@ -41,7 +41,7 @@ foreach ($prs as $pr) {
         echo "⚠️  Format doesn't match expected pattern\n";
     }
 
-    echo str_repeat('-', 70) . "\n";
+    echo str_repeat('-', 70)."\n";
 }
 
 echo "\n✅ Verification Complete!\n\n";

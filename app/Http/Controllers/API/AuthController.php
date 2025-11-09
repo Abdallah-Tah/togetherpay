@@ -125,7 +125,7 @@ class AuthController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'email' => 'sometimes|email|unique:users,email,'.$user->id,
             'phone' => 'sometimes|string|nullable',
             'cash_tag' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^\$?[A-Za-z0-9_-]+$/'],
             'cash_phone' => ['sometimes', 'nullable', 'string', 'max:255'],
