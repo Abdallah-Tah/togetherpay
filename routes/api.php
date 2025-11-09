@@ -55,6 +55,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::put('/auth/me', [AuthController::class, 'updateProfile']);
+    Route::post('/auth/onboarding/complete', [AuthController::class, 'completeOnboarding']);
 
     // Groups
     Route::apiResource('groups', GroupController::class);

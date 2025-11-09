@@ -4,10 +4,18 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public string $preferred_payment_method = '';
+
     public string $venmo_username = '';
+
     public string $cashapp_tag = '';
+
+    public bool $enableVenmo = false;
+
+    public bool $enableCashApp = false;
+
     public bool $skipPayment = false;
 
     /**
@@ -19,6 +27,10 @@ new class extends Component {
         $this->preferred_payment_method = $user->preferred_payment_method ?? '';
         $this->venmo_username = $user->venmo_username ?? '';
         $this->cashapp_tag = $user->cashapp_tag ?? '';
+
+        // Set checkboxes based on existing data
+        $this->enableVenmo = ! empty($user->venmo_username);
+        $this->enableCashApp = ! empty($user->cashapp_tag);
     }
 
     /**
@@ -28,25 +40,59 @@ new class extends Component {
     {
         $user = Auth::user();
 
-        // Validate based on selected payment method
-        if (!$this->skipPayment) {
-            $rules = [
-                'preferred_payment_method' => ['required', 'in:venmo,cashapp'],
-            ];
+        // Validate based on selected payment methods
+        if (! $this->skipPayment) {
+            // At least one payment method must be selected
+            if (! $this->enableVenmo && ! $this->enableCashApp) {
+                $this->addError('payment_methods', 'Please select at least one payment method.');
 
-            if ($this->preferred_payment_method === 'venmo') {
+                return;
+            }
+
+            $rules = [];
+
+            // Validate Venmo if enabled
+            if ($this->enableVenmo) {
                 $rules['venmo_username'] = ['required', 'string', 'max:255'];
-            } elseif ($this->preferred_payment_method === 'cashapp') {
+            }
+
+            // Validate Cash App if enabled
+            if ($this->enableCashApp) {
                 $rules['cashapp_tag'] = ['required', 'string', 'max:255'];
+            }
+
+            // If both are enabled, require a preferred method
+            if ($this->enableVenmo && $this->enableCashApp) {
+                $rules['preferred_payment_method'] = ['required', 'in:VENMO,CASH_APP'];
             }
 
             $validated = $this->validate($rules);
 
-            $user->update([
-                'preferred_payment_method' => $validated['preferred_payment_method'],
-                'venmo_username' => $this->preferred_payment_method === 'venmo' ? $validated['venmo_username'] : $user->venmo_username,
-                'cashapp_tag' => $this->preferred_payment_method === 'cashapp' ? $validated['cashapp_tag'] : $user->cashapp_tag,
-            ]);
+            // Update user payment information
+            $updateData = [];
+
+            if ($this->enableVenmo) {
+                $updateData['venmo_username'] = $validated['venmo_username'];
+            } else {
+                $updateData['venmo_username'] = null;
+            }
+
+            if ($this->enableCashApp) {
+                $updateData['cashapp_tag'] = $validated['cashapp_tag'];
+            } else {
+                $updateData['cashapp_tag'] = null;
+            }
+
+            // Set preferred method based on what's enabled
+            if ($this->enableVenmo && $this->enableCashApp) {
+                $updateData['preferred_payment_method'] = $validated['preferred_payment_method'];
+            } elseif ($this->enableVenmo) {
+                $updateData['preferred_payment_method'] = 'VENMO';
+            } elseif ($this->enableCashApp) {
+                $updateData['preferred_payment_method'] = 'CASH_APP';
+            }
+
+            $user->update($updateData);
         }
 
         $this->redirect(route('onboarding.complete'));
@@ -61,7 +107,7 @@ new class extends Component {
     }
 }; ?>
 
-<x-layouts.auth.simple>
+<div>
     <x-slot:title>Payment Setup</x-slot:title>
 
     <div class="min-h-screen flex items-center justify-center px-4 py-12">
@@ -108,53 +154,79 @@ new class extends Component {
                 </div>
 
                 <!-- Form -->
-                <form wire:submit="save" class="p-8 space-y-6">
+                <form
+                    wire:submit="save"
+                    x-data="{
+                        enableVenmo: @entangle('enableVenmo').live,
+                        enableCashApp: @entangle('enableCashApp').live
+                    }"
+                    class="p-8 space-y-6"
+                >
                     @if(!$skipPayment)
                         <!-- Payment Method Selection -->
                         <div>
-                            <label class="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4">Select Your Payment Method</label>
+                            <label class="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Select Your Payment Methods</label>
+                            <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Choose one or both payment methods</p>
                             <div class="grid md:grid-cols-2 gap-4">
                                 <!-- Venmo Option -->
-                                <label class="relative cursor-pointer">
-                                    <input type="radio" wire:model.live="preferred_payment_method" value="venmo" class="peer sr-only">
-                                    <div class="border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl p-6 transition-all duration-200 peer-checked:border-brand-600 peer-checked:bg-brand-50 dark:peer-checked:bg-brand-900/20 peer-checked:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-600">
-                                        <div class="flex items-center space-x-3 mb-3">
-                                            <div class="w-12 h-12 rounded-xl bg-[#008CFF] flex items-center justify-center text-white font-bold text-xl">
-                                                V
+                                <div class="relative">
+                                    <input type="checkbox" wire:model.live="enableVenmo" id="venmo-checkbox" class="peer sr-only">
+                                    <label for="venmo-checkbox" class="cursor-pointer block border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl p-6 transition-all duration-200 peer-checked:border-[#008CFF] peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 peer-checked:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-600">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-12 h-12 rounded-xl bg-[#008CFF] flex items-center justify-center text-white font-bold text-xl">
+                                                    V
+                                                </div>
+                                                <div>
+                                                    <h3 class="font-bold text-lg text-zinc-900 dark:text-white">Venmo</h3>
+                                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">@username</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 class="font-bold text-lg text-zinc-900 dark:text-white">Venmo</h3>
-                                                <p class="text-xs text-zinc-500 dark:text-zinc-400">@username</p>
+                                            <div class="flex-shrink-0">
+                                                <div class="w-6 h-6 rounded-md border-2 transition-all" :class="enableVenmo ? 'border-[#008CFF] bg-[#008CFF] scale-110' : 'border-zinc-300 dark:border-zinc-600'">
+                                                    <svg x-show="enableVenmo" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                </div>
                                             </div>
                                         </div>
                                         <p class="text-sm text-zinc-600 dark:text-zinc-300">Popular for social payments</p>
-                                    </div>
-                                </label>
+                                    </label>
+                                </div>
 
                                 <!-- Cash App Option -->
-                                <label class="relative cursor-pointer">
-                                    <input type="radio" wire:model.live="preferred_payment_method" value="cashapp" class="peer sr-only">
-                                    <div class="border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl p-6 transition-all duration-200 peer-checked:border-brand-600 peer-checked:bg-brand-50 dark:peer-checked:bg-brand-900/20 peer-checked:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-600">
-                                        <div class="flex items-center space-x-3 mb-3">
-                                            <div class="w-12 h-12 rounded-xl bg-[#00D632] flex items-center justify-center text-white font-bold text-xl">
-                                                $
+                                <div class="relative">
+                                    <input type="checkbox" wire:model.live="enableCashApp" id="cashapp-checkbox" class="peer sr-only">
+                                    <label for="cashapp-checkbox" class="cursor-pointer block border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl p-6 transition-all duration-200 peer-checked:border-[#00D632] peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 peer-checked:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-600">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-12 h-12 rounded-xl bg-[#00D632] flex items-center justify-center text-white font-bold text-xl">
+                                                    $
+                                                </div>
+                                                <div>
+                                                    <h3 class="font-bold text-lg text-zinc-900 dark:text-white">Cash App</h3>
+                                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">$cashtag</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 class="font-bold text-lg text-zinc-900 dark:text-white">Cash App</h3>
-                                                <p class="text-xs text-zinc-500 dark:text-zinc-400">$cashtag</p>
+                                            <div class="flex-shrink-0">
+                                                <div class="w-6 h-6 rounded-md border-2 transition-all" :class="enableCashApp ? 'border-[#00D632] bg-[#00D632] scale-110' : 'border-zinc-300 dark:border-zinc-600'">
+                                                    <svg x-show="enableCashApp" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                </div>
                                             </div>
                                         </div>
                                         <p class="text-sm text-zinc-600 dark:text-zinc-300">Fast and simple transfers</p>
-                                    </div>
-                                </label>
+                                    </label>
+                                </div>
                             </div>
-                            @error('preferred_payment_method')
+                            @error('payment_methods')
                                 <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <!-- Venmo Username Input -->
-                        @if($preferred_payment_method === 'venmo')
+                        @if($enableVenmo)
                             <div class="animate-in fade-in slide-in-from-top-2 duration-300">
                                 <flux:input
                                     wire:model="venmo_username"
@@ -170,7 +242,7 @@ new class extends Component {
                         @endif
 
                         <!-- Cash App Tag Input -->
-                        @if($preferred_payment_method === 'cashapp')
+                        @if($enableCashApp)
                             <div class="animate-in fade-in slide-in-from-top-2 duration-300">
                                 <flux:input
                                     wire:model="cashapp_tag"
@@ -184,6 +256,33 @@ new class extends Component {
                             </div>
                         @endif
 
+                        <!-- Preferred Method Selection (only shown if both are enabled) -->
+                        @if($enableVenmo && $enableCashApp)
+                            <div class="animate-in fade-in slide-in-from-top-2 duration-300">
+                                <label class="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Preferred Payment Method</label>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-3">When both are available, which would you prefer to receive by default?</p>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="relative">
+                                        <input type="radio" wire:model.live="preferred_payment_method" value="VENMO" id="prefer-venmo" class="peer sr-only">
+                                        <label for="prefer-venmo" class="cursor-pointer block border-2 border-zinc-200 dark:border-zinc-700 rounded-xl p-4 transition-all duration-200 peer-checked:border-[#008CFF] peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 hover:border-zinc-300 dark:hover:border-zinc-600 text-center">
+                                            <div class="w-8 h-8 rounded-lg bg-[#008CFF] flex items-center justify-center text-white font-bold text-sm mx-auto mb-2">V</div>
+                                            <p class="text-sm font-medium text-zinc-900 dark:text-white">Venmo</p>
+                                        </label>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="radio" wire:model.live="preferred_payment_method" value="CASH_APP" id="prefer-cashapp" class="peer sr-only">
+                                        <label for="prefer-cashapp" class="cursor-pointer block border-2 border-zinc-200 dark:border-zinc-700 rounded-xl p-4 transition-all duration-200 peer-checked:border-[#00D632] peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 hover:border-zinc-300 dark:hover:border-zinc-600 text-center">
+                                            <div class="w-8 h-8 rounded-lg bg-[#00D632] flex items-center justify-center text-white font-bold text-sm mx-auto mb-2">$</div>
+                                            <p class="text-sm font-medium text-zinc-900 dark:text-white">Cash App</p>
+                                        </label>
+                                    </div>
+                                </div>
+                                @error('preferred_payment_method')
+                                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
+
                         <!-- Info Box -->
                         <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
                             <div class="flex items-start space-x-3">
@@ -193,7 +292,7 @@ new class extends Component {
                                 <div>
                                     <p class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">Why do we need this?</p>
                                     <p class="text-xs text-blue-700 dark:text-blue-300">
-                                        We'll use this to help group members send you payments easily. You can always update this later in your settings.
+                                        We'll use this to help group members send you payments easily. You can choose both options for maximum flexibility. You can always update this later in your settings.
                                     </p>
                                 </div>
                             </div>
@@ -242,4 +341,4 @@ new class extends Component {
             </div>
         </div>
     </div>
-</x-layouts.auth.simple>
+</div>

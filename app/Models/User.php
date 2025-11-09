@@ -252,6 +252,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine if the user has configured at least one payment method.
+     */
+    public function hasPaymentMethodConfigured(): bool
+    {
+        return filled($this->venmo_username) || filled($this->cashapp_tag);
+    }
+
+    /**
      * Check if user has completed onboarding
      */
     public function hasCompletedOnboarding(): bool

@@ -14,8 +14,9 @@ class AddMemberRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required_without:phone', 'email', 'exists:users,email'],
-            'phone' => ['required_without:email', 'string', 'exists:users,phone'],
+            // Allow email/phone for both existing users AND new invitations
+            'email' => ['required_without:phone', 'email'],
+            'phone' => ['required_without:email', 'string'],
             'preferred_channel' => ['sometimes', 'in:VENMO,CASH_APP,CARD'],
             'venmo_username' => ['required_if:preferred_channel,VENMO', 'nullable', 'string'],
             'cash_tag' => ['nullable', 'string'],

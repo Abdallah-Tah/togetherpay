@@ -1,10 +1,4 @@
-<?php
-
-use function Livewire\Volt\{state};
-
-?>
-
-<x-layouts.auth.simple>
+<div>
     <x-slot:title>Welcome to TogetherPay</x-slot:title>
 
     <div class="min-h-screen flex items-center justify-center px-4 py-12">
@@ -130,4 +124,4 @@ use function Livewire\Volt\{state};
             </div>
         </div>
     </div>
-</x-layouts.auth.simple>
+</div>

@@ -10,7 +10,7 @@ mount(function () {
 
 ?>
 
-<x-layouts.auth.simple>
+<div>
     <x-slot:title>Welcome Aboard!</x-slot:title>
 
     <div class="min-h-screen flex items-center justify-center px-4 py-12">
@@ -155,4 +155,4 @@ mount(function () {
             </div>
         </div>
     </div>
-</x-layouts.auth.simple>
+</div>

@@ -35,6 +35,7 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role,
+                'onboarding_completed' => $user->hasCompletedOnboarding(),
             ],
             'token' => $token,
         ], 201);
@@ -67,6 +68,7 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role,
+                'onboarding_completed' => $user->hasCompletedOnboarding(),
             ],
             'token' => $token,
         ]);
@@ -89,8 +91,28 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         return response()->json([
-            'user' => $request->user(),
+            'user' => array_merge($user->toArray(), [
+                'onboarding_completed' => $user->hasCompletedOnboarding(),
+            ]),
+        ]);
+    }
+
+    /**
+     * Complete user onboarding
+     */
+    public function completeOnboarding(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->completeOnboarding();
+
+        return response()->json([
+            'message' => 'Onboarding completed successfully',
+            'user' => array_merge($user->fresh()->toArray(), [
+                'onboarding_completed' => true,
+            ]),
         ]);
     }
 

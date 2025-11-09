@@ -6,11 +6,15 @@ class PaymentLinks
 {
     /**
      * Generate Cash App universal link (HTTPS)
-     * Format: https://cash.app/$<cashtag>/<amount>?note=<encoded_note>
+     * Format: https://cash.app/$<cashtag>/<amount>
+     *
+     * ⚠️ NOTE: Cash App does NOT support query parameters (note, memo, etc.)
+     * This is a security feature. Only the cashtag and amount in the path work.
+     * Example: https://cash.app/$IkramBarkad/5.00
      *
      * @param  string  $recipient  $cashtag (e.g., $IkramBarkad)
      * @param  int  $amountCents  Amount in cents
-     * @param  string  $note  Payment note/memo
+     * @param  string  $note  Payment note (ignored - Cash App doesn't support it)
      * @return string Universal link URL
      */
     public static function cashApp(string $recipient, int $amountCents, string $note = ''): string
@@ -21,15 +25,9 @@ class PaymentLinks
         // Remove $ prefix if present for the URL path
         $cashtag = ltrim($recipient, '$');
 
-        // Build URL with amount in path
-        $url = "https://cash.app/\${$cashtag}/{$amount}";
-
-        // Add note as query parameter if provided
-        if (! empty($note)) {
-            $url .= '?note='.urlencode($note);
-        }
-
-        return $url;
+        // Build clean URL with only cashtag and amount
+        // Format: https://cash.app/$IkramBarkad/5.00
+        return 'https://cash.app/$' . $cashtag . '/' . $amount;
     }
 
     /**

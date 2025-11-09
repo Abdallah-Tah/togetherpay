@@ -21,6 +21,7 @@
                 </div>
             </div>
         </div>
-        @fluxScripts
+        @livewireScripts
+        @include('partials.flux-scripts')
     </body>
 </html>

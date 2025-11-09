@@ -131,7 +131,7 @@
         </flux:header>
 
         {{ $slot }}
-
-        @fluxScripts
+        @livewireScripts
+        @include('partials.flux-scripts')
     </body>
 </html>

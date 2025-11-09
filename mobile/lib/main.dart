@@ -10,6 +10,7 @@ import 'env.dart';
 import 'pay_screen.dart';
 import 'screens/groups/groups_list_screen.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/payments/payment_requests_screen.dart';
 import 'screens/settings/notification_preferences_screen.dart';
 import 'screens/settings/payment_methods_screen.dart';
@@ -59,6 +60,7 @@ class TogetherPayApp extends StatefulWidget {
 class _TogetherPayAppState extends State<TogetherPayApp> {
   String? _authToken;
   bool _isInitializing = true;
+  bool _needsOnboarding = false;
 
   @override
   void initState() {
@@ -76,11 +78,34 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
       // Set authorization header for all API requests
       dio.options.headers['Authorization'] = 'Bearer $_authToken';
       await PushNotificationsService.instance.syncDeviceRegistration(dio);
+
+      // Check if user needs onboarding
+      await _checkOnboardingStatus();
     }
 
     setState(() {
       _isInitializing = false;
     });
+  }
+
+  Future<void> _checkOnboardingStatus() async {
+    try {
+      final response = await dio.get('/auth/me');
+      final user = response.data['user'] as Map<String, dynamic>?;
+      final onboardingCompleted = user?['onboarding_completed'] as bool? ?? true;
+
+      setState(() {
+        _needsOnboarding = !onboardingCompleted;
+      });
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Error checking onboarding status: $e');
+      }
+      // Default to not needing onboarding if API call fails
+      setState(() {
+        _needsOnboarding = false;
+      });
+    }
   }
 
   /// Handle logout and clear auth token
@@ -112,9 +137,17 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     if (token != null) {
       dio.options.headers['Authorization'] = 'Bearer $token';
       await PushNotificationsService.instance.syncDeviceRegistration(dio);
+      await _checkOnboardingStatus();
     }
     setState(() {
       _authToken = token;
+    });
+  }
+
+  /// Handle onboarding completion
+  void _handleOnboardingComplete() {
+    setState(() {
+      _needsOnboarding = false;
     });
   }
 
@@ -130,7 +163,9 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
       home: _isInitializing
           ? const SplashScreen()
           : _authToken != null
-              ? MainScaffold(onLogout: _handleLogout)
+              ? _needsOnboarding
+                  ? OnboardingScreen(onComplete: _handleOnboardingComplete)
+                  : MainScaffold(onLogout: _handleLogout)
               : LoginScreenWrapper(onAuthSuccess: _handleAuthSuccess),
     );
   }

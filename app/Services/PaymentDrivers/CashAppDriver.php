@@ -16,16 +16,21 @@ class CashAppDriver implements PaymentRequestDriver
         $handle = $member->cash_tag ?? $member->cash_phone ?? $member->cash_email ?? '';
         $amount = number_format($amountCents / 100, 2, '.', '');
 
-        if ($member->cash_tag) {
-            $cashtag = ltrim($member->cash_tag, '$');
-            $recipient = '$' . $cashtag;
-            $uri = $this->buildSendUri($recipient, $amount, $note);
+        // Treat anything that is explicitly a cashtag (or stored as one) as a cashtag
+        if (! empty($member->cash_tag) || str_starts_with($handle, '$')) {
+            $cashtag = ltrim($member->cash_tag ?? $handle, '$');
+
+            // Build recipient with $ prefix for deep link
+            $recipient = '$'.$cashtag;
+
+            // Smart deep link - works best on Android and some iOS versions
+            $uri = $this->buildSmartUri($recipient, $amount, $note);
+
+            // Web-friendly URL - always works as fallback, especially on iOS
             $webFallback = sprintf(
-                'https://cash.app/$%s/%s?note=%s&pr=%s',
-                $cashtag,
-                $amount,
-                urlencode($note),
-                urlencode($prCode)
+                'https://cash.app/$%s/%s',
+                rawurlencode($cashtag),
+                $amount
             );
 
             return [
@@ -34,15 +39,20 @@ class CashAppDriver implements PaymentRequestDriver
             ];
         }
 
+        // Fallback for phone/email (less common)
         $recipient = $handle;
-        $uri = $this->buildSendUri($recipient, $amount, $note);
+        $uri = $this->buildSmartUri($recipient, $amount, $note);
+
         $webFallback = sprintf(
-            'https://cash.app/send?recipient=%s&amount=%s&note=%s&pr=%s',
-            urlencode($recipient),
-            $amount,
-            urlencode($note),
-            urlencode($prCode)
+            'https://cash.app/send?recipient=%s&amount=%s',
+            rawurlencode($recipient),
+            $amount
         );
+
+        // Include note in web fallback when present
+        if (! empty($note)) {
+            $webFallback .= '&note='.rawurlencode($note);
+        }
 
         return [
             'uri' => $uri,
@@ -68,14 +78,31 @@ class CashAppDriver implements PaymentRequestDriver
         return 'cash_app';
     }
 
-    protected function buildSendUri(string $recipient, string $amount, string $note): string
+    /**
+     * Build Cash App universal link
+     *
+     * IMPORTANT: Cash App does NOT support cashapp:// deep links with query parameters.
+     * The ONLY format that works is: https://cash.app/$cashtag/amount
+     *
+     * Cash App ignores ALL query parameters (note, memo, etc.) for security reasons.
+     * The amount is shown in the URL path, NOT prefilled in the app - user must enter it manually.
+     *
+     * This is a universal link that:
+     * - Opens Cash App on mobile if installed
+     * - Opens in browser if app not installed
+     * - Works on both iOS and Android
+     *
+     * @param  string  $recipient  Recipient identifier (with $ for cashtag)
+     * @param  string  $amount  Amount in decimal format (e.g., "5.00")
+     * @param  string  $note  Payment note (NOT USED - Cash App ignores it)
+     * @return string Universal link (HTTPS URL)
+     */
+    protected function buildSmartUri(string $recipient, string $amount, string $note): string
     {
-        $query = http_build_query([
-            'recipient' => $recipient,
-            'amount' => $amount,
-            'note' => $note,
-        ], '', '&', PHP_QUERY_RFC3986);
+        // Cash App only works with HTTPS universal links, not cashapp:// scheme
+        // Format: https://cash.app/$cashtag/amount
+        $cashtag = ltrim($recipient, '$');
 
-        return "cashapp://send?{$query}";
+        return "https://cash.app/\${$cashtag}/{$amount}";
     }
 }

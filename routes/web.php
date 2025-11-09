@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\SmartPayController;
 use App\Livewire\Groups\Create as GroupsCreate;
 use App\Livewire\Groups\Index as GroupsIndex;
@@ -17,6 +18,9 @@ Route::get('/', function () {
 
 // Smart Pay - Public payment page (no auth required)
 Route::get('/pay/{request}', [SmartPayController::class, 'show'])->name('smartpay.show');
+
+// Redirect to Cash App (public, no auth required)
+Route::get('/redirect/cashapp', [RedirectController::class, 'cashApp'])->name('redirect.cashapp');
 
 // Invitation acceptance - Public page (no auth required to view)
 Volt::route('/accept-invitation/{token}', 'accept-invitation')->name('invitations.accept');

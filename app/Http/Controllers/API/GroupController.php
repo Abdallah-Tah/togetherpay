@@ -147,10 +147,29 @@ class GroupController extends Controller
             $user = User::where('phone', $request->phone)->first();
         }
 
+        // If user doesn't exist, create a placeholder/invited user
         if (! $user) {
-            return response()->json([
-                'message' => 'User not found. They need to register first.',
-            ], 404);
+            \Log::info('USER NOT FOUND - CREATING INVITATION', [
+                'email' => $request->email,
+                'phone' => $request->phone,
+            ]);
+
+            $user = User::create([
+                'name' => $request->email ? explode('@', $request->email)[0] : 'Invited User',
+                'email' => $request->email ?? $request->phone . '@placeholder.local',
+                'phone' => $request->phone,
+                'password' => \Hash::make(\Str::random(32)), // Random password until they register
+                'role' => 'member',
+                'email_verified_at' => null, // Not verified yet
+            ]);
+
+            \Log::info('INVITATION USER CREATED', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+
+            // TODO: Send invitation email/SMS to the user
+            // This should be implemented as a notification or job
         }
 
         \Log::info('FOUND USER', [

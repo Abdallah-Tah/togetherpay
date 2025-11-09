@@ -243,68 +243,117 @@ class _PaymentRequestDetailsSheetState
 
     final amount = (widget.paymentRequest['amount_cents'] as int? ?? 0) / 100.0;
     final amountStr = amount.toStringAsFixed(2);
-    final prCode = widget.paymentRequest['pr_code'] as String? ?? '';
-    final note = 'Payment for ${widget.paymentRequest['group']?['name'] ?? 'TogetherPay'}';
-
-    Uri? deepLinkUri;
-    Uri? fallbackUri;
+    final note =
+        'Payment for ${widget.paymentRequest['group']?['name'] ?? 'TogetherPay'}';
 
     if (app == 'Cash App') {
-      // Clean the cashtag (remove $ if present)
-      final cashtag = handle.startsWith('\$') ? handle.substring(1) : handle;
-      // Cash App doesn't have a reliable deep link for payment requests
-      // Use web URL which will prompt to open in app if installed
-      fallbackUri = Uri.parse('https://cash.app/\$$cashtag/$amountStr?note=${Uri.encodeComponent(note)}&pr=${Uri.encodeComponent(prCode)}');
-      deepLinkUri = fallbackUri; // Use same URL for both
+      var cashtag = handle.startsWith('\$') ? handle.substring(1) : handle;
+      cashtag = cashtag.replaceAll(' ', '').trim();
+
+      final cashAppUrl =
+          Uri.parse('https://cash.app/\$${cashtag}/${amountStr}');
+
+      if (Env.debug) {
+        debugPrint('===========================================');
+        debugPrint('CASH APP URL: $cashAppUrl');
+        debugPrint('Cashtag: $cashtag | Amount: $amountStr');
+        debugPrint('===========================================');
+      }
+
+      // Force opening in browser by using webOnlyWindowName
+      // This prevents Android from intercepting the app link directly
+      // Browser → Cash App web page → Redirects to app with amount prefilled
+      final launched = await launchUrl(
+        cashAppUrl,
+        mode: LaunchMode.externalApplication,
+        webOnlyWindowName: '_blank', // Force browser on Android
+      );
+
+      if (Env.debug) {
+        debugPrint('Cash App launch result: $launched');
+      }
+
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to open Cash App'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
     } else if (app == 'Venmo') {
-      // Clean the username (remove @ if present)
       final username = handle.startsWith('@') ? handle.substring(1) : handle;
-      // Use deep link for Venmo
-      deepLinkUri = Uri.parse('venmo://paycharge?txn=pay&recipients=$username&amount=$amountStr&note=${Uri.encodeComponent(note)}');
-      // Web fallback
-      fallbackUri = Uri.parse('https://venmo.com/$username?txn=pay&amount=$amountStr&note=${Uri.encodeComponent(note)}');
-    }
 
-    if (deepLinkUri != null) {
+      final venmoWebUri = Uri.parse(
+        'https://venmo.com/$username'
+        '?txn=pay&amount=$amountStr&note=${Uri.encodeComponent(note)}',
+      );
+
+      if (Env.debug) {
+        debugPrint('===========================================');
+        debugPrint('VENMO WEB URL: $venmoWebUri');
+        debugPrint('Username: $username | Amount: $amountStr');
+        debugPrint('===========================================');
+      }
+
+      bool launched = false;
       try {
-        // Try deep link first
-        bool launched = false;
-        try {
-          launched = await launchUrl(deepLinkUri, mode: LaunchMode.externalApplication);
-        } catch (e) {
-          if (Env.debug) {
-            debugPrint('Deep link failed, trying fallback: $e');
-          }
-        }
-
-        // If deep link failed, try web fallback
-        if (!launched && fallbackUri != null) {
-          if (await canLaunchUrl(fallbackUri)) {
-            await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-          } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$app is not installed'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-            }
-          }
-        }
+        launched = await launchUrl(
+          venmoWebUri,
+          mode: LaunchMode
+              .platformDefault, // browser first, then app via redirect
+        );
       } catch (e) {
         if (Env.debug) {
-          debugPrint('Error launching $app: $e');
-        }
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to open $app'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          debugPrint('Venmo web launch failed: $e');
         }
       }
+
+      if (!launched) {
+        final venmoDeepLink = Uri.parse(
+          'venmo://paycharge'
+          '?txn=pay&recipients=$username&amount=$amountStr&note=${Uri.encodeComponent(note)}',
+        );
+
+        try {
+          if (await canLaunchUrl(venmoDeepLink)) {
+            await launchUrl(
+              venmoDeepLink,
+              mode: LaunchMode.externalApplication,
+            );
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Venmo is not installed'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        } catch (e) {
+          if (Env.debug) {
+            debugPrint('Error launching Venmo deep link: $e');
+          }
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to open Venmo'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+      return;
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unsupported payment app: $app'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -336,8 +385,7 @@ class _PaymentRequestDetailsSheetState
     final paidAtStr = pr['paid_at'] as String?;
     final sentAtStr = pr['sent_at'] as String?;
     final isProcessing = _isProcessing;
-    final canCancelRequest =
-        prCode != null && _canCancelStatus(status);
+    final canCancelRequest = prCode != null && _canCancelStatus(status);
     final showStandardActions = !isPaid && !isAwaitingConfirm;
 
     DateTime? dueDate;
@@ -348,9 +396,7 @@ class _PaymentRequestDetailsSheetState
     if (dueDateStr != null) {
       try {
         dueDate = DateTime.parse(dueDateStr);
-        if (!isPaid &&
-            !isAwaitingConfirm &&
-            dueDate.isBefore(DateTime.now())) {
+        if (!isPaid && !isAwaitingConfirm && dueDate.isBefore(DateTime.now())) {
           isOverdue = true;
         }
       } catch (e) {
@@ -394,7 +440,6 @@ class _PaymentRequestDetailsSheetState
           ),
           child: Column(
             children: [
-              // Drag handle
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 width: 40,
@@ -404,13 +449,11 @@ class _PaymentRequestDetailsSheetState
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // Content
               Expanded(
                 child: ListView(
                   controller: scrollController,
                   padding: const EdgeInsets.all(AppTheme.spaceLarge),
                   children: [
-                    // Header
                     Row(
                       children: [
                         CircleAvatar(
@@ -457,8 +500,6 @@ class _PaymentRequestDetailsSheetState
                       ],
                     ),
                     const SizedBox(height: AppTheme.spaceLarge),
-
-                    // Amount card
                     Card(
                       elevation: 0,
                       color: Theme.of(context)
@@ -484,7 +525,8 @@ class _PaymentRequestDetailsSheetState
                                   .displaySmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                   ),
                             ),
                           ],
@@ -492,8 +534,6 @@ class _PaymentRequestDetailsSheetState
                       ),
                     ),
                     const SizedBox(height: AppTheme.spaceLarge),
-
-                    // Status info
                     _buildInfoRow(
                       'Status',
                       isPaid
@@ -536,12 +576,9 @@ class _PaymentRequestDetailsSheetState
                         null,
                         copyable: true,
                       ),
-
                     const SizedBox(height: AppTheme.spaceLarge),
                     const Divider(),
                     const SizedBox(height: AppTheme.spaceMedium),
-
-                    // Contact info
                     Text(
                       'Contact Information',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -565,10 +602,7 @@ class _PaymentRequestDetailsSheetState
                         venmoHandle,
                         onTap: () => _openPaymentApp('Venmo', venmoHandle),
                       ),
-
                     const SizedBox(height: AppTheme.spaceLarge),
-
-                    // Actions
                     if (showStandardActions) ...[
                       FilledButton.icon(
                         onPressed: isProcessing ? null : _markAsPaid,
@@ -578,8 +612,8 @@ class _PaymentRequestDetailsSheetState
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
                             : const Icon(Icons.check_circle),
@@ -622,17 +656,14 @@ class _PaymentRequestDetailsSheetState
                         ),
                       ),
                     ],
-
-                    // Quick payment buttons
                     if (showStandardActions &&
                         (cashAppHandle != null || venmoHandle != null)) ...[
                       const SizedBox(height: AppTheme.spaceMedium),
                       Text(
                         'Quick Pay',
-                        style:
-                            Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: AppTheme.spaceSmall),
                       Row(
@@ -660,7 +691,6 @@ class _PaymentRequestDetailsSheetState
                         ],
                       ),
                     ],
-
                     const SizedBox(height: AppTheme.spaceLarge),
                   ],
                 ),
@@ -743,8 +773,7 @@ class _PaymentRequestDetailsSheetState
                   color: onTap != null
                       ? Theme.of(context).colorScheme.primary
                       : null,
-                  decoration:
-                      onTap != null ? TextDecoration.underline : null,
+                  decoration: onTap != null ? TextDecoration.underline : null,
                 ),
               ),
             ),
@@ -763,8 +792,6 @@ class _PaymentRequestDetailsSheetState
   bool _canCancelStatus(String? status) {
     if (status == null) return false;
     final normalized = status.toLowerCase();
-    return normalized == 'pending' ||
-        normalized == 'sent' ||
-        normalized == 'member_marked';
+    return normalized == 'pending' || normalized == 'sent';
   }
 }

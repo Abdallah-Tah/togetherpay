@@ -118,7 +118,7 @@
         </flux:sidebar>
 
         {{ $slot }}
-
-        @fluxScripts
+        @livewireScripts
+        @include('partials.flux-scripts')
     </body>
 </html>

@@ -11,14 +11,28 @@ This is a limitation of Cash App's public URL format. Unlike some payment apps, 
 ## Current Behavior
 
 ### What Works ✅
-- Link opens Cash App
-- Shows recipient's profile ($IkramBarkad)
+- Link opens Cash App: `https://cash.app/$IkramBarkad/5.00`
+- Shows recipient's profile
+- Amount is displayed in URL (but not pre-filled in the app)
 - User can send payment
 
 ### What Doesn't Work ❌
-- Amount is NOT pre-filled
+- Amount is NOT pre-filled in the Cash App interface
 - Note/memo is NOT pre-filled
-- User must enter amount manually
+- User must enter amount manually (5.00)
+- Adding `?note=...` or `?pr=...` parameters doesn't work
+
+### Correct Deep Link Format
+```
+https://cash.app/$IkramBarkad/5.00
+```
+
+**This is the proper format Cash App accepts:**
+- Clean cashtag with `$` prefix
+- Amount in `/amount` path format
+- No query parameters (they're ignored)
+- Opens Cash App directly on mobile
+- Opens in browser then redirects on desktop
 
 ---
 

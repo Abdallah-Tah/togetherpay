@@ -17,8 +17,19 @@ class EnsureOnboardingCompleted
     {
         $user = $request->user();
 
-        // Skip if user is not authenticated or already completed onboarding
-        if (! $user || $user->hasCompletedOnboarding()) {
+        if (! $user) {
+            return $next($request);
+        }
+
+        // Skip if user already completed onboarding
+        if ($user->hasCompletedOnboarding()) {
+            return $next($request);
+        }
+
+        // Allow users who already configured payments (e.g. via mobile) to bypass onboarding.
+        if ($user->hasPaymentMethodConfigured()) {
+            $user->completeOnboarding();
+
             return $next($request);
         }
 
