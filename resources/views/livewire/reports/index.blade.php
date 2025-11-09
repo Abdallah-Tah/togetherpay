@@ -192,7 +192,7 @@
                                     </div>
                                     <div>
                                         <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $export->group->name }}</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $export->type }} · {{ $export->created_at->diffForHumans() }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ strtoupper($export->format) }} · {{ $export->created_at->diffForHumans() }}</p>
                                     </div>
                                 </div>
                             </div>

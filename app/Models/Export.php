@@ -9,9 +9,15 @@ class Export extends Model
 {
     protected $fillable = [
         'group_id',
-        'type',
-        'path',
-        'created_by',
+        'user_id',
+        'export_type',
+        'format',
+        'file_path',
+        'params',
+    ];
+
+    protected $casts = [
+        'params' => 'array',
     ];
 
     public function group(): BelongsTo
@@ -19,8 +25,8 @@ class Export extends Model
         return $this->belongsTo(Group::class);
     }
 
-    public function creator(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class);
     }
 }

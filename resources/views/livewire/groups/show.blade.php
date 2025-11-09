@@ -8,7 +8,7 @@
     <div class="bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 rounded-3xl shadow-xl p-8 text-white">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-3xl font-bold mb-2">{{ $heading }}</h1>
+                <h1 class="text-3xl font-bold mb-2">{{ $pageTitle }}</h1>
                 <p class="text-brand-100 text-lg">Review the latest performance and member activity for this group.</p>
             </div>
         </div>
@@ -124,27 +124,27 @@
                     <div class="space-y-3">
                         @foreach($group->members as $member)
                             <div class="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition border border-zinc-100 dark:border-zinc-700">
-                                <div class="flex items-center space-x-4">
-                                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-sm font-semibold">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0">
+                                    <div class="h-10 w-10 flex-shrink-0 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-sm font-semibold">
                                         {{ $member->user->initials() }}
                                     </div>
-                                    <div>
-                                        <p class="font-semibold text-zinc-900 dark:text-white">{{ $member->user->name }}</p>
-                                        <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ $member->user->email }}</p>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="font-semibold text-zinc-900 dark:text-white truncate">{{ $member->user->name }}</p>
+                                        <p class="text-sm text-zinc-500 dark:text-zinc-400 hidden sm:block truncate">{{ $member->user->email }}</p>
                                     </div>
                                 </div>
-                                <div class="flex items-center space-x-4">
+                                <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
                                     <div class="text-right">
-                                        <p class="font-semibold text-zinc-900 dark:text-white">
+                                        <p class="font-semibold text-zinc-900 dark:text-white text-sm sm:text-base">
                                             @if($member->share_type === 'PERCENT')
                                                 {{ $member->share_value }}%
                                             @else
                                                 ${{ number_format($member->share_value, 2) }}
                                             @endif
                                         </p>
-                                        <p class="text-xs text-zinc-500 dark:text-zinc-400 uppercase">{{ ucfirst($member->preferred_channel) }}</p>
+                                        <p class="text-xs text-zinc-500 dark:text-zinc-400 uppercase hidden sm:block">{{ ucfirst($member->preferred_channel) }}</p>
                                     </div>
-                                    <span class="px-3 py-1 text-xs font-semibold rounded-full
+                                    <span class="px-2 sm:px-3 py-1 text-xs font-semibold rounded-full
                                         {{ $member->status === 'active' ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300' }}">
                                         {{ ucfirst($member->status) }}
                                     </span>

@@ -189,7 +189,7 @@ class User extends Authenticatable
      */
     public function exports(): HasMany
     {
-        return $this->hasMany(Export::class, 'created_by');
+        return $this->hasMany(Export::class, 'user_id');
     }
 
     /**
