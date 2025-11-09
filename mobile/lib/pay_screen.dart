@@ -435,15 +435,20 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
                   //   ),
                   OutlinedButton.icon(
                     onPressed: () async {
-                      // Debug: Force browser opening with inAppBrowserView
+                      // Launch wallet and set flag to trigger reminder on return
                       final url = _deepLinkUri ?? _webFallback;
                       if (url != null) {
                         final uri = Uri.tryParse(url);
                         if (uri != null) {
-                          await launchUrl(
+                          final launched = await launchUrl(
                             uri,
                             mode: LaunchMode.inAppBrowserView,
                           );
+                          if (launched && mounted) {
+                            setState(() {
+                              _hasLaunchedWallet = true;
+                            });
+                          }
                         }
                       }
                     },
@@ -460,15 +465,20 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: () async {
-                        // Debug: Force browser opening with inAppBrowserView
+                        // Debug button: Launch wallet and set flag to trigger reminder on return
                         final url = _deepLinkUri ?? _webFallback;
                         if (url != null) {
                           final uri = Uri.tryParse(url);
                           if (uri != null) {
-                            await launchUrl(
+                            final launched = await launchUrl(
                               uri,
                               mode: LaunchMode.inAppBrowserView,
                             );
+                            if (launched && mounted) {
+                              setState(() {
+                                _hasLaunchedWallet = true;
+                              });
+                            }
                           }
                         }
                       },

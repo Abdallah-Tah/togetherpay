@@ -37,7 +37,8 @@ class PaymentRequestController extends Controller
                 $query->whereIn('member_id', $memberIds)
                     ->orWhereHas('cycle', function ($q) use ($ownedGroupIds) {
                         $q->whereIn('group_id', $ownedGroupIds);
-                    });
+                    })
+                    ->orWhereIn('group_id', $ownedGroupIds);
             })
             ->with(['cycle.group', 'member.user'])
             ->orderBy('created_at', 'desc')
