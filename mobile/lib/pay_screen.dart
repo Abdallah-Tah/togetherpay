@@ -139,17 +139,20 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
 
       // CRITICAL: Use redirect page for Cash App to force browser opening
       // This prevents Android from intercepting the app link
-      if (targetUri != null && targetUri.toString().startsWith('https://cash.app/')) {
+      if (targetUri != null &&
+          targetUri.toString().startsWith('https://cash.app/')) {
         // Parse Cash App URL to extract cashtag and amount
         // Format: https://cash.app/$cashtag/amount
         final cashAppUrl = targetUri.toString();
-        final match = RegExp(r'https://cash\.app/\$([^/]+)/([0-9.]+)').firstMatch(cashAppUrl);
+        final match = RegExp(r'https://cash\.app/\$([^/]+)/([0-9.]+)')
+            .firstMatch(cashAppUrl);
         if (match != null) {
           final cashtag = match.group(1);
           final amount = match.group(2);
 
           // Get note from payment data (group name + note)
-          final groupName = _paymentData?['group']?['name'] as String? ?? 'Payment';
+          final groupName =
+              _paymentData?['group']?['name'] as String? ?? 'Payment';
           final paymentNote = _paymentData?['note'] as String?;
           final note = paymentNote != null && paymentNote.isNotEmpty
               ? '$groupName - $paymentNote'
@@ -173,7 +176,8 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
             debugPrint('Base URL: $baseUrl');
           }
 
-          targetUri = Uri.parse('$baseUrl/redirect/cashapp?cashtag=$cashtag&amount=$amount&note=$encodedNote');
+          targetUri = Uri.parse(
+              '$baseUrl/redirect/cashapp?cashtag=$cashtag&amount=$amount&note=$encodedNote');
 
           if (Env.debug) {
             debugPrint('Final redirect URL: $targetUri');
@@ -183,43 +187,18 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
 
       if (targetUri != null) {
         if (Env.debug) {
-          debugPrint('Launching in browser: $targetUri');
+          debugPrint('Launching wallet with inAppBrowserView: $targetUri');
         }
 
-        // Try multiple approaches to force browser opening
-        bool launched = false;
+        // Use inAppBrowserView - this is the working approach from the DEBUG button
+        // Opens in-app browser which then properly redirects to the wallet app
+        final launched = await launchUrl(
+          targetUri,
+          mode: LaunchMode.inAppBrowserView,
+        );
 
-        // Approach 1: Try inAppBrowserView first (opens in-app browser)
-        try {
-          launched = await launchUrl(
-            targetUri,
-            mode: LaunchMode.inAppBrowserView,
-          );
-          if (Env.debug) {
-            debugPrint('inAppBrowserView launched: $launched');
-          }
-        } catch (e) {
-          if (Env.debug) {
-            debugPrint('inAppBrowserView failed: $e');
-          }
-        }
-
-        // Approach 2: If that fails, try externalApplication with webOnlyWindowName
-        if (!launched) {
-          try {
-            launched = await launchUrl(
-              targetUri,
-              mode: LaunchMode.externalApplication,
-              webOnlyWindowName: '_blank',
-            );
-            if (Env.debug) {
-              debugPrint('externalApplication launched: $launched');
-            }
-          } catch (e) {
-            if (Env.debug) {
-              debugPrint('externalApplication failed: $e');
-            }
-          }
+        if (Env.debug) {
+          debugPrint('Wallet launched: $launched');
         }
 
         if (launched) {
@@ -420,8 +399,9 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
                           _error != null
                               ? Icons.warning_amber_rounded
                               : Icons.info_outline,
-                          color:
-                              _error != null ? Colors.orange : Colors.blueAccent,
+                          color: _error != null
+                              ? Colors.orange
+                              : Colors.blueAccent,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -439,19 +419,36 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  FilledButton.icon(
-                    onPressed: _launching ? null : _launchWallet,
-                    icon: _launching
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.open_in_new),
-                    label: Text(_launching ? 'Opening...' : 'Open Wallet'),
+                  //   FilledButton.icon(
+                  //     onPressed: _launching ? null : _launchWallet,
+                  //     icon: _launching
+                  //         ? const SizedBox(
+                  //             width: 16,
+                  //             height: 16,
+                  //             child: CircularProgressIndicator(
+                  //               strokeWidth: 2,
+                  //               color: Colors.white,
+                  //             ),
+                  //           )
+                  //         : const Icon(Icons.open_in_new),
+                  //     label: Text(_launching ? 'Opening...' : 'Open Wallet'),
+                  //   ),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      // Debug: Force browser opening with inAppBrowserView
+                      final url = _deepLinkUri ?? _webFallback;
+                      if (url != null) {
+                        final uri = Uri.tryParse(url);
+                        if (uri != null) {
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.inAppBrowserView,
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.bug_report),
+                    label: const Text('Open Wallet'),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(

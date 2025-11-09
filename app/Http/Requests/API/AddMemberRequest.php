@@ -17,6 +17,7 @@ class AddMemberRequest extends FormRequest
             // Allow email/phone for both existing users AND new invitations
             'email' => ['required_without:phone', 'email'],
             'phone' => ['required_without:email', 'string'],
+            'name' => ['nullable', 'string', 'max:255'],
             'preferred_channel' => ['sometimes', 'in:VENMO,CASH_APP,CARD'],
             'venmo_username' => ['required_if:preferred_channel,VENMO', 'nullable', 'string'],
             'cash_tag' => ['nullable', 'string'],

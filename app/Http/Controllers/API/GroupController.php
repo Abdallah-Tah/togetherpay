@@ -157,8 +157,11 @@ class GroupController extends Controller
                 'phone' => $request->phone,
             ]);
 
+            $requestedName = trim((string) $request->input('name'));
+            $fallbackName = $request->email ? explode('@', $request->email)[0] : 'Invited User';
+
             $user = User::create([
-                'name' => $request->email ? explode('@', $request->email)[0] : 'Invited User',
+                'name' => $requestedName !== '' ? $requestedName : $fallbackName,
                 'email' => $request->email ?? $request->phone.'@placeholder.local',
                 'phone' => $request->phone,
                 'password' => \Hash::make(\Str::random(32)), // Random password until they register
@@ -173,6 +176,10 @@ class GroupController extends Controller
             ]);
 
             $isNewInvitation = true;
+        }
+
+        if ($request->filled('name') && $user->is_placeholder) {
+            $user->update(['name' => $request->name]);
         }
 
         \Log::info('FOUND USER', [
@@ -253,6 +260,7 @@ class GroupController extends Controller
                 'status' => 'pending',
                 'expires_at' => now()->addDays(7),
                 'member_data' => [
+                    'name' => $request->name,
                     'preferred_channel' => $request->preferred_channel ?? 'CASH_APP',
                     'venmo_username' => $request->venmo_username,
                     'cash_tag' => $request->cash_tag,

@@ -21,6 +21,7 @@ class AddMemberSheet extends StatefulWidget {
 class _AddMemberSheetState extends State<AddMemberSheet>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _shareValueController = TextEditingController(text: '0');
@@ -54,6 +55,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
   void dispose() {
     _tabController.dispose();
     _searchController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _shareValueController.dispose();
@@ -234,6 +236,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
 
     final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
+    final name = _nameController.text.trim();
 
     if (email.isEmpty && phone.isEmpty) {
       setState(() {
@@ -255,6 +258,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
 
     if (email.isNotEmpty) payload['email'] = email;
     if (phone.isNotEmpty) payload['phone'] = phone;
+    if (name.isNotEmpty) payload['name'] = name;
 
     if (_preferredChannel == 'VENMO') {
       payload['venmo_username'] = _venmoUsernameController.text.trim();
@@ -363,6 +367,23 @@ class _AddMemberSheetState extends State<AddMemberSheet>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            TextFormField(
+              controller: _nameController,
+              enabled: !_submittingNew,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Full name',
+                hintText: 'e.g. Jordan Smith',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter the member\'s full name';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _emailController,
               enabled: !_submittingNew,

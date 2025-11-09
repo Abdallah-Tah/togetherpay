@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../env.dart';
 import '../utils/theme.dart';
 
 /// Reusable payment request card widget with animations
@@ -42,6 +44,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
+  bool _isLaunching = false;
 
   @override
   void initState() {
@@ -79,11 +82,61 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
     _controller.reverse();
   }
 
+  Future<void> _launchWallet() async {
+    if (_isLaunching) return;
+
+    setState(() {
+      _isLaunching = true;
+    });
+
+    try {
+      // Get deep_link from payment request data (same as pay_screen.dart button)
+      final deepLinkUri = widget.paymentRequest['deep_link'] as String?;
+      final webFallback = widget.paymentRequest['web_fallback_link'] as String?;
+      final url = deepLinkUri ?? webFallback;
+
+      if (url != null) {
+        final uri = Uri.tryParse(url);
+        if (uri != null) {
+          // Use inAppBrowserView - exact same approach as "Open Wallet" button
+          await launchUrl(
+            uri,
+            mode: LaunchMode.inAppBrowserView,
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Payment link not available')),
+          );
+        }
+      }
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Error launching wallet: $e');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to launch wallet app')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLaunching = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final amount = widget.paymentRequest['amount_display'] as String? ?? '\$0.00';
+    final amount =
+        widget.paymentRequest['amount_display'] as String? ?? '\$0.00';
     final status = widget.paymentRequest['status'] as String? ?? 'pending';
-    final groupName = widget.paymentRequest['group']?['name'] as String? ?? 'Payment';
+    final groupName =
+        widget.paymentRequest['group']?['name'] as String? ?? 'Payment';
     final dueDate = widget.paymentRequest['due_date'] as String?;
     final code = widget.paymentRequest['code'] as String? ?? '';
 
@@ -138,7 +191,8 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
     final dueDateLabel = _formatDueDateLabel(dueDate);
     final showPayButton = widget.onPay != null && _canShowPayButton(status);
     final showNudgeButton = widget.onNudge != null && _canShowNudge(status);
-    final showConfirmButton = widget.onConfirm != null && _canShowConfirm(status);
+    final showConfirmButton =
+        widget.onConfirm != null && _canShowConfirm(status);
     final showRetryButton = widget.onRetry != null && _canShowRetry(status);
     final showCancelButton = widget.onCancel != null && _canShowCancel(status);
 
@@ -150,7 +204,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
           vertical: AppTheme.spaceSmall,
         ),
         elevation: _isPressed ? 2 : 0,
-        shadowColor: Colors.black.withValues(alpha:0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: widget.onTap,
@@ -193,11 +247,13 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                         const SizedBox(width: AppTheme.spaceMedium),
                         Text(
                           amount,
-                          style:
-                              Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                         ),
                       ],
                     ),
@@ -211,20 +267,20 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                       decoration: BoxDecoration(
                         gradient: statusGradient,
                         color: statusGradient == null
-                            ? statusColor.withValues(alpha:0.1)
+                            ? statusColor.withValues(alpha: 0.1)
                             : null,
                         borderRadius:
                             BorderRadius.circular(AppTheme.radiusMedium),
                         border: statusGradient == null
                             ? Border.all(
-                                color: statusColor.withValues(alpha:0.3),
+                                color: statusColor.withValues(alpha: 0.3),
                                 width: 1,
                               )
                             : null,
                         boxShadow: statusGradient != null
                             ? [
                                 BoxShadow(
-                                  color: statusColor.withValues(alpha:0.3),
+                                  color: statusColor.withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -259,9 +315,9 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                   ],
                 ),
 
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-              // Group name
+                // Group name
                 const SizedBox(height: AppTheme.spaceMedium),
                 Row(
                   children: [
@@ -271,15 +327,16 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withValues(alpha:0.6),
+                          .withValues(alpha: 0.6),
                     ),
                     const SizedBox(width: AppTheme.spaceSmall),
                     Expanded(
                       child: Text(
                         groupName,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -297,7 +354,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withValues(alpha:0.6),
+                            .withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: AppTheme.spaceSmall),
                       Text(
@@ -306,7 +363,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                               color: Theme.of(context)
                                   .colorScheme
                                   .onSurface
-                                  .withValues(alpha:0.6),
+                                  .withValues(alpha: 0.6),
                             ),
                       ),
                     ],
@@ -322,7 +379,8 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                   ),
                   child: Row(
@@ -333,7 +391,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withValues(alpha:0.5),
+                            .withValues(alpha: 0.5),
                       ),
                       const SizedBox(width: AppTheme.spaceSmall),
                       Expanded(
@@ -345,7 +403,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                                     color: Theme.of(context)
                                         .colorScheme
                                         .onSurface
-                                        .withValues(alpha:0.5),
+                                        .withValues(alpha: 0.5),
                                   ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -361,27 +419,30 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                     width: double.infinity,
                     height: 48,
                     child: FilledButton.icon(
-                      onPressed: widget.onPay,
-                      icon: const Icon(Icons.payment_rounded),
-                      label: const Text(
-                        'Pay Now',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
+                      onPressed: _isLaunching ? null : _launchWallet,
+                      icon: _isLaunching
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.payment_rounded),
+                      label: Text(_isLaunching ? 'Opening...' : 'Pay Now'),
                       style: FilledButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusMedium),
-                        ),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
                 ],
 
                 // Action buttons
-                if (showNudgeButton || showConfirmButton || showRetryButton || showCancelButton) ...[
+                if (showNudgeButton ||
+                    showConfirmButton ||
+                    showRetryButton ||
+                    showCancelButton) ...[
                   const SizedBox(height: AppTheme.spaceMedium),
                   Row(
                     children: [
@@ -460,9 +521,8 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: widget.isProcessingCancel
-                            ? null
-                            : widget.onCancel,
+                        onPressed:
+                            widget.isProcessingCancel ? null : widget.onCancel,
                         icon: widget.isProcessingCancel
                             ? const SizedBox(
                                 width: 16,

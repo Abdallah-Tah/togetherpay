@@ -23,6 +23,11 @@ dependencies:
   # Secure storage for auth tokens
   flutter_secure_storage: ^9.0.0
 
+  # File handling
+  path_provider: ^2.1.4
+  open_filex: ^4.4.0
+  path: ^1.9.0
+
   # Deep linking & URL launching (wallet apps)
   url_launcher: ^6.2.2
 

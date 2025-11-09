@@ -6,6 +6,7 @@ use App\Http\Controllers\API\DeviceController;
 use App\Http\Controllers\API\GroupController;
 use App\Http\Controllers\API\GroupInvitationController;
 use App\Http\Controllers\API\PaymentRequestController;
+use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\CashAppWebhookController;
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\SmartPayController;
@@ -56,6 +57,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::put('/auth/me', [AuthController::class, 'updateProfile']);
+    Route::put('/auth/password', [AuthController::class, 'updatePassword']);
     Route::post('/auth/onboarding/complete', [AuthController::class, 'completeOnboarding']);
 
     // Groups
@@ -77,6 +79,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
     Route::post('/payment-requests/{paymentRequest}/mark-paid', [PaymentRequestController::class, 'markPaid']);
     Route::post('/payment-requests/{paymentRequest}/retry', [PaymentRequestController::class, 'retry']);
     Route::get('/cycles/{cycle}/payment-requests', [PaymentRequestController::class, 'byCycle']);
+
+    // Reports & exports
+    Route::get('/reports/summary', [ReportController::class, 'summary']);
+    Route::get('/reports/export/csv', [ReportController::class, 'exportCsv']);
+    Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf']);
 
     // Payment Requests V2 (PR Code based endpoints - authenticated only)
     Route::post('/requests/by-code/{prCode}/confirm', [PaymentRequestController::class, 'confirmPayment']);
