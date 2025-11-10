@@ -45,8 +45,9 @@ class ReportController extends Controller
         $collectedCents = (clone $baseQuery)->whereIn('status', ['paid', 'owner_confirmed'])->sum('amount_cents');
         $pendingCents = (clone $baseQuery)->whereIn('status', ['pending', 'sent', 'member_marked'])->sum('amount_cents');
 
-        $successRate = $totalRequests > 0
-            ? round(($paidRequests / $totalRequests) * 100, 1)
+        $totalCents = $collectedCents + $pendingCents;
+        $successRate = $totalCents > 0
+            ? round(($collectedCents / $totalCents) * 100, 1)
             : 0.0;
 
         return response()->json([

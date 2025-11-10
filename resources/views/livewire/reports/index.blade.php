@@ -110,7 +110,7 @@
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Success Rate</p>
                             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                                {{ $stats['total_requests'] > 0 ? round(($stats['paid_requests'] / $stats['total_requests']) * 100) : 0 }}%
+                                {{ $stats['success_rate'] }}%
                             </p>
                         </div>
                     </div>

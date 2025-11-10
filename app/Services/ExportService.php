@@ -102,15 +102,19 @@ class ExportService
         $requests = $query->orderBy('created_at', 'desc')->get();
 
         // Calculate stats
+        $collectedCents = $requests->whereIn('status', ['paid', 'owner_confirmed'])->sum(fn ($r) => $r->amount_cents);
+        $pendingCents = $requests->whereIn('status', ['pending', 'sent', 'member_marked'])->sum(fn ($r) => $r->amount_cents);
+        $totalCents = $collectedCents + $pendingCents;
+
         $stats = [
-            'total_collected' => $requests->whereIn('status', ['paid', 'owner_confirmed'])->sum(fn ($r) => $r->amount_cents / 100),
-            'total_pending' => $requests->whereIn('status', ['pending', 'sent', 'member_marked'])->sum(fn ($r) => $r->amount_cents / 100),
+            'total_collected' => $collectedCents / 100,
+            'total_pending' => $pendingCents / 100,
             'paid_count' => $requests->whereIn('status', ['paid', 'owner_confirmed'])->count(),
             'pending_count' => $requests->whereIn('status', ['pending', 'sent', 'member_marked'])->count(),
             'failed_count' => $requests->whereIn('status', ['failed', 'expired'])->count(),
             'total_count' => $requests->count(),
-            'success_rate' => $requests->count() > 0
-                ? round(($requests->whereIn('status', ['paid', 'owner_confirmed'])->count() / $requests->count()) * 100, 1)
+            'success_rate' => $totalCents > 0
+                ? round(($collectedCents / $totalCents) * 100, 1)
                 : 0,
         ];
 
