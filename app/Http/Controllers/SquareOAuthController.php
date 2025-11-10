@@ -105,7 +105,7 @@ class SquareOAuthController extends Controller
 
             return redirect()
                 ->route('settings.payment')
-                ->with('error', 'Square connection failed: '.$e->getMessage());
+                ->with('error', 'Square connection failed: ' . $e->getMessage());
         }
     }
 
