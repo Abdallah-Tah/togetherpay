@@ -103,14 +103,14 @@ class ExportService
 
         // Calculate stats
         $stats = [
-            'total_collected' => $requests->where('status', 'paid')->sum(fn ($r) => $r->amount_cents / 100),
-            'total_pending' => $requests->whereIn('status', ['pending', 'sent'])->sum(fn ($r) => $r->amount_cents / 100),
-            'paid_count' => $requests->where('status', 'paid')->count(),
-            'pending_count' => $requests->whereIn('status', ['pending', 'sent'])->count(),
+            'total_collected' => $requests->whereIn('status', ['paid', 'owner_confirmed'])->sum(fn ($r) => $r->amount_cents / 100),
+            'total_pending' => $requests->whereIn('status', ['pending', 'sent', 'member_marked'])->sum(fn ($r) => $r->amount_cents / 100),
+            'paid_count' => $requests->whereIn('status', ['paid', 'owner_confirmed'])->count(),
+            'pending_count' => $requests->whereIn('status', ['pending', 'sent', 'member_marked'])->count(),
             'failed_count' => $requests->whereIn('status', ['failed', 'expired'])->count(),
             'total_count' => $requests->count(),
             'success_rate' => $requests->count() > 0
-                ? round(($requests->where('status', 'paid')->count() / $requests->count()) * 100, 1)
+                ? round(($requests->whereIn('status', ['paid', 'owner_confirmed'])->count() / $requests->count()) * 100, 1)
                 : 0,
         ];
 
