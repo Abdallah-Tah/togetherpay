@@ -67,6 +67,7 @@ class User extends Authenticatable
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
+        'square_access_token',
     ];
 
     /**
@@ -81,6 +82,7 @@ class User extends Authenticatable
             'onboarding_completed_at' => 'datetime',
             'invitation_sent_at' => 'datetime',
             'invitation_accepted_at' => 'datetime',
+            'square_connected_at' => 'datetime',
             'is_placeholder' => 'boolean',
             'password' => 'hashed',
             'payment_metadata' => 'array',
@@ -335,5 +337,60 @@ class User extends Authenticatable
         }
 
         return true;
+    }
+
+    /**
+     * Check if user has Square connected
+     */
+    public function hasSquareConnected(): bool
+    {
+        return ! empty($this->square_access_token) && ! empty($this->square_merchant_id);
+    }
+
+    /**
+     * Connect Square account
+     */
+    public function connectSquare(string $accessToken, string $merchantId, ?string $locationId = null): void
+    {
+        $this->update([
+            'square_access_token' => encrypt($accessToken),
+            'square_merchant_id' => $merchantId,
+            'square_location_id' => $locationId,
+            'square_connected_at' => now(),
+        ]);
+    }
+
+    /**
+     * Disconnect Square account
+     */
+    public function disconnectSquare(): void
+    {
+        $this->update([
+            'square_access_token' => null,
+            'square_merchant_id' => null,
+            'square_location_id' => null,
+            'square_connected_at' => null,
+        ]);
+    }
+
+    /**
+     * Get decrypted Square access token
+     */
+    public function getSquareAccessToken(): ?string
+    {
+        if (empty($this->square_access_token)) {
+            return null;
+        }
+
+        try {
+            return decrypt($this->square_access_token);
+        } catch (\Exception $e) {
+            \Log::error('Failed to decrypt Square access token', [
+                'user_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 }

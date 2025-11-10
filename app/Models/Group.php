@@ -23,6 +23,7 @@ class Group extends Model
         'grace_days',
         'total_amount_cents',
         'status',
+        'billing_mode',
     ];
 
     protected $casts = [
@@ -79,5 +80,29 @@ class Group extends Model
     public function setTotalAmountAttribute(float $value): void
     {
         $this->total_amount_cents = (int) ($value * 100);
+    }
+
+    /**
+     * Check if group uses manual billing mode
+     */
+    public function isManualBilling(): bool
+    {
+        return $this->billing_mode === 'manual';
+    }
+
+    /**
+     * Check if group uses automatic Square billing
+     */
+    public function isAutoSquareBilling(): bool
+    {
+        return $this->billing_mode === 'auto_square';
+    }
+
+    /**
+     * Check if owner has Square connected (required for auto billing)
+     */
+    public function ownerHasSquareConnected(): bool
+    {
+        return $this->owner && $this->owner->hasSquareConnected();
     }
 }
