@@ -106,12 +106,24 @@ class AuthController extends Controller
     public function completeOnboarding(Request $request): JsonResponse
     {
         $user = $request->user();
+
+        // Complete onboarding
         $user->completeOnboarding();
+
+        // Refresh user to get updated data
+        $user = $user->fresh();
+
+        // Log for debugging
+        \Log::info('Onboarding completed', [
+            'user_id' => $user->id,
+            'onboarding_completed_at' => $user->onboarding_completed_at,
+            'has_completed' => $user->hasCompletedOnboarding(),
+        ]);
 
         return response()->json([
             'message' => 'Onboarding completed successfully',
-            'user' => array_merge($user->fresh()->toArray(), [
-                'onboarding_completed' => true,
+            'user' => array_merge($user->toArray(), [
+                'onboarding_completed' => $user->hasCompletedOnboarding(),
             ]),
         ]);
     }

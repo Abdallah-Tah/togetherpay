@@ -51,9 +51,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     });
 
     try {
-      await ApiService().dio.post('/auth/onboarding/complete');
+      final response = await ApiService().dio.post('/auth/onboarding/complete');
+
+      if (Env.debug) {
+        debugPrint('Onboarding completion response: ${response.data}');
+      }
 
       if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Onboarding completed successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Call the completion callback
         widget.onComplete();
       }
     } on DioException catch (e) {
