@@ -24,7 +24,17 @@ class ReportController extends Controller
 
         $baseQuery = PaymentRequest::whereHas('cycle', function ($query) use ($group, $startDate, $endDate) {
             $query->where('group_id', $group->id)
-                ->whereBetween('period_start', [$startDate->toDateString(), $endDate->toDateString()]);
+                ->where(function ($q) use ($startDate, $endDate) {
+                    // Include cycles that overlap with the date range
+                    $q->where(function ($overlap) use ($startDate, $endDate) {
+                        $overlap->whereBetween('period_start', [$startDate->toDateString(), $endDate->toDateString()])
+                            ->orWhereBetween('period_end', [$startDate->toDateString(), $endDate->toDateString()])
+                            ->orWhere(function ($contains) use ($startDate, $endDate) {
+                                $contains->where('period_start', '<=', $startDate->toDateString())
+                                    ->where('period_end', '>=', $endDate->toDateString());
+                            });
+                    });
+                });
         });
 
         $totalRequests = (clone $baseQuery)->count();

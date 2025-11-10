@@ -49,7 +49,17 @@ class Index extends Component
 
         $baseQuery = PaymentRequest::whereHas('cycle', function ($q) use ($group) {
             $q->where('group_id', $group->id)
-                ->whereBetween('period_start', [$this->startDate, $this->endDate]);
+                ->where(function ($query) {
+                    // Include cycles that overlap with the date range
+                    $query->where(function ($overlap) {
+                        $overlap->whereBetween('period_start', [$this->startDate, $this->endDate])
+                            ->orWhereBetween('period_end', [$this->startDate, $this->endDate])
+                            ->orWhere(function ($contains) {
+                                $contains->where('period_start', '<=', $this->startDate)
+                                    ->where('period_end', '>=', $this->endDate);
+                            });
+                    });
+                });
         });
 
         return [
