@@ -34,7 +34,7 @@ title('About TogetherPay');
                     <div class="space-y-4 text-gray-700 dark:text-gray-300">
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
-                                <div class="flex items-center justify-center h-10 w-10 rounded-md bg-indigo-500 text-white font-bold">1</div>
+                                <div class="flex items-center justify-center h-10 w-10 rounded-md bg-brand-500 text-white font-bold">1</div>
                             </div>
                             <div class="ml-4">
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">Create a Group</h3>
@@ -44,7 +44,7 @@ title('About TogetherPay');
 
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
-                                <div class="flex items-center justify-center h-10 w-10 rounded-md bg-indigo-500 text-white font-bold">2</div>
+                                <div class="flex items-center justify-center h-10 w-10 rounded-md bg-brand-500 text-white font-bold">2</div>
                             </div>
                             <div class="ml-4">
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">Invite Members</h3>
@@ -54,7 +54,7 @@ title('About TogetherPay');
 
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
-                                <div class="flex items-center justify-center h-10 w-10 rounded-md bg-indigo-500 text-white font-bold">3</div>
+                                <div class="flex items-center justify-center h-10 w-10 rounded-md bg-brand-500 text-white font-bold">3</div>
                             </div>
                             <div class="ml-4">
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">Automate Requests</h3>
@@ -64,7 +64,7 @@ title('About TogetherPay');
 
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
-                                <div class="flex items-center justify-center h-10 w-10 rounded-md bg-indigo-500 text-white font-bold">4</div>
+                                <div class="flex items-center justify-center h-10 w-10 rounded-md bg-brand-500 text-white font-bold">4</div>
                             </div>
                             <div class="ml-4">
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">Track & Report</h3>
@@ -112,12 +112,12 @@ title('About TogetherPay');
                 </div>
 
                 <!-- Contact CTA -->
-                <div class="bg-indigo-50 dark:bg-gray-700 rounded-lg p-6 mt-8">
+                <div class="bg-brand-50 dark:bg-gray-700 rounded-lg p-6 mt-8">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Have Questions?</h2>
                     <p class="text-gray-700 dark:text-gray-300 mb-4">
                         We'd love to hear from you. Whether you have a question about features, pricing, or anything else, our team is ready to help.
                     </p>
-                    <a href="{{ route('contact') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                    <a href="{{ route('contact') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700">
                         Contact Us
                     </a>
                 </div>
@@ -126,7 +126,7 @@ title('About TogetherPay');
 
         <!-- Back to Home -->
         <div class="mt-6 text-center">
-            <a href="{{ route('welcome') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+            <a href="{{ route('welcome') }}" class="text-brand-600 dark:text-brand-400 hover:text-brand-500">
                 ← Back to Home
             </a>
         </div>

@@ -128,7 +128,7 @@ title('Terms of Service - TogetherPay');
                 <section class="mb-8">
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">7. Privacy and Data Protection</h2>
                     <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Your use of the Service is also governed by our <a href="{{ route('privacy') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Privacy Policy</a>.
+                        Your use of the Service is also governed by our <a href="{{ route('privacy') }}" class="text-brand-600 dark:text-brand-400 hover:underline">Privacy Policy</a>.
                         By using the Service, you consent to the collection and use of your information as described in the Privacy Policy.
                     </p>
                 </section>
@@ -212,8 +212,8 @@ title('Terms of Service - TogetherPay');
                         If you have questions about these Terms, please contact us:
                     </p>
                     <ul class="list-none space-y-2 text-gray-700 dark:text-gray-300">
-                        <li><strong>Email:</strong> <a href="mailto:legal@togetherpay.com" class="text-indigo-600 dark:text-indigo-400 hover:underline">legal@togetherpay.com</a></li>
-                        <li><strong>Contact Form:</strong> <a href="{{ route('contact') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">togetherpay.com/contact</a></li>
+                        <li><strong>Email:</strong> <a href="mailto:legal@togetherpay.com" class="text-brand-600 dark:text-brand-400 hover:underline">legal@togetherpay.com</a></li>
+                        <li><strong>Contact Form:</strong> <a href="{{ route('contact') }}" class="text-brand-600 dark:text-brand-400 hover:underline">togetherpay.com/contact</a></li>
                     </ul>
                 </section>
 
@@ -222,7 +222,7 @@ title('Terms of Service - TogetherPay');
 
         <!-- Back to Home -->
         <div class="mt-6 text-center">
-            <a href="{{ route('welcome') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+            <a href="{{ route('welcome') }}" class="text-brand-600 dark:text-brand-400 hover:text-brand-500">
                 ← Back to Home
             </a>
         </div>

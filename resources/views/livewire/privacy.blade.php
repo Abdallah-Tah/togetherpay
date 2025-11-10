@@ -117,7 +117,7 @@ title('Privacy Policy - TogetherPay');
                         <li><strong>Data Portability:</strong> Export your data in a structured format</li>
                     </ul>
                     <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">
-                        To exercise these rights, please contact us at <a href="mailto:privacy@togetherpay.com" class="text-indigo-600 dark:text-indigo-400 hover:underline">privacy@togetherpay.com</a>.
+                        To exercise these rights, please contact us at <a href="mailto:privacy@togetherpay.com" class="text-brand-600 dark:text-brand-400 hover:underline">privacy@togetherpay.com</a>.
                     </p>
                 </section>
 
@@ -162,8 +162,8 @@ title('Privacy Policy - TogetherPay');
                         If you have questions or concerns about this Privacy Policy, please contact us:
                     </p>
                     <ul class="list-none space-y-2 text-gray-700 dark:text-gray-300 mt-3">
-                        <li><strong>Email:</strong> <a href="mailto:privacy@togetherpay.com" class="text-indigo-600 dark:text-indigo-400 hover:underline">privacy@togetherpay.com</a></li>
-                        <li><strong>Contact Form:</strong> <a href="{{ route('contact') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">togetherpay.com/contact</a></li>
+                        <li><strong>Email:</strong> <a href="mailto:privacy@togetherpay.com" class="text-brand-600 dark:text-brand-400 hover:underline">privacy@togetherpay.com</a></li>
+                        <li><strong>Contact Form:</strong> <a href="{{ route('contact') }}" class="text-brand-600 dark:text-brand-400 hover:underline">togetherpay.com/contact</a></li>
                     </ul>
                 </section>
 
@@ -172,7 +172,7 @@ title('Privacy Policy - TogetherPay');
 
         <!-- Back to Home -->
         <div class="mt-6 text-center">
-            <a href="{{ route('welcome') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+            <a href="{{ route('welcome') }}" class="text-brand-600 dark:text-brand-400 hover:text-brand-500">
                 ← Back to Home
             </a>
         </div>

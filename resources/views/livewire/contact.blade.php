@@ -58,7 +58,7 @@ $submit = function () {
                         <div>
                             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Email</h3>
                             <p class="text-gray-700 dark:text-gray-300">
-                                <a href="mailto:support@togetherpay.com" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                <a href="mailto:support@togetherpay.com" class="text-brand-600 dark:text-brand-400 hover:underline">
                                     support@togetherpay.com
                                 </a>
                             </p>
@@ -83,17 +83,17 @@ $submit = function () {
                             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Other Resources</h3>
                             <ul class="space-y-2">
                                 <li>
-                                    <a href="{{ route('about') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    <a href="{{ route('about') }}" class="text-brand-600 dark:text-brand-400 hover:underline">
                                         About TogetherPay
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('privacy') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    <a href="{{ route('privacy') }}" class="text-brand-600 dark:text-brand-400 hover:underline">
                                         Privacy Policy
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('terms') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    <a href="{{ route('terms') }}" class="text-brand-600 dark:text-brand-400 hover:underline">
                                         Terms of Service
                                     </a>
                                 </li>
@@ -135,7 +135,7 @@ $submit = function () {
                                 type="text"
                                 id="name"
                                 wire:model="name"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
                                 required
                             >
                             @error('name')
@@ -152,7 +152,7 @@ $submit = function () {
                                 type="email"
                                 id="email"
                                 wire:model="email"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
                                 required
                             >
                             @error('email')
@@ -169,7 +169,7 @@ $submit = function () {
                                 type="text"
                                 id="subject"
                                 wire:model="subject"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
                                 required
                             >
                             @error('subject')
@@ -186,7 +186,7 @@ $submit = function () {
                                 id="message"
                                 wire:model="message"
                                 rows="6"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
                                 required
                             ></textarea>
                             @error('message')
@@ -198,7 +198,7 @@ $submit = function () {
                         <div>
                             <button
                                 type="submit"
-                                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
                             >
                                 Send Message
                             </button>
@@ -210,7 +210,7 @@ $submit = function () {
 
         <!-- Back to Home -->
         <div class="mt-6 text-center">
-            <a href="{{ route('welcome') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+            <a href="{{ route('welcome') }}" class="text-brand-600 dark:text-brand-400 hover:text-brand-500">
                 ← Back to Home
             </a>
         </div>
