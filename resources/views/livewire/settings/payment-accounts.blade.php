@@ -141,6 +141,76 @@ new class extends Component {
                 </div>
             </div>
 
+            <!-- Square Integration Section -->
+            <div class="space-y-4 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 p-2 bg-white dark:bg-zinc-800 rounded-lg">
+                        <!-- Square Logo -->
+                        <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M4.01 8.54C4.01 6.58 5.61 5 7.56 5c1.96 0 3.55 1.58 3.55 3.54 0 1.95-1.59 3.54-3.55 3.54-1.95 0-3.55-1.59-3.55-3.54zm8.44 0c0-1.96 1.59-3.54 3.55-3.54 1.95 0 3.54 1.58 3.54 3.54 0 1.95-1.59 3.54-3.54 3.54-1.96 0-3.55-1.59-3.55-3.54zM4.01 16c0-1.96 1.59-3.55 3.55-3.55 1.96 0 3.55 1.59 3.55 3.55 0 1.95-1.59 3.54-3.55 3.54-1.95 0-3.55-1.59-3.55-3.54zm8.44 0c0-1.96 1.59-3.55 3.55-3.55 1.95 0 3.54 1.59 3.54 3.55 0 1.95-1.59 3.54-3.54 3.54-1.96 0-3.55-1.59-3.55-3.54z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-2">Square Integration (Beta)</h3>
+                        <p class="text-sm text-zinc-700 dark:text-zinc-300 mb-4">
+                            Connect your Square account to enable automatic recurring payments for your groups. Members will be charged automatically each billing cycle via credit/debit card.
+                        </p>
+
+                        @if(Auth::user()->hasSquareConnected())
+                            <!-- Connected State -->
+                            <div class="flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-lg border border-green-200 dark:border-green-800">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold text-zinc-900 dark:text-white">Square Connected</p>
+                                        <p class="text-xs text-zinc-600 dark:text-zinc-400">
+                                            Merchant ID: {{ Auth::user()->square_merchant_id }}
+                                            @if(Auth::user()->square_connected_at)
+                                                • Connected {{ Auth::user()->square_connected_at->diffForHumans() }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+                                <form method="POST" action="{{ route('square.disconnect') }}" onsubmit="return confirm('Are you sure you want to disconnect Square? This will not affect existing subscriptions.');">
+                                    @csrf
+                                    <flux:button variant="danger" size="sm" type="submit">
+                                        Disconnect
+                                    </flux:button>
+                                </form>
+                            </div>
+                        @else
+                            <!-- Not Connected State -->
+                            <div class="flex items-start gap-3 p-4 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 mb-4">
+                                <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div class="text-sm text-zinc-700 dark:text-zinc-300">
+                                    <p class="font-medium mb-1">Benefits of Square Integration:</p>
+                                    <ul class="list-disc list-inside space-y-1 text-xs">
+                                        <li>Automatic recurring payments for group members</li>
+                                        <li>Accept credit and debit cards</li>
+                                        <li>Real-time payment tracking and status updates</li>
+                                        <li>Reduce manual payment collection work</li>
+                                        <li>Professional invoicing and receipts</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <a href="{{ route('square.connect') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M4.01 8.54C4.01 6.58 5.61 5 7.56 5c1.96 0 3.55 1.58 3.55 3.54 0 1.95-1.59 3.54-3.55 3.54-1.95 0-3.55-1.59-3.55-3.54zm8.44 0c0-1.96 1.59-3.54 3.55-3.54 1.95 0 3.54 1.58 3.54 3.54 0 1.95-1.59 3.54-3.54 3.54-1.96 0-3.55-1.59-3.55-3.54zM4.01 16c0-1.96 1.59-3.55 3.55-3.55 1.96 0 3.55 1.59 3.55 3.55 0 1.95-1.59 3.54-3.55 3.54-1.95 0-3.55-1.59-3.55-3.54zm8.44 0c0-1.96 1.59-3.55 3.55-3.55 1.95 0 3.54 1.59 3.54 3.55 0 1.95-1.59 3.54-3.54 3.54-1.96 0-3.55-1.59-3.55-3.54z"/>
+                                </svg>
+                                Connect Square Account
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">
                     <flux:button variant="primary" type="submit" class="w-full bg-teal-600 hover:bg-teal-500" data-test="update-payment-accounts-button">
