@@ -38,11 +38,11 @@ class ReportController extends Controller
         });
 
         $totalRequests = (clone $baseQuery)->count();
-        $paidRequests = (clone $baseQuery)->where('status', 'paid')->count();
+        $paidRequests = (clone $baseQuery)->whereIn('status', ['paid', 'owner_confirmed'])->count();
         $pendingRequests = (clone $baseQuery)->whereIn('status', ['pending', 'sent', 'member_marked'])->count();
         $failedRequests = (clone $baseQuery)->whereIn('status', ['failed', 'expired', 'cancelled'])->count();
 
-        $collectedCents = (clone $baseQuery)->where('status', 'paid')->sum('amount_cents');
+        $collectedCents = (clone $baseQuery)->whereIn('status', ['paid', 'owner_confirmed'])->sum('amount_cents');
         $pendingCents = (clone $baseQuery)->whereIn('status', ['pending', 'sent', 'member_marked'])->sum('amount_cents');
 
         $successRate = $totalRequests > 0

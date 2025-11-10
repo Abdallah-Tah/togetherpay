@@ -63,9 +63,9 @@ class Index extends Component
         });
 
         return [
-            'total_collected' => (clone $baseQuery)->where('status', 'paid')->sum('amount_cents') / 100,
-            'total_pending' => (clone $baseQuery)->whereIn('status', ['pending', 'sent'])->sum('amount_cents') / 100,
-            'paid_requests' => (clone $baseQuery)->where('status', 'paid')->count(),
+            'total_collected' => (clone $baseQuery)->whereIn('status', ['paid', 'owner_confirmed'])->sum('amount_cents') / 100,
+            'total_pending' => (clone $baseQuery)->whereIn('status', ['pending', 'sent', 'member_marked'])->sum('amount_cents') / 100,
+            'paid_requests' => (clone $baseQuery)->whereIn('status', ['paid', 'owner_confirmed'])->count(),
             'total_requests' => (clone $baseQuery)->count(),
         ];
     }
