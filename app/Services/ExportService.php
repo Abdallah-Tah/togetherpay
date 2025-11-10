@@ -104,7 +104,6 @@ class ExportService
         // Calculate stats
         $collectedCents = $requests->whereIn('status', ['paid', 'owner_confirmed'])->sum(fn ($r) => $r->amount_cents);
         $pendingCents = $requests->whereIn('status', ['pending', 'sent', 'member_marked'])->sum(fn ($r) => $r->amount_cents);
-        $totalCents = $collectedCents + $pendingCents;
 
         $stats = [
             'total_collected' => $collectedCents / 100,
@@ -113,8 +112,8 @@ class ExportService
             'pending_count' => $requests->whereIn('status', ['pending', 'sent', 'member_marked'])->count(),
             'failed_count' => $requests->whereIn('status', ['failed', 'expired'])->count(),
             'total_count' => $requests->count(),
-            'success_rate' => $totalCents > 0
-                ? round(($collectedCents / $totalCents) * 100, 1)
+            'success_rate' => $group->total_amount_cents > 0
+                ? round(($collectedCents / $group->total_amount_cents) * 100, 1)
                 : 0,
         ];
 
