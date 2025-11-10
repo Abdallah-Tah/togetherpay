@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\SmartPayController;
+use App\Http\Controllers\SquareOAuthController;
+use App\Http\Controllers\SquareWebhookController;
 use App\Livewire\Groups\Create as GroupsCreate;
 use App\Livewire\Groups\Index as GroupsIndex;
 use App\Livewire\Groups\Show as GroupsShow;
@@ -24,6 +26,9 @@ Route::get('/pay/{request}', [SmartPayController::class, 'show'])->name('smartpa
 
 // Redirect to Cash App (public, no auth required)
 Route::get('/redirect/cashapp', [RedirectController::class, 'cashApp'])->name('redirect.cashapp');
+
+// Square webhook (public, verified by signature)
+Route::post('/square/webhook', [SquareWebhookController::class, 'handle'])->name('square.webhook');
 
 // Invitation acceptance - Public page (no auth required to view)
 Volt::route('/accept-invitation/{token}', 'accept-invitation')->name('invitations.accept');
@@ -59,7 +64,13 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingCompleted::class
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('user-password.edit');
     Volt::route('settings/payment-accounts', 'settings.payment-accounts')->name('payment-accounts.edit');
+    Volt::route('settings/payment', 'settings.payment-accounts')->name('settings.payment'); // Alias for Square OAuth
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
+
+    // Square OAuth
+    Route::get('/square/connect', [SquareOAuthController::class, 'redirect'])->name('square.connect');
+    Route::get('/square/callback', [SquareOAuthController::class, 'callback'])->name('square.callback');
+    Route::post('/square/disconnect', [SquareOAuthController::class, 'disconnect'])->name('square.disconnect');
 
     Volt::route('settings/two-factor', 'settings.two-factor')
         ->middleware(
