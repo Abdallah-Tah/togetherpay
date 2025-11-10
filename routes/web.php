@@ -12,9 +12,12 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+// Public pages
+Volt::route('/', 'welcome')->name('welcome');
+Volt::route('/about', 'about')->name('about');
+Volt::route('/privacy', 'privacy')->name('privacy');
+Volt::route('/terms', 'terms')->name('terms');
+Volt::route('/contact', 'contact')->name('contact');
 
 // Smart Pay - Public payment page (no auth required)
 Route::get('/pay/{request}', [SmartPayController::class, 'show'])->name('smartpay.show');
