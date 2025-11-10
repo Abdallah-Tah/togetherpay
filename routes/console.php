@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\CloseCyclesJob;
+use App\Jobs\CreateAutoSquareSubscriptionsJob;
 use App\Jobs\CreateUpcomingCyclesJob;
 use App\Jobs\GeneratePaymentRequestsJob;
 use App\Jobs\ProcessDunningJob;

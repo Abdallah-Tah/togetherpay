@@ -44,6 +44,11 @@ class User extends Authenticatable
         'invitation_sent_at',
         'invitation_accepted_at',
         'is_placeholder',
+        'square_merchant_id',
+        'square_access_token',
+        'square_location_id',
+        'square_connected_at',
+        'preferred_billing_mode',
     ];
 
     /**
@@ -85,6 +90,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'payment_metadata' => 'array',
             'notification_preferences' => 'array',
+            'square_connected_at' => 'datetime',
         ];
     }
 
@@ -335,5 +341,54 @@ class User extends Authenticatable
         }
 
         return true;
+    }
+
+    /**
+     * Check if user has connected Square account
+     */
+    public function hasSquareAccount(): bool
+    {
+        return filled($this->square_merchant_id) && filled($this->square_access_token);
+    }
+
+    /**
+     * Check if user's Square account is properly configured
+     */
+    public function isSquareConfigured(): bool
+    {
+        return $this->hasSquareAccount() && $this->square_connected_at !== null;
+    }
+
+    /**
+     * Disconnect Square account
+     */
+    public function disconnectSquare(): void
+    {
+        $this->update([
+            'square_merchant_id' => null,
+            'square_access_token' => null,
+            'square_location_id' => null,
+            'square_connected_at' => null,
+        ]);
+    }
+
+    /**
+     * Set user's preferred billing mode for new groups
+     */
+    public function setPreferredBillingMode(string $mode): void
+    {
+        if (!in_array($mode, ['manual', 'auto_square'])) {
+            throw new \InvalidArgumentException("Invalid billing mode: {$mode}");
+        }
+
+        $this->update(['preferred_billing_mode' => $mode]);
+    }
+
+    /**
+     * Get user's preferred billing mode
+     */
+    public function getPreferredBillingMode(): string
+    {
+        return $this->preferred_billing_mode ?? 'manual';
     }
 }

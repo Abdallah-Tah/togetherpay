@@ -23,6 +23,14 @@ class Create extends Component
 
     public string $currency = 'USD';
 
+    public string $billing_mode = 'manual';
+
+    public function mount(): void
+    {
+        // Pre-fill billing mode with user's preference
+        $this->billing_mode = auth()->user()->getPreferredBillingMode();
+    }
+
     protected function rules(): array
     {
         return [
@@ -33,6 +41,7 @@ class Create extends Component
             'grace_days' => ['required', 'integer', 'min:0', 'max:30'],
             'timezone' => ['required', 'string'],
             'currency' => ['required', 'string', 'size:3'],
+            'billing_mode' => ['required', 'in:manual,auto_square'],
         ];
     }
 
@@ -49,6 +58,7 @@ class Create extends Component
             'grace_days' => $validated['grace_days'],
             'timezone' => $validated['timezone'],
             'currency' => $validated['currency'],
+            'billing_mode' => $validated['billing_mode'],
             'status' => 'active',
         ]);
 

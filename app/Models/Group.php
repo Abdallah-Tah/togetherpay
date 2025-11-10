@@ -18,6 +18,7 @@ class Group extends Model
         'name',
         'timezone',
         'currency',
+        'billing_mode',
         'cadence',
         'due_day',
         'grace_days',
@@ -79,5 +80,29 @@ class Group extends Model
     public function setTotalAmountAttribute(float $value): void
     {
         $this->total_amount_cents = (int) ($value * 100);
+    }
+
+    /**
+     * Check if group uses manual payment mode (deep-link requests)
+     */
+    public function isManualMode(): bool
+    {
+        return $this->billing_mode === 'manual' || $this->billing_mode === null;
+    }
+
+    /**
+     * Check if group uses auto-square payment mode
+     */
+    public function isAutoSquareMode(): bool
+    {
+        return $this->billing_mode === 'auto_square';
+    }
+
+    /**
+     * Check if owner has Square configured
+     */
+    public function ownerHasSquare(): bool
+    {
+        return $this->owner?->isSquareConfigured() ?? false;
     }
 }

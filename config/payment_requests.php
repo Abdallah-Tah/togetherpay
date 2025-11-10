@@ -123,4 +123,53 @@ return [
         'enabled' => env('LINK_SHORTENER_ENABLED', false),
         'base_url' => env('LINK_SHORTENER_BASE', 'https://tpay.app/p/'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Square Integration Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for Square OAuth and payment processing
+    |
+    */
+    'square' => [
+        'enabled' => env('SQUARE_ENABLED', false),
+        'mode' => env('SQUARE_MODE', 'sandbox'), // 'sandbox' or 'production'
+
+        // OAuth settings
+        'oauth' => [
+            'client_id' => env('SQUARE_CLIENT_ID'),
+            'client_secret' => env('SQUARE_CLIENT_SECRET'),
+            'redirect_uri' => env('SQUARE_OAUTH_CALLBACK_URL', 'http://localhost:8000/oauth/square/callback'),
+            'scopes' => [
+                'MERCHANT_PROFILE_READ',  // Required for /v2/me endpoint
+                'CUSTOMERS_READ',
+                'CUSTOMERS_WRITE',
+                'INVOICES_READ',
+                'INVOICES_WRITE',
+                'PAYMENTS_READ',
+                'PAYMENTS_WRITE',
+                'SUBSCRIPTIONS_READ',     // For reading subscription details
+                'SUBSCRIPTIONS_WRITE',    // For creating subscriptions
+            ],
+        ],
+
+        // API settings
+        'api' => [
+            'base_url' => env('SQUARE_API_URL', 'https://connect.squareupsandbox.com'),
+            'version' => 'v2',
+        ],
+
+        // Default subscription settings
+        'subscription' => [
+            'interval_unit' => 'MONTH', // MONTH or WEEK
+            'interval_count' => 1, // Billing every 1 month
+        ],
+
+        // Webhook settings
+        'webhook' => [
+            'signing_key' => env('SQUARE_WEBHOOK_SIGNING_KEY'),
+            'endpoint' => env('SQUARE_WEBHOOK_ENDPOINT', 'https://togetherpay.local/webhooks/square'),
+        ],
+    ],
 ];

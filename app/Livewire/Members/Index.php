@@ -6,6 +6,8 @@ use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -67,13 +69,13 @@ class Index extends Component
             $query->where(function ($subQuery) {
                 $subQuery
                     ->whereHas('user', function ($userQuery) {
-                        $userQuery->where('name', 'like', '%'.$this->search.'%')
-                            ->orWhere('email', 'like', '%'.$this->search.'%');
+                        $userQuery->where('name', 'like', '%' . $this->search . '%')
+                            ->orWhere('email', 'like', '%' . $this->search . '%');
                     })
                     ->orWhereHas('group', function ($groupQuery) {
-                        $groupQuery->where('name', 'like', '%'.$this->search.'%');
+                        $groupQuery->where('name', 'like', '%' . $this->search . '%');
                     })
-                    ->orWhere('preferred_channel', 'like', '%'.$this->search.'%');
+                    ->orWhere('preferred_channel', 'like', '%' . $this->search . '%');
             });
         }
 
@@ -97,11 +99,44 @@ class Index extends Component
     protected function rules(): array
     {
         $base = [
-            'formPreferredChannel' => ['required', Rule::in(['VENMO', 'CASH_APP', 'CARD'])],
-            'formVenmoUsername' => ['nullable', 'string', Rule::requiredIf($this->formPreferredChannel === 'VENMO')],
-            'formCashTag' => ['nullable', 'string'],
-            'formCashPhone' => ['nullable', 'string'],
-            'formCashEmail' => ['nullable', 'email'],
+            'formPreferredChannel' => ['required', Rule::in(['VENMO', 'CASH_APP'])],
+            'formVenmoUsername' => [
+                'nullable',
+                'string',
+                Rule::requiredIf($this->formPreferredChannel === 'VENMO'),
+                function ($attribute, $value, $fail) {
+                    if ($this->formPreferredChannel !== 'VENMO' && !empty($value)) {
+                        $fail('Venmo username must be empty unless Venmo is selected.');
+                    }
+                },
+            ],
+            'formCashTag' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if ($this->formPreferredChannel !== 'CASH_APP' && !empty($value)) {
+                        $fail('Cash App tag must be empty unless Cash App is selected.');
+                    }
+                },
+            ],
+            'formCashPhone' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if ($this->formPreferredChannel !== 'CASH_APP' && !empty($value)) {
+                        $fail('Cash App phone must be empty unless Cash App is selected.');
+                    }
+                },
+            ],
+            'formCashEmail' => [
+                'nullable',
+                'email',
+                function ($attribute, $value, $fail) {
+                    if ($this->formPreferredChannel !== 'CASH_APP' && !empty($value)) {
+                        $fail('Cash App email must be empty unless Cash App is selected.');
+                    }
+                },
+            ],
             'formShareType' => ['required', Rule::in(['AMOUNT', 'PERCENT'])],
         ];
 
@@ -121,8 +156,8 @@ class Index extends Component
 
         return array_merge($base, [
             'formGroupId' => ['required', Rule::in(array_keys($this->groups()))],
-            'formEmail' => ['nullable', 'email', 'exists:users,email'],
-            'formPhone' => ['nullable', 'string', 'exists:users,phone'],
+            'formEmail' => ['nullable', 'email'],
+            'formPhone' => ['nullable', 'string'],
         ]);
     }
 
@@ -146,6 +181,19 @@ class Index extends Component
     public function updatingSearch(): void
     {
         $this->resetPage();
+    }
+
+    public function updatedFormPreferredChannel(): void
+    {
+        // Clear unrelated payment handle fields when channel changes
+        if ($this->formPreferredChannel === 'VENMO') {
+            $this->formCashTag = '';
+            $this->formCashPhone = '';
+            $this->formCashEmail = '';
+        } elseif ($this->formPreferredChannel === 'CASH_APP') {
+            $this->formVenmoUsername = '';
+        }
+        $this->resetValidation();
     }
 
     public function openCreateModal(): void
@@ -194,20 +242,43 @@ class Index extends Component
 
         $userQuery = User::query();
 
-        if ($this->formEmail) {
+        if ($this->formEmail && $this->formPhone) {
+            // Both provided - find by email OR phone
+            $userQuery->where(function ($q) {
+                $q->where('email', $this->formEmail)
+                    ->orWhere('phone', $this->formPhone);
+            });
+        } elseif ($this->formEmail) {
             $userQuery->where('email', $this->formEmail);
-        }
-
-        if ($this->formPhone) {
-            $userQuery->orWhere('phone', $this->formPhone);
+        } elseif ($this->formPhone) {
+            $userQuery->where('phone', $this->formPhone);
         }
 
         $user = $userQuery->first();
 
+        // If user doesn't exist, create a placeholder user and send invitation
         if (! $user) {
-            $this->addError('formEmail', 'We could not find a registered user with that email or phone.');
+            $user = User::create([
+                'name' => $this->formEmail ? explode('@', $this->formEmail)[0] : 'User',
+                'email' => $this->formEmail ?: null,
+                'phone' => $this->formPhone ?: null,
+                'password' => bcrypt(Str::random(32)), // Random password
+                'is_placeholder' => true,
+            ]);
 
-            return;
+            // Generate invitation token
+            $token = $user->generateInvitationToken();
+
+            // Send invitation notification (queued, won't block if mail fails)
+            try {
+                $user->notify(new \App\Notifications\MemberInvitationNotification($group, auth()->user(), $token));
+            } catch (\Exception $e) {
+                // Log the error but don't block member creation
+                \Illuminate\Support\Facades\Log::warning('Failed to send member invitation notification', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         if ($group->members()->where('user_id', $user->id)->exists()) {
@@ -216,20 +287,27 @@ class Index extends Component
             return;
         }
 
+        // Ensure only relevant payment handle fields are saved based on channel
+        $paymentHandles = $this->getNormalizedPaymentHandles();
+
         GroupMember::create([
             'group_id' => $group->id,
             'user_id' => $user->id,
             'preferred_channel' => $this->formPreferredChannel,
-            'venmo_username' => $this->formVenmoUsername,
-            'cash_tag' => $this->formCashTag,
-            'cash_phone' => $this->formCashPhone,
-            'cash_email' => $this->formCashEmail,
+            'venmo_username' => $paymentHandles['venmo_username'],
+            'cash_tag' => $paymentHandles['cash_tag'],
+            'cash_phone' => $paymentHandles['cash_phone'],
+            'cash_email' => $paymentHandles['cash_email'],
             'share_type' => $this->formShareType,
             'share_value' => (float) $this->formShareValue,
             'status' => 'active',
         ]);
 
-        session()->flash('success', 'Member added successfully.');
+        $successMessage = $user->is_placeholder
+            ? 'Member added successfully. An invitation has been sent to their email/phone.'
+            : 'Member added successfully.';
+
+        session()->flash('success', $successMessage);
 
         $this->closeModals();
         $this->resetForm();
@@ -239,7 +317,7 @@ class Index extends Component
     public function editMember(int $memberId): void
     {
         $member = GroupMember::where('id', $memberId)
-            ->whereHas('group', fn ($q) => $q->where('owner_id', auth()->id()))
+            ->whereHas('group', fn($q) => $q->where('owner_id', auth()->id()))
             ->with(['group', 'user'])
             ->firstOrFail();
 
@@ -268,15 +346,18 @@ class Index extends Component
         $this->validate();
 
         $member = GroupMember::where('id', $this->editingMemberId)
-            ->whereHas('group', fn ($q) => $q->where('owner_id', auth()->id()))
+            ->whereHas('group', fn($q) => $q->where('owner_id', auth()->id()))
             ->firstOrFail();
+
+        // Ensure only relevant payment handle fields are saved based on channel
+        $paymentHandles = $this->getNormalizedPaymentHandles();
 
         $member->update([
             'preferred_channel' => $this->formPreferredChannel,
-            'venmo_username' => $this->formVenmoUsername ?: null,
-            'cash_tag' => $this->formCashTag ?: null,
-            'cash_phone' => $this->formCashPhone ?: null,
-            'cash_email' => $this->formCashEmail ?: null,
+            'venmo_username' => $paymentHandles['venmo_username'],
+            'cash_tag' => $paymentHandles['cash_tag'],
+            'cash_phone' => $paymentHandles['cash_phone'],
+            'cash_email' => $paymentHandles['cash_email'],
             'share_type' => $this->formShareType,
             'share_value' => (float) $this->formShareValue,
             'status' => $this->formStatus,
@@ -292,7 +373,7 @@ class Index extends Component
     public function confirmRemoval(int $memberId): void
     {
         $member = GroupMember::where('id', $memberId)
-            ->whereHas('group', fn ($q) => $q->where('owner_id', auth()->id()))
+            ->whereHas('group', fn($q) => $q->where('owner_id', auth()->id()))
             ->firstOrFail();
 
         $this->editingMemberId = $member->id;
@@ -306,7 +387,7 @@ class Index extends Component
         }
 
         $member = GroupMember::where('id', $this->editingMemberId)
-            ->whereHas('group', fn ($q) => $q->where('owner_id', auth()->id()))
+            ->whereHas('group', fn($q) => $q->where('owner_id', auth()->id()))
             ->firstOrFail();
 
         $member->update(['status' => 'left']);
@@ -316,6 +397,31 @@ class Index extends Component
         $this->closeModals();
         $this->resetForm();
         $this->resetPage();
+    }
+
+    protected function getNormalizedPaymentHandles(): array
+    {
+        // Return only relevant payment handles based on selected channel
+        return match ($this->formPreferredChannel) {
+            'VENMO' => [
+                'venmo_username' => $this->formVenmoUsername ?: null,
+                'cash_tag' => null,
+                'cash_phone' => null,
+                'cash_email' => null,
+            ],
+            'CASH_APP' => [
+                'venmo_username' => null,
+                'cash_tag' => $this->formCashTag ?: null,
+                'cash_phone' => $this->formCashPhone ?: null,
+                'cash_email' => $this->formCashEmail ?: null,
+            ],
+            default => [ // CARD or other
+                'venmo_username' => null,
+                'cash_tag' => null,
+                'cash_phone' => null,
+                'cash_email' => null,
+            ],
+        };
     }
 
     protected function resetForm(): void
@@ -338,13 +444,6 @@ class Index extends Component
         $this->formShareType = 'AMOUNT';
         $this->formStatus = 'active';
         $this->formShareValue = '';
-    }
-
-    public function updatedFormPreferredChannel(): void
-    {
-        if ($this->formPreferredChannel !== 'VENMO') {
-            $this->formVenmoUsername = '';
-        }
     }
 
     public function updatedFormShareType(): void

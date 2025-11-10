@@ -292,22 +292,22 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="create-channel" class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Preferred channel</label>
+                        <select
+                            id="create-channel"
+                            wire:model.live="formPreferredChannel"
+                            class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                        >
+                            <option value="VENMO">Venmo</option>
+                            <option value="CASH_APP">Cash App</option>
+                        </select>
+                        @error('formPreferredChannel') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                    </div>
+
+                    @if ($formPreferredChannel === 'VENMO')
                         <div>
-                            <label for="create-channel" class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Preferred channel</label>
-                            <select
-                                id="create-channel"
-                                wire:model="formPreferredChannel"
-                                class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                            >
-                                <option value="VENMO">Venmo</option>
-                                <option value="CASH_APP">Cash App</option>
-                                <option value="CARD">Card</option>
-                            </select>
-                            @error('formPreferredChannel') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label for="create-venmo" class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Venmo username</label>
+                            <label for="create-venmo" class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Venmo username <span class="text-red-500">*</span></label>
                             <input
                                 id="create-venmo"
                                 type="text"
@@ -317,41 +317,43 @@
                             />
                             @error('formVenmoUsername') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                         </div>
-                    </div>
+                    @endif
 
-                    <div class="grid gap-4 sm:grid-cols-3">
-                        <div>
-                            <label for="create-cashtag" class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash tag</label>
-                            <input
-                                id="create-cashtag"
-                                type="text"
-                                wire:model.defer="formCashTag"
-                                placeholder="$cashtag"
-                                class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                            />
-                            @error('formCashTag') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                    @if ($formPreferredChannel === 'CASH_APP')
+                        <div class="grid gap-4 sm:grid-cols-3">
+                            <div>
+                                <label for="create-cashtag" class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash tag</label>
+                                <input
+                                    id="create-cashtag"
+                                    type="text"
+                                    wire:model.defer="formCashTag"
+                                    placeholder="$cashtag"
+                                    class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                />
+                                @error('formCashTag') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label for="create-cash-phone" class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash phone</label>
+                                <input
+                                    id="create-cash-phone"
+                                    type="text"
+                                    wire:model.defer="formCashPhone"
+                                    class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                />
+                                @error('formCashPhone') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label for="create-cash-email" class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash email</label>
+                                <input
+                                    id="create-cash-email"
+                                    type="email"
+                                    wire:model.defer="formCashEmail"
+                                    class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                />
+                                @error('formCashEmail') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            </div>
                         </div>
-                        <div>
-                            <label for="create-cash-phone" class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash phone</label>
-                            <input
-                                id="create-cash-phone"
-                                type="text"
-                                wire:model.defer="formCashPhone"
-                                class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
-                            />
-                            @error('formCashPhone') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label for="create-cash-email" class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash email</label>
-                            <input
-                                id="create-cash-email"
-                                type="email"
-                                wire:model.defer="formCashEmail"
-                                class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
-                            />
-                            @error('formCashEmail') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
+                    @endif
 
                     <div class="flex items-center justify-end gap-3">
                         <button
@@ -433,12 +435,11 @@
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Preferred channel</label>
                             <select
-                                wire:model="formPreferredChannel"
+                                wire:model.live="formPreferredChannel"
                                 class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
                             >
                                 <option value="VENMO">Venmo</option>
                                 <option value="CASH_APP">Cash App</option>
-                                <option value="CARD">Card</option>
                             </select>
                             @error('formPreferredChannel') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                         </div>
@@ -456,9 +457,9 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    @if ($formPreferredChannel === 'VENMO')
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Venmo username</label>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Venmo username <span class="text-red-500">*</span></label>
                             <input
                                 type="text"
                                 wire:model.defer="formVenmoUsername"
@@ -467,40 +468,42 @@
                             />
                             @error('formVenmoUsername') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                         </div>
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash tag</label>
-                            <input
-                                type="text"
-                                wire:model.defer="formCashTag"
-                                placeholder="$cashtag"
-                                class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                            />
-                            @error('formCashTag') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
+                    @endif
 
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash phone</label>
-                            <input
-                                type="text"
-                                wire:model.defer="formCashPhone"
-                                placeholder="+1 555 000 1234"
-                                class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                            />
-                            @error('formCashPhone') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                    @if ($formPreferredChannel === 'CASH_APP')
+                        <div class="grid gap-4 sm:grid-cols-3">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash tag</label>
+                                <input
+                                    type="text"
+                                    wire:model.defer="formCashTag"
+                                    placeholder="$cashtag"
+                                    class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                />
+                                @error('formCashTag') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash phone</label>
+                                <input
+                                    type="text"
+                                    wire:model.defer="formCashPhone"
+                                    placeholder="+1 555 000 1234"
+                                    class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                />
+                                @error('formCashPhone') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash email</label>
+                                <input
+                                    type="email"
+                                    wire:model.defer="formCashEmail"
+                                    placeholder="email@example.com"
+                                    class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                />
+                                @error('formCashEmail') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Cash email</label>
-                            <input
-                                type="email"
-                                wire:model.defer="formCashEmail"
-                                placeholder="email@example.com"
-                                class="mt-2 block w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                            />
-                            @error('formCashEmail') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
+                    @endif
 
                     <div class="rounded-xl border border-teal-200 dark:border-teal-900/40 bg-teal-50 dark:bg-teal-900/20 px-4 py-3 text-xs text-teal-800 dark:text-teal-200">
                         <div class="flex items-center gap-3">

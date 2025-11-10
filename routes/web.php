@@ -4,6 +4,7 @@ use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\SmartPayController;
 use App\Livewire\Groups\Create as GroupsCreate;
 use App\Livewire\Groups\Index as GroupsIndex;
+use App\Livewire\Groups\Settings as GroupsSettings;
 use App\Livewire\Groups\Show as GroupsShow;
 use App\Livewire\Members\Index as MembersIndex;
 use App\Livewire\PaymentRequests\Index as PaymentRequestsIndex;
@@ -44,6 +45,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingCompleted::class
     Route::get('groups', GroupsIndex::class)->name('app.groups.index');
     Route::get('groups/create', GroupsCreate::class)->name('app.groups.create');
     Route::get('groups/{group}', GroupsShow::class)->name('app.groups.show');
+    Route::get('groups/{group}/settings', GroupsSettings::class)->name('app.groups.settings');
 
     // Members
     Route::get('members', MembersIndex::class)->name('app.members.index');
@@ -59,6 +61,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingCompleted::class
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('user-password.edit');
     Volt::route('settings/payment-accounts', 'settings.payment-accounts')->name('payment-accounts.edit');
+    Volt::route('settings/square', 'settings.square-account')->name('square-account.edit');
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
 
     Volt::route('settings/two-factor', 'settings.two-factor')
@@ -77,3 +80,15 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingCompleted::class
 Route::get('/payment/callback', function () {
     return view('payment.callback');
 })->name('payment.callback');
+
+// Square OAuth routes (authenticated)
+Route::middleware('auth')->prefix('oauth/square')->name('oauth.square.')->group(function () {
+    Route::get('authorize', 'App\Http\Controllers\Square\SquareOAuthController@redirectToSquare')->name('authorize');
+    Route::get('callback', 'App\Http\Controllers\Square\SquareOAuthController@callback')->name('callback');
+    Route::post('disconnect', 'App\Http\Controllers\Square\SquareOAuthController@disconnect')->name('disconnect');
+});
+
+// Square webhooks (public, CSRF exempt)
+Route::post('/webhooks/square', 'App\Http\Controllers\Square\SquareWebhookController@handle')
+    ->name('webhooks.square')
+    ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);

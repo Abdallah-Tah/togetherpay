@@ -102,16 +102,30 @@ Core entities flow: **Users** → **Groups** → **Group Members** → **Billing
 - **Dunning Events** - Reminders and retry attempts for pending requests
 - **Exports** - Generated CSV/PDF reports
 
-### Payment Request Drivers (Planned)
+### Payment Request Drivers (Current)
 
 Contract-based driver pattern for payment channels:
 
 **`App\Contracts\PaymentRequestDriver`** interface with implementations:
 - **VenmoDriver** - Generates deep-links (`venmo://paycharge?...`)
 - **CashAppDriver** - Generates deep-links (`cashapp://send?...`)
-- Future: API-based request drivers with webhook handling
 
-MVP uses **deep-link strategy** (fee-free), future premium features will add API integration.
+MVP uses **deep-link strategy** (fee-free).
+
+### Square Integration (Implemented)
+
+**Two-Mode Payment System**:
+- **Manual Mode** (default) - Deep-link requests, two-step confirmation (member marks → owner confirms)
+- **Auto-Square Mode** - Recurring subscriptions via Square + Cash App Pay, automatic webhook confirmation
+
+**Features**:
+- Owner OAuth connection to Square merchant account
+- Automatic Square Customer creation for group members
+- Recurring subscription setup synchronized with billing cycles
+- Webhook-based payment confirmation (auto_verified status)
+- Backward compatible - existing manual groups unaffected
+
+See `SQUARE_INTEGRATION_SUMMARY.md` for architecture details and `SQUARE_INTEGRATION_QUICKSTART.md` for developer guide.
 
 ### Scheduled Jobs (Planned)
 

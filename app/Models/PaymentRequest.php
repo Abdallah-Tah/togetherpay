@@ -32,6 +32,9 @@ class PaymentRequest extends Model
         'paid_at',
         'fail_reason',
         'metadata',
+        'square_invoice_id',
+        'square_payment_id',
+        'square_confirmed_at',
     ];
 
     protected $casts = [
@@ -41,6 +44,7 @@ class PaymentRequest extends Model
         'marked_at' => 'datetime',
         'confirmed_at' => 'datetime',
         'paid_at' => 'datetime',
+        'square_confirmed_at' => 'datetime',
         'metadata' => 'array',
     ];
 
@@ -142,5 +146,28 @@ class PaymentRequest extends Model
     public function scopeAwaitingConfirmation($query)
     {
         return $query->where('status', 'member_marked');
+    }
+
+    /**
+     * Check if payment was verified by Square webhook
+     */
+    public function isSquareVerified(): bool
+    {
+        return filled($this->square_payment_id) && $this->square_confirmed_at !== null;
+    }
+
+    /**
+     * Confirm payment via Square webhook
+     */
+    public function confirmViaSquare(string $paymentId): void
+    {
+        $this->update([
+            'status' => 'auto_verified',
+            'square_payment_id' => $paymentId,
+            'square_confirmed_at' => now(),
+        ]);
+
+        // Update cycle collected amount
+        $this->cycle->increment('total_collected_cents', $this->amount_cents);
     }
 }

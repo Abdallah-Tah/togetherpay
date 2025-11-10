@@ -55,6 +55,72 @@
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">The total monthly bill amount to split among members</p>
                     </div>
 
+                    <!-- Billing Mode -->
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-4">
+                            How do you want to collect money? <span class="text-red-500">*</span>
+                        </label>
+                        <div class="space-y-3">
+                            <!-- Manual Mode -->
+                            <label class="flex items-start p-4 rounded-xl border-2 cursor-pointer transition" :class="@js($billing_mode === 'manual') ? 'border-teal-500 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/20' : 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 hover:border-teal-300 dark:hover:border-teal-700'">
+                                <input wire:model="billing_mode"
+                                       type="radio"
+                                       value="manual"
+                                       class="mt-1 h-5 w-5 text-teal-600 focus:ring-teal-500 cursor-pointer">
+                                <div class="ml-3 flex-1">
+                                    <p class="font-semibold text-zinc-900 dark:text-white">Manual Collection</p>
+                                    <p class="text-sm text-zinc-600 dark:text-zinc-400">Send payment links, members confirm payment, you approve</p>
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-500 mt-1">⏱️ Requires manual coordination but gives you full control</p>
+                                </div>
+                            </label>
+
+                            <!-- Auto-Square Mode -->
+                            <label class="flex items-start p-4 rounded-xl border-2 cursor-pointer transition" :class="@js($billing_mode === 'auto_square') ? 'border-teal-500 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/20' : 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 hover:border-teal-300 dark:hover:border-teal-700'">
+                                <input wire:model="billing_mode"
+                                       type="radio"
+                                       value="auto_square"
+                                       class="mt-1 h-5 w-5 text-teal-600 focus:ring-teal-500 cursor-pointer">
+                                <div class="ml-3 flex-1">
+                                    <p class="font-semibold text-zinc-900 dark:text-white">Automatic (Square)</p>
+                                    <p class="text-sm text-zinc-600 dark:text-zinc-400">Square charges members automatically on due date via Cash App</p>
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-500 mt-1">🤖 Fully automated, no manual coordination needed</p>
+                                </div>
+                            </label>
+                        </div>
+                        @error('billing_mode')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Auto-Square Warning -->
+                    @if ($billing_mode === 'auto_square')
+                        @if (auth()->user()->isSquareConfigured())
+                            <div class="rounded-xl bg-green-50 dark:bg-green-900/20 p-4 border border-green-200 dark:border-green-900/40">
+                                <div class="flex">
+                                    <svg class="h-5 w-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-medium text-green-800 dark:text-green-200">Square Connected</h3>
+                                        <p class="mt-1 text-sm text-green-700 dark:text-green-300">Your Square account is connected and ready for automatic payments!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <div class="rounded-xl bg-yellow-50 dark:bg-yellow-900/20 p-4 border border-yellow-200 dark:border-yellow-900/40">
+                                <div class="flex">
+                                    <svg class="h-5 w-5 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Square Required</h3>
+                                        <p class="mt-1 text-sm text-yellow-700 dark:text-yellow-300">You need to connect your Square account first. You can do this in <a href="{{ route('square-account.edit') }}" class="underline font-medium hover:no-underline">Settings → Square Account</a>.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    @endif
+
                     <!-- Billing Cadence -->
                     <div>
                         <label for="cadence" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">

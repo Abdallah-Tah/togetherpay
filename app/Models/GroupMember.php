@@ -25,11 +25,15 @@ class GroupMember extends Model
         'share_value',
         'status',
         'verified_at',
+        'square_customer_id',
+        'square_subscription_id',
+        'square_subscription_created_at',
     ];
 
     protected $casts = [
         'share_value' => 'decimal:2',
         'verified_at' => 'datetime',
+        'square_subscription_created_at' => 'datetime',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -75,5 +79,21 @@ class GroupMember extends Model
             'CASH_APP' => $this->cash_tag ?? $this->cash_phone ?? $this->cash_email,
             default => null,
         };
+    }
+
+    /**
+     * Check if member has Square subscription
+     */
+    public function hasSquareSubscription(): bool
+    {
+        return filled($this->square_customer_id) && filled($this->square_subscription_id);
+    }
+
+    /**
+     * Check if member is enrolled in auto-square payments
+     */
+    public function isAutoSquareEnrolled(): bool
+    {
+        return $this->hasSquareSubscription() && $this->square_subscription_created_at !== null;
     }
 }

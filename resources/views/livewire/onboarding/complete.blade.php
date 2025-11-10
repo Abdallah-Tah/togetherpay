@@ -1,14 +1,36 @@
 <?php
 
 use Illuminate\Support\Facades\Auth;
-use function Livewire\Volt\{mount};
+use Livewire\Volt\Component;
 
-mount(function () {
-    // Mark onboarding as completed
-    Auth::user()->completeOnboarding();
-});
+new class extends Component
+{
+    public string $billing_mode = 'manual';
 
-?>
+    public function mount(): void
+    {
+        // Mark onboarding as completed
+        Auth::user()->completeOnboarding();
+
+        // Load user's existing preference if any
+        $this->billing_mode = Auth::user()->getPreferredBillingMode() ?? 'manual';
+    }
+
+    public function saveBillingPreference(): void
+    {
+        // Validate the mode
+        if (!in_array($this->billing_mode, ['manual', 'auto_square'])) {
+            $this->addError('billing_mode', 'Invalid billing mode selected');
+            return;
+        }
+
+        // Save user's preference
+        Auth::user()->setPreferredBillingMode($this->billing_mode);
+
+        // Redirect to dashboard
+        $this->redirect(route('dashboard'), navigate: true);
+    }
+}; ?>
 
 <div>
     <x-slot:title>Welcome Aboard!</x-slot:title>
@@ -104,6 +126,67 @@ mount(function () {
                         </div>
                     </div>
 
+                    <!-- Billing Mode Selection Form -->
+                    <form wire:submit="saveBillingPreference" class="mt-8 space-y-4">
+                        <h3 class="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Choose Your Payment Collection Method</h3>
+                        <p class="text-sm text-zinc-600 dark:text-zinc-300 mb-6">Select your preferred method for collecting payments from group members. You can change this later for each group:</p>
+
+                        <!-- Manual Mode Option -->
+                        <label class="flex items-start p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 @if($billing_mode === 'manual') border-brand-600 bg-brand-50 dark:bg-brand-900/20 @else border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 @endif">
+                            <input type="radio" wire:model="billing_mode" value="manual" class="mt-1 w-4 h-4">
+                            <div class="ml-4 flex-1">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="text-xl">📝</span>
+                                    <h4 class="font-semibold text-zinc-900 dark:text-white">Manual Collection</h4>
+                                </div>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-300">Send payment links to members via Venmo/Cash App. They confirm payment and you approve.</p>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-2">✓ Full control over payments  ✓ No additional setup  ✓ Fee-free</p>
+                            </div>
+                        </label>
+
+                        <!-- Auto-Square Mode Option -->
+                        <label class="flex items-start p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 @if($billing_mode === 'auto_square') border-success-600 bg-success-50 dark:bg-success-900/20 @else border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 @endif">
+                            <input type="radio" wire:model="billing_mode" value="auto_square" class="mt-1 w-4 h-4">
+                            <div class="ml-4 flex-1">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="text-xl">🤖</span>
+                                    <h4 class="font-semibold text-zinc-900 dark:text-white">Automatic (Square)</h4>
+                                    @if(!auth()->user()->hasSquareAccount())
+                                        <span class="text-xs px-2 py-1 rounded-full bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-300 font-medium">Setup Required</span>
+                                    @endif
+                                </div>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-300">Members are charged automatically on the due date. Zero manual coordination.</p>
+                                @if(!auth()->user()->hasSquareAccount())
+                                    <p class="text-xs text-warning-700 dark:text-warning-300 mt-2">⚠️ Square account connection required. <a href="{{ route('square-account.edit') }}" class="underline font-medium hover:text-warning-800">Connect now</a></p>
+                                @else
+                                    <p class="text-xs text-success-700 dark:text-success-300 mt-2">✓ Square connected  ✓ Automatic billing  ✓ Reduced follow-ups</p>
+                                @endif
+                            </div>
+                        </label>
+
+                        <!-- Error Display -->
+                        @error('billing_mode')
+                            <div class="p-3 rounded-lg bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800">
+                                <p class="text-sm text-danger-700 dark:text-danger-300">{{ $message }}</p>
+                            </div>
+                        @enderror
+
+                        <!-- Info Box -->
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+                            <p class="text-sm text-blue-900 dark:text-blue-100">
+                                <strong>💡 Note:</strong> You can change your payment collection method for each group individually, or switch the default here anytime.
+                            </p>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Continue to Dashboard
+                        </button>
+                    </form>
+
                     <!-- Tip Box -->
                     <div class="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/20 dark:to-brand-800/20 border border-brand-200 dark:border-brand-800 rounded-2xl p-5 mb-8">
                         <div class="flex items-start space-x-3">
@@ -121,20 +204,6 @@ mount(function () {
                         </div>
                     </div>
 
-                    <!-- CTA Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <a href="{{ route('app.groups.create') }}" wire:navigate
-                           class="flex-1 inline-flex items-center justify-center px-6 py-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            Create Your First Group
-                        </a>
-                        <a href="{{ route('dashboard') }}" wire:navigate
-                           class="flex-1 inline-flex items-center justify-center px-6 py-4 border-2 border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-semibold rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all duration-200">
-                            Go to Dashboard
-                        </a>
-                    </div>
                 </div>
             </div>
 

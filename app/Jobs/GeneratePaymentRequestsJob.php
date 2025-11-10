@@ -38,6 +38,11 @@ class GeneratePaymentRequestsJob implements ShouldQueue
                 $requestsGenerated += $count;
 
                 Log::info("Generated {$count} payment requests for cycle {$cycle->id}");
+
+                // Create Square subscriptions for auto_square groups
+                if ($cycle->group->isAutoSquareMode()) {
+                    CreateAutoSquareSubscriptionsJob::dispatch($cycle);
+                }
             } catch (\Exception $e) {
                 Log::error("Failed to generate requests for cycle {$cycle->id}: {$e->getMessage()}");
             }
