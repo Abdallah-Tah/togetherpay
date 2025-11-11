@@ -33,6 +33,7 @@ class PaymentRequest extends Model
         'fail_reason',
         'metadata',
         'square_invoice_id',
+        'square_subscription_id',
         'square_payment_id',
         'square_confirmed_at',
     ];

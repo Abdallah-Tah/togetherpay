@@ -12,7 +12,7 @@ use Illuminate\Console\Command;
 
 class TestRealSquareInvoice extends Command
 {
-    protected $signature = 'test:real-square-invoice {member_email} {member_name?} {member_phone?} {--force : Skip confirmation} {--owner_id= : Use specific owner ID instead of first connected}';
+    protected $signature = 'test:real-square-invoice {member_email} {member_name?} {member_phone?} {amount=5} {--force : Skip confirmation} {--owner_id= : Use specific owner ID instead of first connected}';
 
     protected $description = 'Create a REAL Square invoice sent to member email with Cash App Pay option';
 
@@ -22,6 +22,8 @@ class TestRealSquareInvoice extends Command
         $memberName = $this->argument('member_name') ?: 'Test Member';
         $memberPhone = $this->argument('member_phone') ?: '+12065551000';
         $ownerId = $this->option('owner_id');
+        $amountDollars = (float) $this->argument('amount');
+        $amountCents = (int) round($amountDollars * 100);
 
         $this->info('╔════════════════════════════════════════════════════════════════╗');
         $this->info('║     Creating REAL Square Invoice with Cash App Pay             ║');
@@ -73,7 +75,7 @@ class TestRealSquareInvoice extends Command
             $this->line("  Email: {$memberEmail}");
             $this->line("  Name: {$memberName}");
             $this->line("  Phone: {$memberPhone}");
-            $this->line("  Amount: \$5.00");
+            $this->line('  Amount: $' . number_format($amountDollars, 2));
             $this->newLine();
             if (!$this->confirm('Create invoice and send to member?')) {
                 $this->info('Cancelled.');
@@ -89,7 +91,7 @@ class TestRealSquareInvoice extends Command
             'owner_id' => $owner->id,
             'name' => 'Square Invoice Test - ' . now()->format('H:i:s'),
             'description' => 'Testing Square Invoice + Cash App Pay integration',
-            'total_amount_cents' => 500, // $5.00
+            'total_amount_cents' => $amountCents,
             'billing_mode' => 'auto_square',
             'cadence' => 'monthly',
             'status' => 'active',
@@ -116,7 +118,7 @@ class TestRealSquareInvoice extends Command
             'cash_phone' => $memberPhone,
             'cash_email' => $memberEmail,
             'share_type' => 'AMOUNT',
-            'share_value' => 5.00,
+            'share_value' => $amountDollars,
             'status' => 'active',
             'verified_at' => now(),
         ]);
@@ -135,7 +137,7 @@ class TestRealSquareInvoice extends Command
             'period_start' => now()->startOfMonth(),
             'period_end' => now()->endOfMonth(),
             'due_at' => now()->addDays(7),
-            'total_amount_cents' => 500,
+            'total_amount_cents' => $amountCents,
             'total_collected_cents' => 0,
             'status' => 'active',
         ]);
@@ -165,7 +167,7 @@ class TestRealSquareInvoice extends Command
         $this->info('Step 5: Creating Square Invoice with Cash App Pay...');
         $this->line("<fg=yellow>This will:</>");
         $this->line("  • Send invoice to: {$memberEmail}");
-        $this->line("  • Amount: \$5.00");
+        $this->line('  • Amount: $' . number_format($amountDollars, 2));
         $this->line("  • Payment method: Cash App Pay");
         $this->newLine();
 
@@ -192,7 +194,7 @@ class TestRealSquareInvoice extends Command
             $this->line("<fg=green>💳 Cash App Payment:</>");
             $this->line("  1. Member receives email with payment link");
             $this->line("  2. Clicks the link or taps \"Pay with Cash App\"");
-            $this->line("  3. Cash App opens with \$5.00 payment request");
+            $this->line('  3. Cash App opens with $' . number_format($amountDollars, 2) . " payment request");
             $this->line("  4. Swipes to confirm payment");
             $this->line("  5. Payment completes instantly");
             $this->newLine();
@@ -209,7 +211,7 @@ class TestRealSquareInvoice extends Command
             $this->line("  Member: {$memberName} ({$memberEmail})");
             $this->line("  Group ID: {$group->id}");
             $this->line("  Invoice ID: {$invoiceId}");
-            $this->line("  Amount: \$5.00");
+            $this->line('  Amount: $' . number_format($amountDollars, 2));
             $this->newLine();
 
             $this->info('Next Steps:');

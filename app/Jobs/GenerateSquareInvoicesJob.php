@@ -83,7 +83,7 @@ class GenerateSquareInvoicesJob implements ShouldQueue
                 }
 
                 // Create Square invoice
-                $invoiceId = $invoiceService->createInvoiceForMember($member, $this->cycle);
+                $invoiceId = $invoiceService->createInvoiceForMember($member, $owner, $this->cycle);
 
                 // Calculate member's share
                 $amountCents = $member->calculateAmount($group->total_amount_cents);

@@ -12,18 +12,11 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
- * Creates Square subscriptions for each member in an auto_square billing cycle
- * Dispatched when a billing cycle is created for auto_square groups
- *
- * Payment flow:
- * 1. Owner connects their Square account (OAuth)
- * 2. App creates subscription for each member
- * 3. Square sends monthly Cash App notifications to members
- * 4. Members confirm payment in Cash App
- * 5. Money flows directly to owner's Square merchant account
- * 6. Webhooks confirm payment and update status
+ * Generates Cash App Pay invoices for each member in an auto_square billing cycle.
+ * Keeps legacy naming for backwards compatibility inside the queue table.
  */
 class CreateAutoSquareInvoices implements ShouldQueue
 {
@@ -55,9 +48,9 @@ class CreateAutoSquareInvoices implements ShouldQueue
         }
 
         $customerService = new SquareCustomerService();
-        $subscriptionService = new SquareSubscriptionService();
+        $subscriptionService = app(SquareSubscriptionService::class);
 
-        Log::info('Starting subscription creation for cycle', [
+        Log::info('Starting Cash App invoice generation for cycle', [
             'cycle_id' => $this->cycle->id,
             'group_id' => $group->id,
             'group_name' => $group->name,
@@ -66,6 +59,18 @@ class CreateAutoSquareInvoices implements ShouldQueue
 
         foreach ($group->members()->where('status', 'active')->get() as $member) {
             try {
+                $existingRequest = PaymentRequest::where('cycle_id', $this->cycle->id)
+                    ->where('member_id', $member->id)
+                    ->first();
+
+                if ($existingRequest) {
+                    Log::info('Payment request already exists for member', [
+                        'member_id' => $member->id,
+                        'payment_request_id' => $existingRequest->id,
+                    ]);
+                    continue;
+                }
+
                 // Step 1: Ensure member has Square customer ID
                 if (!$member->square_customer_id) {
                     Log::info('Creating Square customer for member', [
@@ -82,15 +87,15 @@ class CreateAutoSquareInvoices implements ShouldQueue
                     ]);
                 }
 
-                // Step 2: Create subscription for recurring monthly billing
-                Log::info('Creating subscription for member', [
+                // Step 2: Create Cash App Pay invoice (via subscription service wrapper)
+                Log::info('Creating Cash App invoice for member', [
                     'member_id' => $member->id,
                     'cycle_id' => $this->cycle->id,
                 ]);
 
-                $subscriptionId = $subscriptionService->createSubscription($member, $owner, $this->cycle);
+                $invoiceId = $subscriptionService->createSubscription($member, $owner, $this->cycle);
 
-                // Step 3: Create payment request record linked to subscription
+                // Step 3: Create payment request record linked to invoice
                 $amountCents = $member->calculateAmount($this->cycle->total_amount_cents);
 
                 $paymentRequest = PaymentRequest::create([
@@ -98,19 +103,27 @@ class CreateAutoSquareInvoices implements ShouldQueue
                     'cycle_id' => $this->cycle->id,
                     'member_id' => $member->id,
                     'amount_cents' => $amountCents,
-                    'method_hint' => 'SQUARE_SUBSCRIPTION',
+                    'method_hint' => 'CASH_APP',
+                    'pr_code' => 'PR-' . strtoupper(Str::random(8)),
+                    'note' => "{$group->name} - {$this->cycle->period_start->format('M Y')}",
                     'status' => 'sent',
+                    'square_invoice_id' => $invoiceId,
+                    'initiated_at' => now(),
                     'sent_at' => now(),
-                    'square_subscription_id' => $subscriptionId,
                 ]);
 
-                Log::info('Created payment request for subscription', [
+                $member->update([
+                    'square_subscription_id' => $invoiceId,
+                    'square_subscription_created_at' => now(),
+                ]);
+
+                Log::info('Created payment request for Cash App invoice', [
                     'payment_request_id' => $paymentRequest->id,
-                    'subscription_id' => $subscriptionId,
+                    'invoice_id' => $invoiceId,
                     'member_id' => $member->id,
                 ]);
             } catch (\Exception $e) {
-                Log::error('Failed to create subscription for member', [
+                Log::error('Failed to create Cash App invoice for member', [
                     'member_id' => $member->id,
                     'cycle_id' => $this->cycle->id,
                     'error' => $e->getMessage(),
@@ -118,7 +131,7 @@ class CreateAutoSquareInvoices implements ShouldQueue
             }
         }
 
-        Log::info('Finished subscription creation for cycle', [
+        Log::info('Finished Cash App invoice generation for cycle', [
             'cycle_id' => $this->cycle->id,
             'group_id' => $group->id,
         ]);

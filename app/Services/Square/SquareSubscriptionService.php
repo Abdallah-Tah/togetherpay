@@ -7,13 +7,19 @@ use App\Models\GroupMember;
 use App\Models\User;
 
 /**
- * Manages Square subscriptions for recurring billing via REST API
+ * Legacy "subscription" service now issues Square invoices with Cash App Pay
+ * Keeps the same interface so the rest of the app can remain unchanged while
+ * we mimic Claude's Cash App approval flow.
  */
 class SquareSubscriptionService
 {
+    public function __construct(private SquareInvoiceService $invoiceService)
+    {
+    }
+
     /**
-     * Create a subscription for a group member
-     * First creates a subscription plan, then subscribes the customer
+     * Create a Cash App Pay invoice for this cycle/member.
+     * Returns the published invoice ID (stored where subscription ID used to be).
      */
     public function createSubscription(GroupMember $member, User $owner, BillingCycle $cycle): string
     {
@@ -25,30 +31,7 @@ class SquareSubscriptionService
             throw new \Exception("Owner does not have a Square location ID");
         }
 
-        $client = new SquareApiClient($owner);
-
-        // Calculate the member's share
-        $amountCents = $member->calculateAmount($cycle->total_amount_cents);
-        $amountDollars = $amountCents / 100;
-
-        // Step 1: Create or find subscription plan
-        // Plans are needed for subscriptions in Square
-        $planName = "Subscription - \${$amountDollars}/month";
-        $planId = $client->createPlan([
-            'idempotency_key' => uniqid('plan_member_' . $member->id . '_'),
-            'plan_name' => $planName,
-            'amount_cents' => $amountCents,
-        ]);
-
-        // Step 2: Create subscription using the plan
-        return $client->createSubscription([
-            'idempotency_key' => uniqid('sub_' . $member->id . '_'),
-            'location_id' => $owner->square_location_id,
-            'customer_id' => $member->square_customer_id,
-            'start_date' => $cycle->due_at->toDateString(),
-            'amount_cents' => $amountCents,
-            'plan_variation_uid' => $planId,
-        ]);
+        return $this->invoiceService->createInvoiceForMember($member, $owner, $cycle);
     }
 
     /**
