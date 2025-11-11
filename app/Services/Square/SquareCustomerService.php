@@ -4,8 +4,8 @@ namespace App\Services\Square;
 
 use App\Models\GroupMember;
 use App\Models\User;
-use Square\Models\CreateCustomerRequest;
-use Square\Models\UpdateCustomerRequest;
+use Square\Customers\Requests\CreateCustomerRequest;
+use Square\Customers\Requests\UpdateCustomerRequest;
 
 /**
  * Manages Square Customer creation and updates
@@ -18,29 +18,26 @@ class SquareCustomerService
     public function createCustomerForMember(GroupMember $member, User $owner): string
     {
         $client = SquareClientBuilder::buildForUser($owner);
-        $customersApi = $client->getCustomersApi();
+        $customersApi = $client->customers;
 
-        $customer = new \Square\Models\Customer();
-        $customer->setGivenName($member->user->name ?? 'Member');
-        $customer->setEmailAddress($member->user->email);
+        $customerData = [
+            'idempotencyKey' => uniqid('gm_' . $member->id . '_'),
+            'givenName' => $member->user->name ?? 'Member',
+            'emailAddress' => $member->user->email,
+            'referenceId' => "member_{$member->id}",
+        ];
 
         // Add phone if available
         if ($member->user->phone) {
-            $customer->setPhoneNumber($member->user->phone);
+            $customerData['phoneNumber'] = $member->user->phone;
         }
 
-        // Add reference ID to link back to our system
-        $customer->setReferenceId("member_{$member->id}");
-
-        $request = new CreateCustomerRequest();
-        $request->setCustomer($customer);
-        $request->setIdempotencyKey(uniqid('gm_' . $member->id . '_'));
+        $request = new CreateCustomerRequest($customerData);
 
         try {
-            $response = $customersApi->createCustomer($request);
-            $squareCustomer = $response->getResult()->getCustomer();
+            $response = $customersApi->create($request);
 
-            return $squareCustomer->getId();
+            return $response->customer->id;
         } catch (\Exception $e) {
             logger()->error('Failed to create Square customer', [
                 'member_id' => $member->id,
@@ -56,25 +53,24 @@ class SquareCustomerService
     public function updateCustomer(string $customerId, User $owner, array $data): void
     {
         $client = SquareClientBuilder::buildForUser($owner);
-        $customersApi = $client->getCustomersApi();
+        $customersApi = $client->customers;
 
-        $customer = new \Square\Models\Customer();
+        $customerData = [];
 
         if (isset($data['name'])) {
-            $customer->setGivenName($data['name']);
+            $customerData['givenName'] = $data['name'];
         }
         if (isset($data['email'])) {
-            $customer->setEmailAddress($data['email']);
+            $customerData['emailAddress'] = $data['email'];
         }
         if (isset($data['phone'])) {
-            $customer->setPhoneNumber($data['phone']);
+            $customerData['phoneNumber'] = $data['phone'];
         }
 
-        $request = new UpdateCustomerRequest();
-        $request->setCustomer($customer);
+        $request = new UpdateCustomerRequest($customerData);
 
         try {
-            $customersApi->updateCustomer($customerId, $request);
+            $customersApi->update($customerId, $request);
         } catch (\Exception $e) {
             logger()->error('Failed to update Square customer', [
                 'customer_id' => $customerId,
@@ -90,10 +86,10 @@ class SquareCustomerService
     public function deleteCustomer(string $customerId, User $owner): void
     {
         $client = SquareClientBuilder::buildForUser($owner);
-        $customersApi = $client->getCustomersApi();
+        $customersApi = $client->customers;
 
         try {
-            $customersApi->deleteCustomer($customerId);
+            $customersApi->delete($customerId);
         } catch (\Exception $e) {
             logger()->error('Failed to delete Square customer', [
                 'customer_id' => $customerId,
@@ -109,19 +105,19 @@ class SquareCustomerService
     public function getCustomer(string $customerId, User $owner): array
     {
         $client = SquareClientBuilder::buildForUser($owner);
-        $customersApi = $client->getCustomersApi();
+        $customersApi = $client->customers;
 
         try {
-            $response = $customersApi->retrieveCustomer($customerId);
-            $customer = $response->getResult()->getCustomer();
+            $response = $customersApi->get($customerId);
+            $customer = $response->customer;
 
             return [
-                'id' => $customer->getId(),
-                'name' => $customer->getGivenName(),
-                'email' => $customer->getEmailAddress(),
-                'phone' => $customer->getPhoneNumber(),
-                'created_at' => $customer->getCreatedAt(),
-                'updated_at' => $customer->getUpdatedAt(),
+                'id' => $customer->id,
+                'name' => $customer->givenName,
+                'email' => $customer->emailAddress,
+                'phone' => $customer->phoneNumber ?? null,
+                'created_at' => $customer->createdAt,
+                'updated_at' => $customer->updatedAt,
             ];
         } catch (\Exception $e) {
             logger()->error('Failed to retrieve Square customer', [

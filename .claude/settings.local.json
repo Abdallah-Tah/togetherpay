@@ -6,7 +6,12 @@
       "Bash(php artisan config:clear:*)",
       "Bash(php artisan:*)",
       "Bash(php -l:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(sqlite3:*)",
+      "Bash(yes:*)",
+      "Bash(composer show:*)",
+      "Bash(./vendor/bin/pint:*)"
     ],
     "deny": [],
     "ask": []

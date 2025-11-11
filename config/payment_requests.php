@@ -134,13 +134,15 @@ return [
     */
     'square' => [
         'enabled' => env('SQUARE_ENABLED', false),
-        'mode' => env('SQUARE_MODE', 'sandbox'), // 'sandbox' or 'production'
+        'mode' => env('SQUARE_ENVIRONMENT', env('SQUARE_MODE', 'sandbox')), // 'sandbox' or 'production'
+        'access_token' => env('SQUARE_ACCESS_TOKEN'),
+        'default_location_id' => env('SQUARE_LOCATION_ID'),
 
         // OAuth settings
         'oauth' => [
-            'client_id' => env('SQUARE_CLIENT_ID'),
-            'client_secret' => env('SQUARE_CLIENT_SECRET'),
-            'redirect_uri' => env('SQUARE_OAUTH_CALLBACK_URL', 'http://localhost:8000/oauth/square/callback'),
+            'client_id' => env('SQUARE_CLIENT_ID', env('SQUARE_APPLICATION_ID')),
+            'client_secret' => env('SQUARE_CLIENT_SECRET', env('SQUARE_APPLICATION_SECRET')),
+            'redirect_uri' => env('SQUARE_OAUTH_CALLBACK_URL', env('SQUARE_OAUTH_REDIRECT_URI', 'http://localhost:8000/oauth/square/callback')),
             'scopes' => [
                 'MERCHANT_PROFILE_READ',  // Required for /v2/me endpoint
                 'CUSTOMERS_READ',
