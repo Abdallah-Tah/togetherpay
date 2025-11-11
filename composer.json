@@ -21,8 +21,7 @@
         "livewire/flux": "^2.1.1",
         "livewire/volt": "^1.7.0",
         "spatie/laravel-activitylog": "^4.10",
-        "spatie/laravel-permission": "^6.21",
-        "square/square": "^43.2"
+        "spatie/laravel-permission": "^6.21"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

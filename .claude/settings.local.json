@@ -22,7 +22,8 @@
       "Bash(taskkill:*)",
       "Bash(mkdir:*)",
       "Bash(timeout 30 php artisan:*)",
-      "Bash(wmic process where \"name=''''php.exe'''' and NOT commandline like ''''%devsense%'''' and NOT commandline like ''''%intelliphp%''''\" delete /nointeractive)"
+      "Bash(wmic process where \"name=''''php.exe'''' and NOT commandline like ''''%devsense%'''' and NOT commandline like ''''%intelliphp%''''\" delete /nointeractive)",
+      "Bash(composer update:*)"
     ],
     "deny": [],
     "ask": []

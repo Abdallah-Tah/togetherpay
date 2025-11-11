@@ -12,133 +12,83 @@ use Illuminate\Console\Command;
 
 class TestRealSquareInvoice extends Command
 {
-    protected $signature = 'test:real-square-invoice {email} {phone?} {--force : Skip confirmation}';
+    protected $signature = 'test:real-square-invoice {member_email} {member_name?} {member_phone?} {--force : Skip confirmation} {--owner_id= : Use specific owner ID instead of first connected}';
 
-    protected $description = 'Create a REAL Square invoice that will send to your email/Cash App';
+    protected $description = 'Create a REAL Square invoice sent to member email with Cash App Pay option';
 
     public function handle(): void
     {
-        $email = $this->argument('email');
-        $phone = $this->argument('phone');
+        $memberEmail = $this->argument('member_email');
+        $memberName = $this->argument('member_name') ?: 'Test Member';
+        $memberPhone = $this->argument('member_phone') ?: '+12065551000';
+        $ownerId = $this->option('owner_id');
 
-        $this->info('=== Creating REAL Square Invoice ===');
-        $this->info('This will send an actual invoice to your email and Cash App');
+        $this->info('╔════════════════════════════════════════════════════════════════╗');
+        $this->info('║     Creating REAL Square Invoice with Cash App Pay             ║');
+        $this->info('╚════════════════════════════════════════════════════════════════╝');
         $this->newLine();
 
+        // Find owner with connected Square account
+        if ($ownerId) {
+            $owner = User::find($ownerId);
+            if (!$owner) {
+                $this->error("Owner with ID {$ownerId} not found!");
+                return;
+            }
+        } else {
+            $owner = User::whereNotNull('square_access_token')
+                ->whereNotNull('square_merchant_id')
+                ->first();
+
+            if (!$owner) {
+                $this->error('❌ No user with connected Square account found!');
+                $this->line('Please connect your Square account first in settings.');
+                $this->newLine();
+                $this->info('Steps to connect:');
+                $this->line('  1. Go to your account settings');
+                $this->line('  2. Click "Connect Square Account"');
+                $this->line('  3. Authorize the connection');
+                return;
+            }
+        }
+
+        $this->line("✓ Found owner with Square connection");
+        $this->line("  Name: {$owner->name}");
+        $this->line("  Email: {$owner->email}");
+        $this->line("  Merchant ID: {$owner->square_merchant_id}");
+        $this->line("  Location ID: {$owner->square_location_id}");
+        $this->newLine();
+
+        // Verify location ID is set
+        if (!$owner->square_location_id) {
+            $this->error('❌ Owner is missing Square location ID!');
+            $this->line('This usually happens during OAuth connection.');
+            $this->line('Try reconnecting your Square account.');
+            return;
+        }
+
         if (!$this->option('force')) {
-            if (!$this->confirm('Are you sure you want to create a REAL invoice?')) {
+            $this->newLine();
+            $this->line("<fg=yellow>Member Details:</>");
+            $this->line("  Email: {$memberEmail}");
+            $this->line("  Name: {$memberName}");
+            $this->line("  Phone: {$memberPhone}");
+            $this->line("  Amount: \$5.00");
+            $this->newLine();
+            if (!$this->confirm('Create invoice and send to member?')) {
                 $this->info('Cancelled.');
                 return;
             }
         }
 
-        // Check Square credentials
-        // FULL token from working curl command (84 characters)
-        $squareToken = 'EAAAl4YRs9djONdfEAkmOourp_y5tP1ncA4Ls_FviBHCl_ExAlqGAfvDvDbt72l8';
-        $this->info('Using Square Access Token: ' . ($squareToken ? 'FOUND' : 'NOT FOUND'));
-        $this->line('Token length: ' . strlen($squareToken) . ' characters');
-
-        // Show environment settings
-        $this->line('Environment: ' . config('payment_requests.square.mode'));
-        $this->line('Config Token: ' . (config('payment_requests.square.access_token') ? 'SET' : 'NOT SET'));
-        $this->newLine();
-        // curl https://connect.squareupsandbox.com/v2/customers \
-        //   -H 'Square-Version: 2025-01-23' \
-        //   -H 'Authorization: Bearer EAAAl4YRs9djONdfEAkmOourp_y5tP1ncA4Ls_FviBHCl_ExAlqGAfvDvDbt72l8' \
-        //   -H 'Content-Type: application/json' \
-        //   -d '{"idempotency_key":"test1234","given_name":"Test","email_address":"test@example.com"}'
-        /*
- * Removed accidental raw curl command which breaks PHP parsing.
- * If you want to call the Square API here, use Laravel's HTTP client:
- *
- * use Illuminate\Support\Facades\Http;
- *
- * $response = Http::withHeaders([
- *     'Square-Version' => '2025-01-23',
- *     'Authorization' => 'Bearer ' . $squareToken,
- *     'Content-Type' => 'application/json',
- * ])->post('https://connect.squareupsandbox.com/v2/customers', [
- *     'idempotency_key' => 'test1234',
- *     'given_name' => 'Test',
- *     'email_address' => 'test@example.com',
- * ]);
- *
- * // then check $response->successful() or handle errors as needed.
- */
-        try {
-            if ($squareToken) {
-                $this->info('Verifying Square token by listing customers...');
-
-                // Use sandbox URL since this is a sandbox token
-                $baseUrl = config('payment_requests.square.mode') === 'production'
-                    ? 'https://connect.squareup.com'
-                    : 'https://connect.squareupsandbox.com';
-
-                $response = \Illuminate\Support\Facades\Http::withHeaders([
-                    'Square-Version' => '2025-01-23',
-                    'Authorization' => 'Bearer ' . $squareToken,
-                    'Content-Type' => 'application/json',
-                ])->get($baseUrl . '/v2/customers');
-
-                if ($response->successful()) {
-                    $this->info('Square API reachable and token looks valid.');
-                    $this->line('  Environment: ' . config('payment_requests.square.mode'));
-                    $this->line('  Base URL: ' . $baseUrl);
-                } else {
-                    $this->warn('Square API returned HTTP ' . $response->status() . '. Response: ' . substr($response->body(), 0, 1000));
-                }
-            } else {
-                $this->warn('Skipping Square API check because no token provided.');
-            }
-        } catch (\Exception $e) {
-            $this->warn('Square API check failed: ' . $e->getMessage());
-        }
-
-
-        if (!$squareToken) {
-            $this->error('Square access token not configured!');
-            $this->line('Set SQUARE_ACCESS_TOKEN in .env');
-            return;
-        }
-
-        $this->newLine();
-        $this->info('Step 1: Creating test owner with Square...');
-
-        // Create owner
-        $owner = User::factory()->create([
-            'name' => 'Test Owner',
-            'email' => 'owner-test-' . time() . '@togetherpay.local',
-            'phone' => '+12065551111',
-        ]);
-
-        // Connect to Square
-        $owner->update([
-            'square_merchant_id' => 'TEST_MERCHANT_' . time(),
-            'square_access_token' => encrypt($squareToken),
-            'square_location_id' => config('payment_requests.square.default_location_id') ?: 'MAIN',
-            'square_connected_at' => now(),
-        ]);
-
-        // Verify encryption/decryption works
-        $this->line("✓ Owner created");
-        $this->line("  Testing token encryption...");
-        try {
-            $decryptedToken = decrypt($owner->square_access_token);
-            $tokenMatch = $decryptedToken === $squareToken;
-            $this->line("  Encrypted token length: " . strlen($owner->square_access_token));
-            $this->line("  Decrypted token matches: " . ($tokenMatch ? 'YES ✓' : 'NO ✗'));
-            $this->line("  Decrypted token: " . substr($decryptedToken, 0, 20) . '...');
-        } catch (\Exception $e) {
-            $this->error("  Decryption failed: " . $e->getMessage());
-        }
         $this->newLine();
 
-        // Create group
-        $this->info('Step 2: Creating test group...');
+        // Step 1: Create group
+        $this->info('Step 1: Creating test group...');
         $group = Group::create([
             'owner_id' => $owner->id,
-            'name' => 'TogetherPay Test Group',
-            'description' => 'Testing Square + Cash App Pay integration',
+            'name' => 'Square Invoice Test - ' . now()->format('H:i:s'),
+            'description' => 'Testing Square Invoice + Cash App Pay integration',
             'total_amount_cents' => 500, // $5.00
             'billing_mode' => 'auto_square',
             'cadence' => 'monthly',
@@ -148,13 +98,13 @@ class TestRealSquareInvoice extends Command
         $this->line("✓ Group created: {$group->name}");
         $this->newLine();
 
-        // Create member (YOU)
-        $this->info('Step 3: Creating member with YOUR details...');
+        // Step 2: Create/find member
+        $this->info('Step 2: Setting up member...');
         $memberUser = User::firstOrCreate(
-            ['email' => $email],
+            ['email' => $memberEmail],
             [
-                'name' => 'Abdallah Mohamed',
-                'phone' => $phone ?: '+12074097887',
+                'name' => $memberName,
+                'phone' => $memberPhone,
                 'password' => bcrypt('password'),
             ]
         );
@@ -163,9 +113,8 @@ class TestRealSquareInvoice extends Command
             'group_id' => $group->id,
             'user_id' => $memberUser->id,
             'preferred_channel' => 'CASH_APP',
-            'cash_tag' => '$AbdallahTM',
-            'cash_phone' => $phone,
-            'cash_email' => $email,
+            'cash_phone' => $memberPhone,
+            'cash_email' => $memberEmail,
             'share_type' => 'AMOUNT',
             'share_value' => 5.00,
             'status' => 'active',
@@ -173,13 +122,13 @@ class TestRealSquareInvoice extends Command
         ]);
 
         $this->line("✓ Member created");
-        $this->line("  Email: {$email}");
-        $this->line("  Phone: {$phone}");
-        $this->line("  Cash App: \$AbdallahTM");
+        $this->line("  Name: {$memberName}");
+        $this->line("  Email: {$memberEmail}");
+        $this->line("  Phone: {$memberPhone}");
         $this->newLine();
 
-        // Create billing cycle
-        $this->info('Step 4: Creating billing cycle...');
+        // Step 3: Create billing cycle
+        $this->info('Step 3: Creating billing cycle...');
         $cycle = BillingCycle::create([
             'group_id' => $group->id,
             'sequence_number' => 1,
@@ -191,77 +140,93 @@ class TestRealSquareInvoice extends Command
             'status' => 'active',
         ]);
 
-        $this->line("✓ Cycle created");
+        $this->line("✓ Billing cycle created");
+        $this->line("  Cycle ID: {$cycle->id}");
+        $this->line("  Due Date: {$cycle->due_at->format('M d, Y')}");
         $this->newLine();
 
-        // Create Square customer
-        $this->info('Step 5: Creating Square customer...');
+        // Step 4: Create Square customer
+        $this->info('Step 4: Creating Square customer for member...');
         try {
-            // Refresh owner to ensure we have the latest data
             $owner->refresh();
-
             $customerService = app(SquareCustomerService::class);
             $customerId = $customerService->createCustomerForMember($member, $owner);
-
             $member->update(['square_customer_id' => $customerId]);
 
-            $this->line("✓ Square customer created: {$customerId}");
+            $this->line("✓ Square customer created");
+            $this->line("  Customer ID: {$customerId}");
         } catch (\Exception $e) {
-            $this->error("Failed to create Square customer: {$e->getMessage()}");
-            $this->newLine();
-            $this->line("Using mock customer ID for testing...");
-            $member->update(['square_customer_id' => 'MOCK_' . time()]);
+            $this->error("❌ Failed to create Square customer: {$e->getMessage()}");
+            return;
         }
         $this->newLine();
 
-        // Create Square invoice
-        $this->info('Step 6: Creating REAL Square invoice...');
-        $this->line('This will send an email to: ' . $email);
+        // Step 5: Create Square invoice with Cash App Pay
+        $this->info('Step 5: Creating Square Invoice with Cash App Pay...');
+        $this->line("<fg=yellow>This will:</>");
+        $this->line("  • Send invoice to: {$memberEmail}");
+        $this->line("  • Amount: \$5.00");
+        $this->line("  • Payment method: Cash App Pay");
         $this->newLine();
 
         try {
-            // Refresh owner to ensure we have the latest data
             $owner->refresh();
-
             $invoiceService = app(SquareInvoiceService::class);
-            $invoiceId = $invoiceService->createInvoiceForMember($member, $cycle);
+            $invoiceId = $invoiceService->createInvoiceForMember($member, $owner, $cycle);
 
-            $this->line("✓ Square invoice created and published!");
+            $this->line("✓ Invoice created and published!");
             $this->line("  Invoice ID: {$invoiceId}");
             $this->newLine();
 
-            $this->info('=== SUCCESS! ===');
-            $this->newLine();
-            $this->line('<fg=green>Check your email:</> ' . $email);
-            $this->line('You should receive an email from Square with:');
-            $this->line('  • Subject: "Invoice from Test Owner"');
-            $this->line('  • Amount: $5.00');
-            $this->line('  • Payment link inside');
-            $this->newLine();
-            $this->line('<fg=yellow>When you click the payment link:</>');
-            $this->line('  1. Opens Square payment page');
-            $this->line('  2. Click "Pay with Cash App"');
-            $this->line('  3. Cash App opens on your phone');
-            $this->line('  4. Shows: "$5.00 to Test Owner"');
-            $this->line('  5. Swipe/tap to confirm');
-            $this->line('  6. Payment completes!');
-            $this->newLine();
-            $this->line('<fg=cyan>Check Cash App Activity:</>');
-            $this->line('You should see a notification in Cash App:');
-            $this->line('  "TogetherPay Test Group - $5.00"');
+            $this->info('╔════════════════════════════════════════════════════════════════╗');
+            $this->info('║                    ✓ SUCCESS!                                  ║');
+            $this->info('╚════════════════════════════════════════════════════════════════╝');
             $this->newLine();
 
-            $this->info('Test Data IDs:');
-            $this->line("  Owner ID: {$owner->id}");
+            $this->line("<fg=green>📧 Email Notification:</>");
+            $this->line("  {$memberName} will receive an email at:");
+            $this->line("  <fg=cyan>{$memberEmail}</>");
+            $this->line("  with a Square invoice and Cash App Pay button");
+            $this->newLine();
+
+            $this->line("<fg=green>💳 Cash App Payment:</>");
+            $this->line("  1. Member receives email with payment link");
+            $this->line("  2. Clicks the link or taps \"Pay with Cash App\"");
+            $this->line("  3. Cash App opens with \$5.00 payment request");
+            $this->line("  4. Swipes to confirm payment");
+            $this->line("  5. Payment completes instantly");
+            $this->newLine();
+
+            $this->line("<fg=green>✓ Webhook Confirmation:</>");
+            $this->line("  When payment is received:");
+            $this->line("  • Square sends webhook: <fg=cyan>invoice.payment_made</>");
+            $this->line("  • Our app auto-marks payment as <fg=cyan>auto_verified</>");
+            $this->line("  • Notification sent to group owner");
+            $this->newLine();
+
+            $this->line("<fg=yellow>📊 Test Data:</>");
+            $this->line("  Owner: {$owner->name} ({$owner->email})");
+            $this->line("  Member: {$memberName} ({$memberEmail})");
             $this->line("  Group ID: {$group->id}");
-            $this->line("  Member ID: {$member->id}");
-            $this->line("  Cycle ID: {$cycle->id}");
             $this->line("  Invoice ID: {$invoiceId}");
+            $this->line("  Amount: \$5.00");
             $this->newLine();
+
+            $this->info('Next Steps:');
+            $this->line("  1. Check {$memberEmail} for Square invoice email");
+            $this->line("  2. Click the payment link");
+            $this->line("  3. Choose \"Pay with Cash App\"");
+            $this->line("  4. Complete payment in Cash App");
+            $this->line("  5. Watch the webhook confirmation in logs");
+            $this->newLine();
+
+            $this->line("<fg=cyan>Monitor real-time logs with:</> php artisan pail");
+            $this->newLine();
+
         } catch (\Exception $e) {
-            $this->error('Failed to create Square invoice!');
+            $this->error('❌ Failed to create Square invoice!');
             $this->newLine();
-            $this->line('Error: ' . $e->getMessage());
+            $this->line("<fg=red>Error:</> {$e->getMessage()}");
             $this->newLine();
             $this->line('Stack trace:');
             $this->line($e->getTraceAsString());
