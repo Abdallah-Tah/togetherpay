@@ -149,6 +149,8 @@ return [
                 'CUSTOMERS_WRITE',
                 'INVOICES_READ',
                 'INVOICES_WRITE',
+                'ITEMS_READ',             // Required for subscription creation
+                'ORDERS_WRITE',           // Required for subscription creation
                 'PAYMENTS_READ',
                 'PAYMENTS_WRITE',
                 'SUBSCRIPTIONS_READ',     // For reading subscription details

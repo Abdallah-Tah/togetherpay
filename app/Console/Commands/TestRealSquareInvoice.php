@@ -154,7 +154,7 @@ class TestRealSquareInvoice extends Command
             ['email' => $email],
             [
                 'name' => 'Abdallah Mohamed',
-                'phone' => $phone ?: '+12065559999',
+                'phone' => $phone ?: '+12074097887',
                 'password' => bcrypt('password'),
             ]
         );

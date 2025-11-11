@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\CreateAutoSquareInvoices;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -63,5 +64,17 @@ class BillingCycle extends Model
     public function isOverdue(): bool
     {
         return $this->due_at->isPast() && $this->status === 'collecting';
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function (self $cycle) {
+            // Dispatch invoice generation job for auto_square groups
+            if ($cycle->group && $cycle->group->billing_mode === 'auto_square') {
+                CreateAutoSquareInvoices::dispatch($cycle);
+            }
+        });
     }
 }

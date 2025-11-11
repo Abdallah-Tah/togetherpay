@@ -11,7 +11,18 @@
       "Bash(sqlite3:*)",
       "Bash(yes:*)",
       "Bash(composer show:*)",
-      "Bash(./vendor/bin/pint:*)"
+      "Bash(./vendor/bin/pint:*)",
+      "Bash(composer install:*)",
+      "Bash(php -r:*)",
+      "Bash(composer dump-autoload:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(composer dev:*)",
+      "Bash(taskkill /F /IM php.exe)",
+      "Bash(taskkill:*)",
+      "Bash(mkdir:*)",
+      "Bash(timeout 30 php artisan:*)",
+      "Bash(wmic process where \"name=''''php.exe'''' and NOT commandline like ''''%devsense%'''' and NOT commandline like ''''%intelliphp%''''\" delete /nointeractive)"
     ],
     "deny": [],
     "ask": []

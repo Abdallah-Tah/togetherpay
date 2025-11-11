@@ -120,8 +120,9 @@ class SquareOAuthController extends Controller
             }
 
             // Store encrypted token and merchant details
+            // Use encrypt() for simple strings to avoid serialization issues
             $user->update([
-                'square_access_token' => Crypt::encryptString($accessToken),
+                'square_access_token' => Crypt::encrypt($accessToken),
                 'square_merchant_id' => $tokenResponse['merchant_id'] ?? null,
                 'square_location_id' => $locationId,
                 'square_connected_at' => now(),
