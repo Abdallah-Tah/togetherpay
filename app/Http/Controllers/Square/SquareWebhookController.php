@@ -9,7 +9,16 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Handles incoming webhooks from Square
- * Processes invoice payments and updates payment request status
+ * Processes payments from both invoices and subscriptions
+ * Updates payment request status based on Square events
+ *
+ * Subscription payment flow:
+ * 1. Owner connects their Square account (OAuth)
+ * 2. App creates subscription for each member
+ * 3. Square sends monthly Cash App notifications to members
+ * 4. Members confirm payment in Cash App
+ * 5. Square webhook: subscription.charge.succeeded
+ * 6. App marks payment as auto_verified
  */
 class SquareWebhookController extends Controller
 {
@@ -28,8 +37,12 @@ class SquareWebhookController extends Controller
 
         try {
             match ($eventType) {
+                // Invoice-based payment flow
                 'invoice.payment_made' => $this->handleInvoicePaymentMade($data),
                 'invoice.scheduled_charge_failed' => $this->handleInvoiceChargeFailed($data),
+                // Subscription-based payment flow (new - owner-as-merchant model)
+                'subscription.charge.succeeded' => $this->handleSubscriptionChargeSucceeded($data),
+                'subscription.charge.failed' => $this->handleSubscriptionChargeFailed($data),
                 'payment.updated' => $this->handlePaymentUpdated($data),
                 default => Log::info('Square webhook ignored', ['event_type' => $eventType]),
             };
@@ -120,6 +133,80 @@ class SquareWebhookController extends Controller
     }
 
     /**
+     * Handle subscription.charge.succeeded webhook
+     * Fired when a subscription charge succeeds (member paid via Cash App)
+     */
+    private function handleSubscriptionChargeSucceeded(array $data): void
+    {
+        $subscription = $data['object']['subscription'] ?? [];
+        $subscriptionId = $subscription['id'] ?? null;
+
+        if (!$subscriptionId) {
+            Log::warning('Subscription charge succeeded webhook missing subscription ID', $data);
+            return;
+        }
+
+        Log::info('Subscription charge succeeded', [
+            'subscription_id' => $subscriptionId,
+            'customer_id' => $subscription['customer_id'] ?? null,
+            'billing_anchor_date' => $subscription['billing_anchor_date'] ?? null,
+        ]);
+
+        // Find the payment request linked to this subscription
+        $paymentRequest = PaymentRequest::where('square_subscription_id', $subscriptionId)->first();
+
+        if ($paymentRequest) {
+            $paymentRequest->update([
+                'status' => 'auto_verified',
+                'verified_at' => now(),
+            ]);
+
+            Log::info('Payment request marked as auto_verified', [
+                'payment_request_id' => $paymentRequest->id,
+                'subscription_id' => $subscriptionId,
+            ]);
+        } else {
+            Log::warning('No payment request found for subscription', [
+                'subscription_id' => $subscriptionId,
+            ]);
+        }
+    }
+
+    /**
+     * Handle subscription.charge.failed webhook
+     * Fired when a subscription charge fails (member didn't pay)
+     */
+    private function handleSubscriptionChargeFailed(array $data): void
+    {
+        $subscription = $data['object']['subscription'] ?? [];
+        $subscriptionId = $subscription['id'] ?? null;
+
+        if (!$subscriptionId) {
+            Log::warning('Subscription charge failed webhook missing subscription ID', $data);
+            return;
+        }
+
+        Log::warning('Subscription charge failed', [
+            'subscription_id' => $subscriptionId,
+            'customer_id' => $subscription['customer_id'] ?? null,
+            'error_code' => $data['object']['error_code'] ?? null,
+        ]);
+
+        $paymentRequest = PaymentRequest::where('square_subscription_id', $subscriptionId)->first();
+
+        if ($paymentRequest) {
+            $paymentRequest->update([
+                'status' => 'failed',
+            ]);
+
+            Log::info('Payment request marked as failed', [
+                'payment_request_id' => $paymentRequest->id,
+                'subscription_id' => $subscriptionId,
+            ]);
+        }
+    }
+
+    /**
      * Handle payment.updated webhook
      * Extra confirmation for successful payments
      */
@@ -134,7 +221,7 @@ class SquareWebhookController extends Controller
             'status' => $status,
         ]);
 
-        // This is optional - the invoice.payment_made event is the primary indicator
+        // This is optional - the invoice.payment_made or subscription.charge.succeeded events are the primary indicators
         // Only use this if we need extra confirmation
     }
 }
