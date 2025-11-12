@@ -108,6 +108,22 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
+        $validated = $request->validate([
+            'billing_mode' => 'required|in:manual,auto_square',
+        ]);
+
+        if (! empty($validated['billing_mode'])) {
+            $mode = $validated['billing_mode'];
+
+            if ($mode === 'auto_square' && ! $user->hasSquareAccount()) {
+                return response()->json([
+                    'message' => 'Connect your Square account before enabling automatic Cash App billing.',
+                ], 422);
+            }
+
+            $user->setPreferredBillingMode($mode);
+        }
+
         // Complete onboarding
         $user->completeOnboarding();
 
@@ -117,6 +133,7 @@ class AuthController extends Controller
         // Log for debugging
         Log::info('Onboarding completed', [
             'user_id' => $user->id,
+            'preferred_billing_mode' => $user->preferred_billing_mode,
             'onboarding_completed_at' => $user->onboarding_completed_at,
             'has_completed' => $user->hasCompletedOnboarding(),
         ]);
@@ -125,6 +142,7 @@ class AuthController extends Controller
             'message' => 'Onboarding completed successfully',
             'user' => array_merge($user->toArray(), [
                 'onboarding_completed' => $user->hasCompletedOnboarding(),
+                'preferred_billing_mode' => $user->getPreferredBillingMode(),
             ]),
         ]);
     }

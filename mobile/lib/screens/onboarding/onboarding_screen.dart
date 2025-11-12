@@ -20,6 +20,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
   final _pageController = PageController();
   bool _isCompleting = false;
+  String? _billingMode;
+  String? _modeError;
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
@@ -43,15 +45,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       icon: Icons.payment,
       color: Colors.purple,
     ),
+    OnboardingPage(
+      title: 'Choose how you collect',
+      description:
+          'Stick with manual payment links or enable automatic Cash App Pay via Square. You can change this later.',
+      icon: Icons.swap_horiz,
+      color: Colors.orange,
+    ),
   ];
 
   Future<void> _completeOnboarding() async {
+    if (_billingMode == null) {
+      setState(() {
+        _modeError = 'Please choose how you want to collect payments.';
+      });
+      return;
+    }
+
     setState(() {
       _isCompleting = true;
+      _modeError = null;
     });
 
     try {
-      final response = await ApiService().dio.post('/auth/onboarding/complete');
+      final response = await ApiService().dio.post(
+        '/auth/onboarding/complete',
+        data: {'billing_mode': _billingMode},
+      );
 
       if (Env.debug) {
         debugPrint('Onboarding completion response: ${response.data}');
@@ -75,16 +95,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         debugPrint('Complete onboarding error: ${e.response?.data}');
       }
 
+      final message = e.response?.data?['message'] as String? ??
+          'Failed to complete onboarding';
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              e.response?.data?['message'] as String? ??
-                  'Failed to complete onboarding',
-            ),
+            content: Text(message),
             backgroundColor: Colors.red,
           ),
         );
+
+        setState(() {
+          _modeError = message;
+        });
       }
     } finally {
       if (mounted) {
@@ -93,6 +117,60 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         });
       }
     }
+  }
+
+  Widget _buildModeSelector(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'How do you want to collect payments?',
+          style: textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        _ModeOptionCard(
+          title: 'Manual payouts',
+          description:
+              'Members tap Cash App or Venmo links and you confirm payments inside the app.',
+          icon: Icons.handshake,
+          selected: _billingMode == 'manual',
+          badgeLabel: 'Default',
+          onTap: () => _selectMode('manual'),
+        ),
+        const SizedBox(height: 12),
+        _ModeOptionCard(
+          title: 'Auto Cash App Pay (Square)',
+          description:
+              'Square emails your members and Cash App prompts them to approve. Requires a connected Square account.',
+          icon: Icons.bolt,
+          selected: _billingMode == 'auto_square',
+          badgeLabel: 'Hands-free',
+          onTap: () => _selectMode('auto_square'),
+        ),
+        if (_billingMode == 'auto_square') ...[
+          const SizedBox(height: 8),
+          Text(
+            'Connect your Square account from the web dashboard to finish enabling automatic Cash App Pay.',
+            style: textTheme.bodySmall,
+          ),
+        ],
+        if (_modeError != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _modeError!,
+            style: const TextStyle(color: Colors.red),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _selectMode(String mode) {
+    setState(() {
+      _billingMode = mode;
+      _modeError = null;
+    });
   }
 
   @override
@@ -173,6 +251,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  if (_currentPage == _pages.length - 1) ...[
+                    _buildModeSelector(context),
+                    const SizedBox(height: 24),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
@@ -185,6 +267,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   curve: Curves.easeInOut,
                                 );
                               } else {
+                                if (_billingMode == null) {
+                                  setState(() {
+                                    _modeError =
+                                        'Please choose how you want to collect payments.';
+                                  });
+                                  return;
+                                }
                                 _completeOnboarding();
                               }
                             },
@@ -204,15 +293,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                     ),
                   ),
-                  if (_currentPage < _pages.length - 1) ...[
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: _isCompleting
-                          ? null
-                          : () => _completeOnboarding(),
-                      child: const Text('Skip'),
-                    ),
-                  ],
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -235,4 +316,109 @@ class OnboardingPage {
     required this.icon,
     required this.color,
   });
+}
+
+class _ModeOptionCard extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+  final bool selected;
+  final String? badgeLabel;
+  final VoidCallback onTap;
+
+  const _ModeOptionCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+    this.badgeLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? colorScheme.primary : Colors.grey.shade300,
+            width: 2,
+          ),
+          color: selected
+              ? colorScheme.primaryContainer.withOpacity(0.4)
+              : colorScheme.surface,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              size: 28,
+              color: selected ? colorScheme.primary : Colors.grey.shade600,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      if (badgeLabel != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            badgeLabel!,
+                            style: TextStyle(
+                              color: colorScheme.primary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey.shade700,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Icon(
+              selected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_off_outlined,
+              color: selected ? colorScheme.primary : Colors.grey.shade400,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

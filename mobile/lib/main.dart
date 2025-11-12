@@ -94,7 +94,8 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     try {
       final response = await dio.get('/auth/me');
       final user = response.data['user'] as Map<String, dynamic>?;
-      final onboardingCompleted = user?['onboarding_completed'] as bool? ?? true;
+      final onboardingCompleted =
+          user?['onboarding_completed'] as bool? ?? true;
 
       setState(() {
         _needsOnboarding = !onboardingCompleted;
@@ -151,6 +152,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     setState(() {
       _needsOnboarding = false;
     });
+    _checkOnboardingStatus();
   }
 
   @override
