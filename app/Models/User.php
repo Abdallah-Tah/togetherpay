@@ -49,6 +49,7 @@ class User extends Authenticatable
         'square_location_id',
         'square_connected_at',
         'preferred_billing_mode',
+        'onboarding_completed_at',
     ];
 
     /**

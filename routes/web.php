@@ -6,6 +6,7 @@ use App\Livewire\Groups\Create as GroupsCreate;
 use App\Livewire\Groups\Index as GroupsIndex;
 use App\Livewire\Groups\Settings as GroupsSettings;
 use App\Livewire\Groups\Show as GroupsShow;
+use App\Livewire\Groups\InvoiceDetails as GroupsInvoiceDetails;
 use App\Livewire\Members\Index as MembersIndex;
 use App\Livewire\PaymentRequests\Index as PaymentRequestsIndex;
 use App\Livewire\Reports\Index as ReportsIndex;
@@ -45,6 +46,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureOnboardingCompleted::class
     Route::get('groups', GroupsIndex::class)->name('app.groups.index');
     Route::get('groups/create', GroupsCreate::class)->name('app.groups.create');
     Route::get('groups/{group}', GroupsShow::class)->name('app.groups.show');
+    Route::get('groups/{group}/invoices', GroupsInvoiceDetails::class)->name('app.groups.invoices');
     Route::get('groups/{group}/settings', GroupsSettings::class)->name('app.groups.settings');
 
     // Members
@@ -81,11 +83,17 @@ Route::get('/payment/callback', function () {
     return view('payment.callback');
 })->name('payment.callback');
 
-// Square OAuth routes (authenticated)
-Route::middleware('auth')->prefix('oauth/square')->name('oauth.square.')->group(function () {
-    Route::get('authorize', 'App\Http\Controllers\Square\SquareOAuthController@redirectToSquare')->name('authorize');
-    Route::get('callback', 'App\Http\Controllers\Square\SquareOAuthController@callback')->name('callback');
-    Route::post('disconnect', 'App\Http\Controllers\Square\SquareOAuthController@disconnect')->name('disconnect');
+// Square OAuth routes
+Route::prefix('oauth/square')->name('oauth.square.')->group(function () {
+    Route::middleware('auth')->get('authorize', 'App\Http\Controllers\Square\SquareOAuthController@redirectToSquare')
+        ->name('authorize');
+
+    // Callback must be accessible for mobile flows without prior session
+    Route::get('callback', 'App\Http\Controllers\Square\SquareOAuthController@callback')
+        ->name('callback');
+
+    Route::middleware('auth')->post('disconnect', 'App\Http\Controllers\Square\SquareOAuthController@disconnect')
+        ->name('disconnect');
 });
 
 // Square webhooks (public, CSRF exempt)

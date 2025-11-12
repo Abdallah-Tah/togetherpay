@@ -16,12 +16,15 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with TickerProviderStateMixin {
   int _currentPage = 0;
   final _pageController = PageController();
   bool _isCompleting = false;
   String? _billingMode;
   String? _modeError;
+  late AnimationController _fadeAnimController;
+  late Animation<double> _fadeAnimation;
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
@@ -123,6 +126,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final textTheme = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           'How do you want to collect payments?',
@@ -159,7 +163,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: 8),
           Text(
             _modeError!,
-            style: const TextStyle(color: Colors.red),
+            style: const TextStyle(color: Colors.red, fontSize: 12),
           ),
         ],
       ],
@@ -174,8 +178,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _fadeAnimController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeAnimController, curve: Curves.easeInOut),
+    );
+    _fadeAnimController.forward();
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
+    _fadeAnimController.dispose();
     super.dispose();
   }
 
@@ -186,115 +204,152 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: Column(
           children: [
             Expanded(
+              flex: 3,
               child: PageView.builder(
                 controller: _pageController,
                 onPageChanged: (index) {
                   setState(() {
                     _currentPage = index;
                   });
+                  _fadeAnimController.reset();
+                  _fadeAnimController.forward();
                 },
                 itemCount: _pages.length,
                 itemBuilder: (context, index) {
                   final page = _pages[index];
-                  return Padding(
-                    padding: const EdgeInsets.all(40.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          page.icon,
-                          size: 120,
-                          color: page.color,
-                        ),
-                        const SizedBox(height: 48),
-                        Text(
-                          page.title,
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
+                  return FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ScaleTransition(
+                            scale: Tween<double>(begin: 0.5, end: 1.0).animate(
+                              CurvedAnimation(
+                                parent: _fadeAnimController,
+                                curve: Curves.elasticOut,
                               ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          page.description,
-                          style: Theme.of(context).textTheme.bodyLarge,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                            ),
+                            child: Icon(
+                              page.icon,
+                              size: 100,
+                              color: page.color,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          Text(
+                            page.title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            page.description,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _pages.length,
-                      (index) => Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: _currentPage == index ? 24 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _currentPage == index
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(4),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Animated page indicators
+                      AnimatedBuilder(
+                        animation: _fadeAnimation,
+                        builder: (context, child) {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              _pages.length,
+                              (index) => AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                width: _currentPage == index ? 28 : 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: _currentPage == index
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.grey.shade300,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      // Billing mode selector with animation
+                      if (_currentPage == _pages.length - 1) ...[
+                        AnimatedOpacity(
+                          opacity: 1.0,
+                          duration: const Duration(milliseconds: 500),
+                          child: _buildModeSelector(context),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                      // Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: FilledButton(
+                          onPressed: _isCompleting
+                              ? null
+                              : () {
+                                  if (_currentPage < _pages.length - 1) {
+                                    _pageController.nextPage(
+                                      duration: const Duration(milliseconds: 400),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  } else {
+                                    if (_billingMode == null) {
+                                      setState(() {
+                                        _modeError =
+                                            'Please choose how you want to collect payments.';
+                                      });
+                                      return;
+                                    }
+                                    _completeOnboarding();
+                                  }
+                                },
+                          child: _isCompleting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  _currentPage < _pages.length - 1
+                                      ? 'Next'
+                                      : 'Get Started',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  if (_currentPage == _pages.length - 1) ...[
-                    _buildModeSelector(context),
-                    const SizedBox(height: 24),
-                  ],
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: _isCompleting
-                          ? null
-                          : () {
-                              if (_currentPage < _pages.length - 1) {
-                                _pageController.nextPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              } else {
-                                if (_billingMode == null) {
-                                  setState(() {
-                                    _modeError =
-                                        'Please choose how you want to collect payments.';
-                                  });
-                                  return;
-                                }
-                                _completeOnboarding();
-                              }
-                            },
-                      child: _isCompleting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(
-                              _currentPage < _pages.length - 1
-                                  ? 'Next'
-                                  : 'Get Started',
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
+                ),
               ),
             ),
           ],
@@ -318,7 +373,7 @@ class OnboardingPage {
   });
 }
 
-class _ModeOptionCard extends StatelessWidget {
+class _ModeOptionCard extends StatefulWidget {
   final String title;
   final String description;
   final IconData icon;
@@ -336,87 +391,155 @@ class _ModeOptionCard extends StatelessWidget {
   });
 
   @override
+  State<_ModeOptionCard> createState() => _ModeOptionCardState();
+}
+
+class _ModeOptionCardState extends State<_ModeOptionCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? colorScheme.primary : Colors.grey.shade300,
-            width: 2,
-          ),
-          color: selected
-              ? colorScheme.primaryContainer.withOpacity(0.4)
-              : colorScheme.surface,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              icon,
-              size: 28,
-              color: selected ? colorScheme.primary : Colors.grey.shade600,
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) {
+        _controller.forward();
+      },
+      onTapUp: (_) {
+        _controller.reverse();
+      },
+      onTapCancel: () {
+        _controller.reverse();
+      },
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: widget.selected ? colorScheme.primary : Colors.grey.shade300,
+              width: widget.selected ? 2 : 1.5,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      if (badgeLabel != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
+            color: widget.selected
+                ? colorScheme.primaryContainer.withOpacity(0.3)
+                : colorScheme.surface,
+            boxShadow: widget.selected
+                ? [
+                    BoxShadow(
+                      color: colorScheme.primary.withOpacity(0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: widget.selected
+                      ? colorScheme.primary.withOpacity(0.15)
+                      : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  widget.icon,
+                  size: 24,
+                  color: widget.selected ? colorScheme.primary : Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
                           child: Text(
-                            badgeLabel!,
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                            widget.title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        if (widget.badgeLabel != null)
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              widget.badgeLabel!,
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    description,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade700,
-                        ),
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.description,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey.shade700,
+                            height: 1.4,
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Icon(
-              selected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_off_outlined,
-              color: selected ? colorScheme.primary : Colors.grey.shade400,
-            ),
-          ],
+              const SizedBox(width: 12),
+              AnimatedScale(
+                scale: widget.selected ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: Icon(
+                  widget.selected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off_outlined,
+                  color: widget.selected ? colorScheme.primary : Colors.grey.shade400,
+                  size: 24,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
