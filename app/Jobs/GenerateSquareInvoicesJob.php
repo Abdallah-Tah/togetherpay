@@ -83,7 +83,9 @@ class GenerateSquareInvoicesJob implements ShouldQueue
                 }
 
                 // Create Square invoice
-                $invoiceId = $invoiceService->createInvoiceForMember($member, $owner, $this->cycle);
+                $invoice = $invoiceService->createInvoiceForMember($member, $owner, $this->cycle);
+                $invoiceId = $invoice['id'] ?? null;
+                $invoiceUrl = $invoice['public_url'] ?? null;
 
                 // Calculate member's share
                 $amountCents = $member->calculateAmount($group->total_amount_cents);
@@ -99,6 +101,9 @@ class GenerateSquareInvoicesJob implements ShouldQueue
                     'note' => "{$group->name} - {$this->cycle->period_start->format('M Y')}",
                     'status' => 'sent',
                     'square_invoice_id' => $invoiceId,
+                    'metadata' => [
+                        'square_public_url' => $invoiceUrl,
+                    ],
                     'initiated_at' => now(),
                     'sent_at' => now(),
                 ]);

@@ -43,6 +43,7 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
 
     // Public payment request lookup by code (for mobile deep links)
     Route::get('/requests/by-code/{prCode}', [PaymentRequestController::class, 'showByCode']);
+    Route::get('/requests/by-code/{prCode}/square-invoice', [PaymentRequestController::class, 'squareInvoiceByCode']);
 
     // Member marks payment as sent (public endpoint - auth by PR code)
     Route::post('/requests/by-code/{prCode}/mark', [PaymentRequestController::class, 'markByCode']);

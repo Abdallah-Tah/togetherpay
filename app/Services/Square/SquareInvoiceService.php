@@ -19,7 +19,7 @@ class SquareInvoiceService
     /**
      * Create an invoice for a group member
      */
-    public function createInvoiceForMember(GroupMember $member, User $owner, BillingCycle $cycle): string
+    public function createInvoiceForMember(GroupMember $member, User $owner, BillingCycle $cycle): array
     {
         if (!$member->square_customer_id) {
             throw new \Exception("Member does not have a Square customer ID");
@@ -80,7 +80,7 @@ class SquareInvoiceService
             'public_url' => $publishedInvoice['public_url'] ?? null,
         ]);
 
-        return $publishedInvoice['id'];
+        return $publishedInvoice;
     }
 
     /**

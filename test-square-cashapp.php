@@ -126,33 +126,49 @@ try {
     echo "  Using mock customer ID for testing: {$member->square_customer_id}\n\n";
 }
 
-// Step 6: Create Square subscription
-echo "Step 6: Creating Square subscription with Cash App Pay...\n";
+// Step 6: Create Square Cash App invoice (auto-pay)
+echo "Step 6: Creating Square Cash App Pay invoice...
+";
 try {
     $subscriptionService = app(SquareSubscriptionService::class);
 
-    // This will create a subscription in Square with Cash App Pay as payment method
-    $subscriptionId = $subscriptionService->createSubscription($member, $owner, $cycle);
+    $invoice = $subscriptionService->createSubscription($member, $owner, $cycle);
+    $subscriptionId = $invoice['id'] ?? 'unknown';
+    $publicUrl = $invoice['public_url'] ?? null;
 
     $member->update([
         'square_subscription_id' => $subscriptionId,
         'square_subscription_created_at' => now(),
     ]);
 
-    echo "✓ Square subscription created\n";
-    echo "  Subscription ID: {$subscriptionId}\n";
-    echo "  Amount: $" . ($member->calculateAmount($group->total_amount_cents) / 100) . "/month\n";
-    echo "  Payment Method: Cash App Pay\n\n";
+    echo "✓ Square Cash App invoice created
+";
+    echo "  Invoice ID: {$subscriptionId}
+";
+    if ($publicUrl) {
+        echo "  Public URL: {$publicUrl}
+";
+    }
+    echo "  Amount: $" . ($member->calculateAmount($group->total_amount_cents) / 100) . "/month
+";
+    echo "  Payment Method: Cash App Pay
+
+";
 } catch (\Exception $e) {
-    echo "✗ Failed to create Square subscription: {$e->getMessage()}\n";
-    echo "  This is expected in test mode if Square API credentials are not configured.\n\n";
+    echo "✗ Failed to create Square Cash App invoice: {$e->getMessage()}
+";
+    echo "  This is expected in test mode if Square API credentials are not configured.
+
+";
 
     // For testing, we'll use a mock subscription ID
     $member->update([
         'square_subscription_id' => 'MOCK_SUB_' . time(),
         'square_subscription_created_at' => now(),
     ]);
-    echo "  Using mock subscription ID for testing: {$member->square_subscription_id}\n\n";
+    echo "  Using mock subscription ID for testing: {$member->square_subscription_id}
+
+";
 }
 
 // Step 7: Create payment request

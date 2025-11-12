@@ -93,7 +93,9 @@ class CreateAutoSquareInvoices implements ShouldQueue
                     'cycle_id' => $this->cycle->id,
                 ]);
 
-                $invoiceId = $subscriptionService->createSubscription($member, $owner, $this->cycle);
+                $invoice = $subscriptionService->createSubscription($member, $owner, $this->cycle);
+                $invoiceId = $invoice['id'] ?? null;
+                $invoiceUrl = $invoice['public_url'] ?? null;
 
                 // Step 3: Create payment request record linked to invoice
                 $amountCents = $member->calculateAmount($this->cycle->total_amount_cents);
@@ -108,6 +110,9 @@ class CreateAutoSquareInvoices implements ShouldQueue
                     'note' => "{$group->name} - {$this->cycle->period_start->format('M Y')}",
                     'status' => 'sent',
                     'square_invoice_id' => $invoiceId,
+                    'metadata' => [
+                        'square_public_url' => $invoiceUrl,
+                    ],
                     'initiated_at' => now(),
                     'sent_at' => now(),
                 ]);

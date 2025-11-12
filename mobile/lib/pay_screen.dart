@@ -31,6 +31,11 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
   Map<String, dynamic>? _paymentData;
   String? _deepLinkUri;
   String? _webFallback;
+  bool _isSquareInvoice = false;
+  Map<String, dynamic>? _squareInvoice;
+  String? _squareInvoiceUrl;
+  String? _squareInvoiceStatus;
+  String? _squareInvoiceDueDate;
 
   @override
   void initState() {
@@ -66,6 +71,9 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
     setState(() {
       _loading = true;
       _error = null;
+      _squareInvoice = null;
+      _squareInvoiceStatus = null;
+      _squareInvoiceDueDate = null;
     });
 
     try {
@@ -78,12 +86,25 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
         _paymentData = data;
         _deepLinkUri = data['deep_link'] as String?;
         _webFallback = data['web_fallback_link'] as String?;
-        _loading = false;
+        _isSquareInvoice = data['square_invoice_id'] != null;
+        final metadata = data['metadata'];
+        if (metadata is Map<String, dynamic>) {
+          _squareInvoiceUrl = metadata['square_public_url'] as String?;
+        }
       });
 
-      await Future.delayed(const Duration(milliseconds: 400));
-      if (mounted) {
-        _launchWallet();
+      if (_isSquareInvoice) {
+        await _loadSquareInvoiceDetails();
+      } else {
+        if (mounted) {
+          setState(() {
+            _loading = false;
+          });
+        }
+        await Future.delayed(const Duration(milliseconds: 400));
+        if (mounted) {
+          _launchWallet();
+        }
       }
     } on DioException catch (e) {
       if (Env.debug) {
@@ -111,7 +132,48 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _loadSquareInvoiceDetails() async {
+    try {
+      final response =
+          await _dio.get('/requests/by-code/${widget.prCode}/square-invoice');
+      final data = Map<String, dynamic>.from(response.data as Map);
+
+      if (!mounted) return;
+
+      setState(() {
+        _squareInvoice = data;
+        _squareInvoiceStatus = data['status'] as String?;
+        _squareInvoiceDueDate = data['due_date'] as String?;
+        _squareInvoiceUrl = data['public_url'] as String? ?? _squareInvoiceUrl;
+        _loading = false;
+      });
+    } on DioException catch (e) {
+      if (Env.debug) {
+        debugPrint('Error loading Square invoice: ${e.response?.data}');
+      }
+      if (!mounted) return;
+      setState(() {
+        _error = e.response?.data?['message'] as String? ??
+            'Unable to load Square invoice';
+        _loading = false;
+      });
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Unexpected error loading Square invoice: $e');
+      }
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unable to load Square invoice';
+        _loading = false;
+      });
+    }
+  }
+
   Future<void> _launchWallet() async {
+    if (_isSquareInvoice) {
+      return;
+    }
+
     if (_launching) return;
 
     setState(() {
@@ -235,6 +297,27 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _openLink(String url,
+      {LaunchMode mode = LaunchMode.inAppBrowserView}) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    try {
+      await launchUrl(uri, mode: mode);
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Failed to open link $url: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to open link'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _showPaymentConfirmationDialog() async {
     final result = await showDialog<String>(
       context: context,
@@ -333,6 +416,21 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final hasError = _error != null;
+    final infoMessage = _error ??
+        (_isSquareInvoice
+            ? 'Cash App will notify you automatically. Use "Open Invoice" below if you need to review it manually.'
+            : 'Your wallet should open automatically. If not, tap "Open Wallet".');
+    final infoBackground = hasError
+        ? Colors.orange.shade50
+        : (_isSquareInvoice ? Colors.green.shade50 : Colors.blue.shade50);
+    final infoIconColor = hasError
+        ? Colors.orange
+        : (_isSquareInvoice ? Colors.green : Colors.blueAccent);
+    final infoTextColor = hasError
+        ? Colors.orange.shade900
+        : (_isSquareInvoice ? Colors.green.shade900 : Colors.blue.shade900);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Pay • ${widget.prCode}'),
@@ -388,84 +486,67 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _error != null
-                          ? Colors.orange.shade50
-                          : Colors.blue.shade50,
+                      color: infoBackground,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          _error != null
+                          hasError
                               ? Icons.warning_amber_rounded
-                              : Icons.info_outline,
-                          color: _error != null
-                              ? Colors.orange
-                              : Colors.blueAccent,
+                              : (_isSquareInvoice
+                                  ? Icons.notifications_active
+                                  : Icons.info_outline),
+                          color: infoIconColor,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            _error ??
-                                'Your wallet should open automatically. If not, tap "Open Wallet".',
-                            style: TextStyle(
-                              color: _error != null
-                                  ? Colors.orange.shade900
-                                  : Colors.blue.shade900,
-                            ),
+                            infoMessage,
+                            style: TextStyle(color: infoTextColor),
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 32),
-                  //   FilledButton.icon(
-                  //     onPressed: _launching ? null : _launchWallet,
-                  //     icon: _launching
-                  //         ? const SizedBox(
-                  //             width: 16,
-                  //             height: 16,
-                  //             child: CircularProgressIndicator(
-                  //               strokeWidth: 2,
-                  //               color: Colors.white,
-                  //             ),
-                  //           )
-                  //         : const Icon(Icons.open_in_new),
-                  //     label: Text(_launching ? 'Opening...' : 'Open Wallet'),
-                  //   ),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      // Launch wallet and set flag to trigger reminder on return
-                      final url = _deepLinkUri ?? _webFallback;
-                      if (url != null) {
-                        final uri = Uri.tryParse(url);
-                        if (uri != null) {
-                          final launched = await launchUrl(
-                            uri,
-                            mode: LaunchMode.inAppBrowserView,
-                          );
-                          if (launched && mounted) {
-                            setState(() {
-                              _hasLaunchedWallet = true;
-                            });
-                          }
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.bug_report),
-                    label: const Text('Open Wallet'),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _markAsPaid,
-                    icon: const Icon(Icons.check_circle_outline),
-                    label: const Text('Mark as Paid'),
-                  ),
-                  if (Env.debug) ...[
+                  if (_isSquareInvoice) ...[
+                    _buildSquareInvoiceCard(),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: _squareInvoiceUrl == null
+                          ? null
+                          : () => _openLink(
+                                _squareInvoiceUrl!,
+                                mode: LaunchMode.inAppBrowserView,
+                              ),
+                      icon: const Icon(Icons.open_in_new),
+                      label: const Text('Open Invoice'),
+                    ),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
+                      onPressed: _loadPaymentRequest,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Refresh Status'),
+                    ),
+                    const SizedBox(height: 32),
+                    const Text(
+                      'What happens next:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildStep(1, 'Open Cash App and look for TogetherPay'),
+                    _buildStep(2, 'Tap Continue to approve the payment'),
+                    _buildStep(
+                      3,
+                      'We auto-mark this request once Cash App finishes processing',
+                    ),
+                  ] else ...[
+                    OutlinedButton.icon(
                       onPressed: () async {
-                        // Debug button: Launch wallet and set flag to trigger reminder on return
                         final url = _deepLinkUri ?? _webFallback;
                         if (url != null) {
                           final uri = Uri.tryParse(url);
@@ -482,46 +563,55 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
                           }
                         }
                       },
-                      icon: const Icon(Icons.bug_report),
-                      label: const Text('DEBUG: Open in Browser'),
+                      icon: const Icon(Icons.open_in_new),
+                      label: const Text('Open Wallet'),
                     ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _markAsPaid,
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Mark as Paid'),
+                    ),
+                    if (Env.debug) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final url = _deepLinkUri ?? _webFallback;
+                          if (url != null) {
+                            final uri = Uri.tryParse(url);
+                            if (uri != null) {
+                              final launched = await launchUrl(
+                                uri,
+                                mode: LaunchMode.inAppBrowserView,
+                              );
+                              if (launched && mounted) {
+                                setState(() {
+                                  _hasLaunchedWallet = true;
+                                });
+                              }
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.bug_report),
+                        label: const Text('DEBUG: Open in Browser'),
+                      ),
+                    ],
+                    const SizedBox(height: 32),
+                    const Text(
+                      'How it works:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildStep(1, 'Tap "Open Wallet"'),
+                    _buildStep(2, 'Review the pre-filled amount'),
+                    _buildStep(3, 'Send the payment'),
+                    _buildStep(4, 'Confirm here once sent'),
                   ],
-                  const SizedBox(height: 32),
-                  const Text(
-                    'How it works:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildStep(1, 'Tap "Open Wallet"'),
-                  _buildStep(2, 'Review the pre-filled amount'),
-                  _buildStep(3, 'Send the payment'),
-                  _buildStep(4, 'Confirm here once sent'),
                   const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.qr_code, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.prCode,
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildCodeCard(),
                 ],
               ),
             ),
@@ -547,6 +637,98 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
           ),
           const SizedBox(width: 12),
           Expanded(child: Text(text)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSquareInvoiceCard() {
+    final amountDisplay =
+        _paymentData?['amount_display'] as String? ?? '\$0.00';
+    final invoiceId =
+        _paymentData?['square_invoice_id'] ?? _squareInvoice?['invoice_id'];
+    final statusLabel = (_squareInvoiceStatus ??
+            _paymentData?['status'] ??
+            _squareInvoice?['status'] ??
+            'pending')
+        .toString()
+        .toUpperCase();
+    final dueLabel = _squareInvoiceDueDate ??
+        _paymentData?['cycle']?['due_at'] ??
+        _squareInvoice?['due_date'];
+    final normalizedDue = dueLabel?.split('T').first;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.receipt_long, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Square Cash App Invoice',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Chip(
+                  label: Text(statusLabel),
+                  backgroundColor: statusLabel == 'PAID'
+                      ? Colors.green.shade100
+                      : Colors.orange.shade100,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              amountDisplay,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            if (normalizedDue != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Due $normalizedDue',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+            if (invoiceId != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Invoice ID: $invoiceId',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCodeCard() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.qr_code, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              widget.prCode,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+              ),
+            ),
+          ),
         ],
       ),
     );

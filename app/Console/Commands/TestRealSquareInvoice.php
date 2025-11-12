@@ -174,10 +174,15 @@ class TestRealSquareInvoice extends Command
         try {
             $owner->refresh();
             $invoiceService = app(SquareInvoiceService::class);
-            $invoiceId = $invoiceService->createInvoiceForMember($member, $owner, $cycle);
+            $invoice = $invoiceService->createInvoiceForMember($member, $owner, $cycle);
+            $invoiceId = $invoice['id'] ?? 'unknown';
+            $invoiceUrl = $invoice['public_url'] ?? null;
 
             $this->line("✓ Invoice created and published!");
             $this->line("  Invoice ID: {$invoiceId}");
+            if ($invoiceUrl) {
+                $this->line("  Public URL: {$invoiceUrl}");
+            }
             $this->newLine();
 
             $this->info('╔════════════════════════════════════════════════════════════════╗');

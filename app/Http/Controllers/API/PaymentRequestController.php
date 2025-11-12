@@ -10,6 +10,7 @@ use App\Models\GroupMember;
 use App\Models\PaymentRequest;
 use App\Notifications\PaymentRequestEventNotification;
 use App\Services\PaymentRequestService;
+use App\Services\Square\SquareInvoiceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -101,6 +102,54 @@ class PaymentRequestController extends Controller
         }
 
         return response()->json($this->transformPaymentRequest($pr));
+    }
+
+    /**
+     * Retrieve Square invoice details for a payment request (by PR code)
+     */
+    public function squareInvoiceByCode(string $prCode, SquareInvoiceService $invoiceService): JsonResponse
+    {
+        $pr = PaymentRequest::where('pr_code', $prCode)
+            ->with(['group.owner', 'cycle'])
+            ->firstOrFail();
+
+        if (! $pr->square_invoice_id) {
+            return response()->json([
+                'message' => 'No Square invoice associated with this payment request.',
+            ], 404);
+        }
+
+        $owner = $pr->group?->owner;
+
+        if (! $owner || empty($owner->square_access_token)) {
+            return response()->json([
+                'message' => 'Owner has not connected a Square account.',
+            ], 422);
+        }
+
+        try {
+            $invoice = $invoiceService->getInvoice($pr->square_invoice_id, $owner);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Unable to fetch Square invoice.',
+            ], 502);
+        }
+
+        $paymentRequests = $invoice['payment_requests'] ?? [];
+        $balanceRequest = $paymentRequests[0] ?? [];
+
+        return response()->json([
+            'invoice_id' => $invoice['id'] ?? $pr->square_invoice_id,
+            'status' => $invoice['status'] ?? null,
+            'public_url' => $invoice['public_url'] ?? data_get($pr->metadata, 'square_public_url'),
+            'due_date' => $balanceRequest['due_date'] ?? $pr->cycle?->due_at?->toIso8601String(),
+            'amount_money' => $balanceRequest['total_amount_money'] ?? [
+                'amount' => $pr->amount_cents,
+                'currency' => 'USD',
+            ],
+            'accepted_payment_methods' => $invoice['accepted_payment_methods'] ?? null,
+            'payment_requests' => $paymentRequests,
+        ]);
     }
 
     /**
@@ -202,6 +251,11 @@ class PaymentRequestController extends Controller
             'note' => $pr->note,
             'deep_link' => $pr->deep_link,
             'web_fallback_link' => $pr->web_fallback_link,
+            'square_invoice_id' => $pr->square_invoice_id,
+            'square_payment_id' => $pr->square_payment_id,
+            'square_subscription_id' => $pr->square_subscription_id,
+            'square_public_url' => data_get($pr->metadata, 'square_public_url'),
+            'is_square_cash_app' => filled($pr->square_invoice_id),
             'sent_at' => $pr->sent_at?->toIso8601String(),
             'marked_at' => $pr->marked_at?->toIso8601String(),
             'confirmed_at' => $pr->confirmed_at?->toIso8601String(),

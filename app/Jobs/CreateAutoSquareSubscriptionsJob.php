@@ -79,7 +79,9 @@ class CreateAutoSquareSubscriptionsJob implements ShouldQueue
                 }
 
                 // Create Cash App Pay invoice (legacy subscription service)
-                $invoiceId = $subscriptionService->createSubscription($member, $owner, $this->cycle);
+                $invoice = $subscriptionService->createSubscription($member, $owner, $this->cycle);
+                $invoiceId = $invoice['id'] ?? null;
+                $invoiceUrl = $invoice['public_url'] ?? null;
 
                 $amountCents = $member->calculateAmount($this->cycle->total_amount_cents);
 
@@ -93,6 +95,9 @@ class CreateAutoSquareSubscriptionsJob implements ShouldQueue
                     'note' => "{$group->name} - {$this->cycle->period_start->format('M Y')}",
                     'status' => 'sent',
                     'square_invoice_id' => $invoiceId,
+                    'metadata' => [
+                        'square_public_url' => $invoiceUrl,
+                    ],
                     'initiated_at' => now(),
                     'sent_at' => now(),
                 ]);

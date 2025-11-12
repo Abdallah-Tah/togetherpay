@@ -19,9 +19,9 @@ class SquareSubscriptionService
 
     /**
      * Create a Cash App Pay invoice for this cycle/member.
-     * Returns the published invoice ID (stored where subscription ID used to be).
+     * Returns the published invoice payload from Square.
      */
-    public function createSubscription(GroupMember $member, User $owner, BillingCycle $cycle): string
+    public function createSubscription(GroupMember $member, User $owner, BillingCycle $cycle): array
     {
         if (!$member->square_customer_id) {
             throw new \Exception("Member does not have a Square customer ID");

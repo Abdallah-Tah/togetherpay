@@ -173,10 +173,15 @@ class TestSquareSubscription extends Command
         try {
             $owner->refresh();
             $subscriptionService = app(SquareSubscriptionService::class);
-            $subscriptionId = $subscriptionService->createSubscription($member, $owner, $cycle);
+            $invoice = $subscriptionService->createSubscription($member, $owner, $cycle);
+            $subscriptionId = $invoice['id'] ?? 'unknown';
+            $publicUrl = $invoice['public_url'] ?? null;
 
             $this->line("✓ Subscription created!");
             $this->line("  Subscription ID: {$subscriptionId}");
+            if ($publicUrl) {
+                $this->line("  Public URL: {$publicUrl}");
+            }
             $this->newLine();
 
             $this->info('╔════════════════════════════════════════════════════════════════╗');

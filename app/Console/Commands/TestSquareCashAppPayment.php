@@ -122,12 +122,17 @@ class TestSquareCashAppPayment extends Command
         $this->info('Step 6: Creating Square subscription with Cash App Pay...');
         try {
             $subscriptionService = app(SquareSubscriptionService::class);
-            $subscriptionId = $subscriptionService->createSubscription($member, $owner, $cycle);
+            $invoice = $subscriptionService->createSubscription($member, $owner, $cycle);
+            $subscriptionId = $invoice['id'] ?? 'unknown';
+            $publicUrl = $invoice['public_url'] ?? null;
             $member->update([
                 'square_subscription_id' => $subscriptionId,
                 'square_subscription_created_at' => now(),
             ]);
-            $this->line("✓ Square subscription created: {$subscriptionId}");
+            $this->line("✓ Square Cash App invoice created: {$subscriptionId}");
+            if ($publicUrl) {
+                $this->line("  Public URL: {$publicUrl}");
+            }
             $this->line("  Amount: $" . ($memberAmount / 100) . "/month");
             $this->line("  Payment Method: Cash App Pay");
         } catch (\Exception $e) {

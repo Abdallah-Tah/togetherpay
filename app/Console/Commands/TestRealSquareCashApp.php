@@ -140,12 +140,17 @@ class TestRealSquareCashApp extends Command
 
         try {
             $subscriptionService = app(SquareSubscriptionService::class);
-            $subscriptionId = $subscriptionService->createSubscription($member, $owner, $cycle);
+            $invoice = $subscriptionService->createSubscription($member, $owner, $cycle);
+            $subscriptionId = $invoice['id'] ?? 'unknown';
+            $publicUrl = $invoice['public_url'] ?? null;
             $member->update([
                 'square_subscription_id' => $subscriptionId,
                 'square_subscription_created_at' => now(),
             ]);
-            $this->line("✓ Square subscription created: {$subscriptionId}");
+            $this->line("✓ Square Cash App invoice created: {$subscriptionId}");
+            if ($publicUrl) {
+                $this->line("  Public URL: {$publicUrl}");
+            }
         } catch (\Exception $e) {
             $this->warn("Square API error (using sandbox mode): {$e->getMessage()}");
             $member->update([
