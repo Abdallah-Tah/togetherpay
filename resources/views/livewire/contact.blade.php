@@ -42,7 +42,8 @@ $submit = function () {
     <!-- Header -->
     <div class="bg-white dark:bg-gray-800 shadow">
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Contact Us</h1>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Contact TogetherPay</h1>
+            <p class="mt-2 text-gray-500 dark:text-gray-400">We’re a small team that answers every message personally. Ask about features, billing, or how Square autopay works—we’re happy to help.</p>
         </div>
     </div>
 

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../env.dart';
 import '../../services/api_service.dart';
@@ -23,6 +24,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   bool _isCompleting = false;
   String? _billingMode;
   String? _modeError;
+  bool _isConnectingSquare = false;
   late AnimationController _fadeAnimController;
   late Animation<double> _fadeAnimation;
 
@@ -101,6 +103,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       final message = e.response?.data?['message'] as String? ??
           'Failed to complete onboarding';
 
+      if (_billingMode == 'auto_square' &&
+          message.toLowerCase().contains('square account')) {
+        await _startSquareConnect();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -117,6 +124,55 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       if (mounted) {
         setState(() {
           _isCompleting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _startSquareConnect() async {
+    if (_isConnectingSquare) return;
+
+    setState(() {
+      _isConnectingSquare = true;
+    });
+
+    try {
+      final response = await ApiService().dio.get('/square/oauth/url');
+      final url = response.data['authorization_url'] as String?;
+
+      if (url == null) {
+        throw Exception('Missing Square authorization URL');
+      }
+
+      final uri = Uri.tryParse(url);
+      if (uri == null) {
+        throw Exception('Invalid Square authorization URL');
+      }
+
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+      if (mounted) {
+        setState(() {
+          _modeError =
+              'Finish connecting Square in your browser, then return and tap Get Started again.';
+        });
+      }
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Square connect error: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to launch Square connection right now.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isConnectingSquare = false;
         });
       }
     }
@@ -155,7 +211,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         if (_billingMode == 'auto_square') ...[
           const SizedBox(height: 8),
           Text(
-            'Connect your Square account from the web dashboard to finish enabling automatic Cash App Pay.',
+            'We will launch Square in your browser so you can connect securely.',
             style: textTheme.bodySmall,
           ),
         ],
@@ -264,7 +320,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 16.0),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -279,7 +336,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               _pages.length,
                               (index) => AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 4),
                                 width: _currentPage == index ? 28 : 8,
                                 height: 8,
                                 decoration: BoxDecoration(
@@ -313,7 +371,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               : () {
                                   if (_currentPage < _pages.length - 1) {
                                     _pageController.nextPage(
-                                      duration: const Duration(milliseconds: 400),
+                                      duration:
+                                          const Duration(milliseconds: 400),
                                       curve: Curves.easeInOut,
                                     );
                                   } else {
@@ -441,7 +500,8 @@ class _ModeOptionCardState extends State<_ModeOptionCard>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: widget.selected ? colorScheme.primary : Colors.grey.shade300,
+              color:
+                  widget.selected ? colorScheme.primary : Colors.grey.shade300,
               width: widget.selected ? 2 : 1.5,
             ),
             color: widget.selected
@@ -472,7 +532,9 @@ class _ModeOptionCardState extends State<_ModeOptionCard>
                 child: Icon(
                   widget.icon,
                   size: 24,
-                  color: widget.selected ? colorScheme.primary : Colors.grey.shade600,
+                  color: widget.selected
+                      ? colorScheme.primary
+                      : Colors.grey.shade600,
                 ),
               ),
               const SizedBox(width: 14),
@@ -534,7 +596,9 @@ class _ModeOptionCardState extends State<_ModeOptionCard>
                   widget.selected
                       ? Icons.radio_button_checked
                       : Icons.radio_button_off_outlined,
-                  color: widget.selected ? colorScheme.primary : Colors.grey.shade400,
+                  color: widget.selected
+                      ? colorScheme.primary
+                      : Colors.grey.shade400,
                   size: 24,
                 ),
               ),

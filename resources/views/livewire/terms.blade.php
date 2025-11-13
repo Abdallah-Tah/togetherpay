@@ -8,7 +8,6 @@ title('Terms of Service - TogetherPay');
 ?>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- Header -->
     <div class="bg-white dark:bg-gray-800 shadow">
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Terms of Service</h1>
@@ -16,215 +15,73 @@ title('Terms of Service - TogetherPay');
         </div>
     </div>
 
-    <!-- Content -->
     <div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-            <div class="px-4 py-5 sm:p-6 prose dark:prose-invert max-w-none">
-
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">1. Acceptance of Terms</h2>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        By accessing or using TogetherPay ("Service"), you agree to be bound by these Terms of Service ("Terms").
-                        If you do not agree to these Terms, you may not access or use the Service.
-                    </p>
+        <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-3xl">
+            <div class="px-6 py-8 sm:p-10 space-y-10 prose dark:prose-invert max-w-none">
+                <section>
+                    <h2>1. Acceptance of Terms</h2>
+                    <p>By downloading or using TogetherPay (“Service”) you agree to these Terms. If you do not agree, do not access or use the Service.</p>
                 </section>
 
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">2. Description of Service</h2>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                        TogetherPay provides a platform for managing shared expenses and facilitating payment requests between group members.
-                        Our Service includes:
-                    </p>
-                    <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                        <li>Group creation and member management</li>
-                        <li>Automated payment request generation and delivery</li>
-                        <li>Payment tracking and status updates</li>
-                        <li>Reminder notifications and dunning management</li>
-                        <li>Reporting and analytics tools</li>
+                <section>
+                    <h2>2. Description of Service</h2>
+                    <p>TogetherPay provides tooling for group owners to organize shared expenses, send payment requests, and track payment status. We offer two collection modes:</p>
+                    <ul>
+                        <li><strong>Manual mode</strong> – generates pre-filled links for peer‑to‑peer apps such as Cash App or Venmo.</li>
+                        <li><strong>Auto Cash App Pay</strong> – publishes Cash App Pay invoices through the owner’s connected Square merchant account.</li>
                     </ul>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">
-                        <strong>Important:</strong> TogetherPay is not a payment processor. We do not handle, process, or store any
-                        payment transactions. All payments are made directly between members via third-party services (Venmo, Cash App).
-                    </p>
+                    <p><em>Important:</em> TogetherPay is not a payment processor and never holds user funds. Payments occur directly between the parties or via the owner’s Square account.</p>
                 </section>
 
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">3. User Accounts and Responsibilities</h2>
-
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">Account Creation</h3>
-                    <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300 mb-4">
-                        <li>You must be at least 18 years old to create an account</li>
-                        <li>You must provide accurate and complete information</li>
-                        <li>You are responsible for maintaining the security of your account credentials</li>
-                        <li>You may not share your account with others</li>
-                    </ul>
-
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">Account Usage</h3>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">You agree to:</p>
-                    <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                        <li>Use the Service only for lawful purposes</li>
-                        <li>Not impersonate others or provide false information</li>
-                        <li>Not use the Service to harass, abuse, or harm others</li>
-                        <li>Not attempt to gain unauthorized access to the Service</li>
-                        <li>Comply with all applicable laws and regulations</li>
+                <section>
+                    <h2>3. Accounts & Responsibilities</h2>
+                    <ul>
+                        <li>You must be at least 18 years old and provide accurate registration information.</li>
+                        <li>You are responsible for safeguarding your credentials and the content you create.</li>
+                        <li>You may not use the Service for unlawful or prohibited activities.</li>
+                        <li>You agree to comply with all applicable laws and the terms of any linked payment providers.</li>
                     </ul>
                 </section>
 
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">4. Payment Terms</h2>
-
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">No Payment Processing</h3>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                        TogetherPay does not process payments. All financial transactions occur directly between users via
-                        third-party payment platforms (Venmo, Cash App). We are not responsible for:
-                    </p>
-                    <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300 mb-4">
-                        <li>Failed or delayed payments</li>
-                        <li>Payment disputes between members</li>
-                        <li>Third-party payment platform fees or policies</li>
-                        <li>Unauthorized transactions on payment platforms</li>
-                    </ul>
-
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">Service Fees</h3>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        TogetherPay is currently free to use. We reserve the right to introduce fees for premium features in the future.
-                        Users will be notified at least 30 days before any new fees take effect.
-                    </p>
+                <section>
+                    <h2>4. Payment Terms (Manual Mode)</h2>
+                    <p>When using manual mode you acknowledge that all financial transactions are handled solely through third‑party peer-to-peer services. TogetherPay is not responsible for failed payments, disputes, chargebacks, or fees imposed by those providers.</p>
                 </section>
 
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">5. Groups and Member Management</h2>
-
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">Group Owners</h3>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">As a group owner, you:</p>
-                    <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300 mb-4">
-                        <li>Are responsible for the accuracy of billing information</li>
-                        <li>Must obtain consent from members before adding them to groups</li>
-                        <li>Are responsible for resolving payment disputes with members</li>
-                        <li>May not use the Service to defraud or mislead members</li>
-                    </ul>
-
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">Group Members</h3>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">As a group member, you:</p>
-                    <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                        <li>Are responsible for paying your share of group expenses on time</li>
-                        <li>Acknowledge that payment requests are sent on behalf of the group owner</li>
-                        <li>May leave a group at any time through the Service</li>
-                        <li>Should verify billing amounts with the group owner if there are discrepancies</li>
+                <section>
+                    <h2>5. Square & Cash App Pay Autopay</h2>
+                    <ul>
+                        <li>Connecting Square authorizes TogetherPay to create invoices and read invoice metadata on your behalf.</li>
+                        <li>You remain the merchant of record. Square deposits funds into your Square balance or linked bank account. TogetherPay never receives those funds.</li>
+                        <li>Your use of Square is governed by Square’s Merchant Terms and Card Brand rules. You are solely responsible for compliance, taxes, chargebacks, refunds, and any disputes.</li>
+                        <li>You may disconnect Square at any time from within TogetherPay or the Square dashboard. Disconnecting stops new autopay invoices but does not cancel invoices already published.</li>
                     </ul>
                 </section>
 
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">6. Intellectual Property</h2>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                        The Service and its original content, features, and functionality are owned by TogetherPay and are protected
-                        by international copyright, trademark, and other intellectual property laws.
-                    </p>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        You may not copy, modify, distribute, sell, or lease any part of our Service without our written permission.
-                    </p>
+                <section>
+                    <h2>6. Data & Privacy</h2>
+                    <p>We collect and store information needed to provide the Service (e.g., group details, email addresses, Square OAuth tokens). See our Privacy Policy for details on data handling. We never store full card numbers or bank credentials.</p>
                 </section>
 
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">7. Privacy and Data Protection</h2>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Your use of the Service is also governed by our <a href="{{ route('privacy') }}" class="text-brand-600 dark:text-brand-400 hover:underline">Privacy Policy</a>.
-                        By using the Service, you consent to the collection and use of your information as described in the Privacy Policy.
-                    </p>
+                <section>
+                    <h2>7. Service Availability</h2>
+                    <p>We aim for continuous availability but may suspend or modify the Service at any time for maintenance, upgrades, or security reasons. We are not liable for any loss resulting from downtime.</p>
                 </section>
 
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">8. Disclaimers and Limitation of Liability</h2>
-
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">Service Availability</h3>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                        The Service is provided "as is" and "as available" without warranties of any kind. We do not guarantee that
-                        the Service will be uninterrupted, secure, or error-free.
-                    </p>
-
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">Limitation of Liability</h3>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                        To the maximum extent permitted by law, TogetherPay shall not be liable for:
-                    </p>
-                    <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                        <li>Indirect, incidental, or consequential damages</li>
-                        <li>Loss of profits, data, or goodwill</li>
-                        <li>Payment disputes between users</li>
-                        <li>Actions or failures of third-party payment platforms</li>
-                        <li>Unauthorized access to your account</li>
-                    </ul>
+                <section>
+                    <h2>8. Limitation of Liability</h2>
+                    <p>TogetherPay is provided “as is.” To the fullest extent permitted by law, TogetherPay and its affiliates are not liable for indirect, incidental, or consequential damages arising from the use of the Service.</p>
                 </section>
 
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">9. Indemnification</h2>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        You agree to indemnify and hold harmless TogetherPay from any claims, damages, losses, or expenses
-                        (including legal fees) arising from your use of the Service, violation of these Terms, or infringement
-                        of any third-party rights.
-                    </p>
+                <section>
+                    <h2>9. Contact</h2>
+                    <p>Questions about these Terms? Email <a href="mailto:support@togetherpay.com">support@togetherpay.com</a>.</p>
                 </section>
-
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">10. Termination</h2>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                        We may terminate or suspend your account and access to the Service immediately, without prior notice,
-                        for any reason, including:
-                    </p>
-                    <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300 mb-4">
-                        <li>Violation of these Terms</li>
-                        <li>Fraudulent or illegal activity</li>
-                        <li>At your request</li>
-                        <li>For any other reason at our sole discretion</li>
-                    </ul>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Upon termination, your right to use the Service will immediately cease. Data retention is subject to our Privacy Policy.
-                    </p>
-                </section>
-
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">11. Dispute Resolution</h2>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Any disputes arising from these Terms or your use of the Service shall be resolved through binding arbitration
-                        in accordance with the rules of the American Arbitration Association. You waive your right to a jury trial or
-                        to participate in a class action lawsuit.
-                    </p>
-                </section>
-
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">12. Changes to Terms</h2>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        We reserve the right to modify these Terms at any time. We will notify users of material changes via email
-                        or through the Service. Continued use of the Service after changes constitutes acceptance of the modified Terms.
-                    </p>
-                </section>
-
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">13. Governing Law</h2>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        These Terms shall be governed by and construed in accordance with the laws of the United States,
-                        without regard to conflict of law principles.
-                    </p>
-                </section>
-
-                <section class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">14. Contact Information</h2>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                        If you have questions about these Terms, please contact us:
-                    </p>
-                    <ul class="list-none space-y-2 text-gray-700 dark:text-gray-300">
-                        <li><strong>Email:</strong> <a href="mailto:legal@togetherpay.com" class="text-brand-600 dark:text-brand-400 hover:underline">legal@togetherpay.com</a></li>
-                        <li><strong>Contact Form:</strong> <a href="{{ route('contact') }}" class="text-brand-600 dark:text-brand-400 hover:underline">togetherpay.com/contact</a></li>
-                    </ul>
-                </section>
-
             </div>
         </div>
 
-        <!-- Back to Home -->
         <div class="mt-6 text-center">
-            <a href="{{ route('welcome') }}" class="text-brand-600 dark:text-brand-400 hover:text-brand-500">
-                ← Back to Home
-            </a>
+            <a href="{{ route('welcome') }}" class="text-brand-600 dark:text-brand-400 hover:text-brand-500">← Back to home</a>
         </div>
     </div>
 </div>

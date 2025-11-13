@@ -27,8 +27,6 @@ class _AddMemberSheetState extends State<AddMemberSheet>
   final _shareValueController = TextEditingController(text: '0');
   final _venmoUsernameController = TextEditingController();
   final _cashTagController = TextEditingController();
-  final _cashPhoneController = TextEditingController();
-  final _cashEmailController = TextEditingController();
   final _searchController = TextEditingController();
 
   late final TabController _tabController;
@@ -61,8 +59,6 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     _shareValueController.dispose();
     _venmoUsernameController.dispose();
     _cashTagController.dispose();
-    _cashPhoneController.dispose();
-    _cashEmailController.dispose();
     super.dispose();
   }
 
@@ -264,11 +260,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
       payload['venmo_username'] = _venmoUsernameController.text.trim();
     } else if (_preferredChannel == 'CASH_APP') {
       final cashTag = _cashTagController.text.trim();
-      final cashPhone = _cashPhoneController.text.trim();
-      final cashEmail = _cashEmailController.text.trim();
       if (cashTag.isNotEmpty) payload['cash_tag'] = cashTag;
-      if (cashPhone.isNotEmpty) payload['cash_phone'] = cashPhone;
-      if (cashEmail.isNotEmpty) payload['cash_email'] = cashEmail;
     }
 
     try {
@@ -458,29 +450,17 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                 controller: _cashTagController,
                 enabled: !_submittingNew,
                 decoration: const InputDecoration(
-                  labelText: 'Cash tag (optional)',
+                  labelText: 'Cash tag',
                   border: OutlineInputBorder(),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _cashPhoneController,
-                enabled: !_submittingNew,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Cash App phone (optional)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _cashEmailController,
-                enabled: !_submittingNew,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Cash App email (optional)',
-                  border: OutlineInputBorder(),
-                ),
+                validator: (value) {
+                  if (_preferredChannel == 'CASH_APP') {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Cash tag is required';
+                    }
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
             ],

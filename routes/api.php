@@ -92,6 +92,9 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
     Route::post('/requests/by-code/{prCode}/cancel', [PaymentRequestController::class, 'cancel']);
     Route::post('/cycles/{cycleId}/bulk-confirm', [PaymentRequestController::class, 'bulkConfirm']);
 
+    // Square OAuth for mobile clients
+    Route::get('/square/oauth/url', [\App\Http\Controllers\API\SquareOAuthApiController::class, 'issueAuthorizationUrl']);
+
     // Cash App OAuth endpoints
     Route::prefix('cashapp')->group(function () {
         Route::get('/oauth/authorize', [CashAppOAuthController::class, 'initiateOAuth']);
