@@ -130,54 +130,70 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          isScrollable: true,
+          isScrollable: false,
           tabs: [
             Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('All'),
-                  if (_stats != null) ...[
-                    const SizedBox(width: 4),
-                    _buildBadge(_stats!['total'] ?? 0, Colors.grey),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('All', overflow: TextOverflow.ellipsis),
+                    if (_stats != null) ...[
+                      const SizedBox(width: 1),
+                      _buildBadge(_stats!['total'] ?? 0, Colors.grey),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
             Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Pending'),
-                  if (_stats != null) ...[
-                    const SizedBox(width: 4),
-                    _buildBadge(_stats!['pending'] ?? 0, Colors.orange),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Pending', overflow: TextOverflow.ellipsis),
+                    if (_stats != null) ...[
+                      const SizedBox(width: 1),
+                      _buildBadge(_stats!['pending'] ?? 0, Colors.orange),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
             Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Paid'),
-                  if (_stats != null) ...[
-                    const SizedBox(width: 4),
-                    _buildBadge(_stats!['paid'] ?? 0, Colors.green),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Paid', overflow: TextOverflow.ellipsis),
+                    if (_stats != null) ...[
+                      const SizedBox(width: 1),
+                      _buildBadge(_stats!['paid'] ?? 0, Colors.green),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
             Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Overdue'),
-                  if (_stats != null) ...[
-                    const SizedBox(width: 4),
-                    _buildBadge(_stats!['overdue'] ?? 0, Colors.red),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Overdue', overflow: TextOverflow.ellipsis),
+                    if (_stats != null) ...[
+                      const SizedBox(width: 1),
+                      _buildBadge(_stats!['overdue'] ?? 0, Colors.red),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ],
@@ -192,17 +208,18 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
 
   Widget _buildBadge(int count, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         count.toString(),
         style: TextStyle(
           color: color,
-          fontSize: 12,
+          fontSize: 9,
           fontWeight: FontWeight.bold,
+          height: 1.0,
         ),
       ),
     );
@@ -282,7 +299,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
               Text(
                 _filterStatus == 'all'
                     ? 'Payment requests will appear here when you create groups and send payment requests to members.'
-                    : 'You have no ${_filterStatus} payment requests at the moment.',
+                    : 'You have no $_filterStatus payment requests at the moment.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.grey.shade600,
@@ -372,11 +389,22 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
       statusText = 'Pending';
     }
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.spaceMedium),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: () => _showPaymentRequestDetails(pr),
@@ -386,59 +414,94 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header row
+              // Main content row
               Row(
                 children: [
-                  // Member avatar
-                  CircleAvatar(
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    child: Text(
-                      memberName.isNotEmpty
-                          ? memberName[0].toUpperCase()
-                          : '?',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
+                  // Member avatar with accent
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          statusColor.withValues(alpha: 0.3),
+                          statusColor.withValues(alpha: 0.1),
+                        ],
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      backgroundColor: statusColor.withValues(alpha: 0.15),
+                      radius: 24,
+                      child: Text(
+                        memberName.isNotEmpty
+                            ? memberName[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: AppTheme.spaceSmall),
+                  const SizedBox(width: AppTheme.spaceMedium),
                   // Member and group info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           memberName,
                           style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            height: 1.2,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 4),
                         Text(
                           groupName,
                           style: TextStyle(
                             color: Colors.grey.shade600,
-                            fontSize: 14,
+                            fontSize: 12,
+                            height: 1.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spaceSmall),
+                  // Amount with accent
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '\$${amount.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: statusColor,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // Amount
-                  Text(
-                    '\$${amount.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
                 ],
               ),
-              const SizedBox(height: AppTheme.spaceSmall),
-              const Divider(),
-              const SizedBox(height: AppTheme.spaceSmall),
+              const SizedBox(height: AppTheme.spaceMedium),
               // Status and date row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -446,31 +509,28 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
                   // Status badge
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                      horizontal: 10,
+                      vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
+                      color: statusColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: statusColor.withValues(alpha: 0.3),
-                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           statusIcon,
-                          size: 16,
+                          size: 14,
                           color: statusColor,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         Text(
                           statusText,
                           style: TextStyle(
                             color: statusColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
                           ),
                         ),
                       ],
@@ -484,8 +544,9 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
                             ? 'Due ${_formatDate(dueDate)}'
                             : 'No due date',
                     style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

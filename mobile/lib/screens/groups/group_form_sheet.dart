@@ -377,20 +377,33 @@ class _GroupFormSheetState extends State<GroupFormSheet> {
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _submitting ? null : _handleSubmit,
-                  icon: _submitting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.save),
-                  label: Text(
-                    widget.isEditing ? 'Save changes' : 'Create group',
+                child: AnimatedOpacity(
+                  opacity: _submitting ? 0.7 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: FilledButton.icon(
+                    onPressed: _submitting ? null : _handleSubmit,
+                    icon: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) =>
+                          ScaleTransition(scale: animation, child: child),
+                      child: _submitting
+                          ? const SizedBox(
+                              key: ValueKey('loading'),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.save,
+                              key: ValueKey('save'),
+                            ),
+                    ),
+                    label: Text(
+                      widget.isEditing ? 'Save changes' : 'Create group',
+                    ),
                   ),
                 ),
               ),

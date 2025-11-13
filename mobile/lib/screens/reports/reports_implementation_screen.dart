@@ -438,15 +438,18 @@ class _ReportsImplementationScreenState
                           ],
                         ),
                       ] else if (_selectedGroupId != null && !_loading)
-                        Center(
+                        const Center(
                           child: Padding(
-                            padding: const EdgeInsets.all(32.0),
+                            padding: EdgeInsets.all(32.0),
                             child: Column(
                               children: [
-                                Icon(Icons.analytics_outlined,
-                                    size: 64, color: Colors.white24),
-                                const SizedBox(height: 16),
-                                const Text(
+                                Icon(
+                                  Icons.analytics_outlined,
+                                  size: 64,
+                                  color: Colors.white24,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
                                   'No data available for this date range',
                                   style: TextStyle(color: Colors.white60),
                                   textAlign: TextAlign.center,
@@ -468,14 +471,14 @@ class _ReportsImplementationScreenState
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            color.withOpacity(0.2),
-            color.withOpacity(0.05),
+            color.withValues(alpha: 0.2),
+            color.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,7 +497,7 @@ class _ReportsImplementationScreenState
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 12,
             ),
           ),

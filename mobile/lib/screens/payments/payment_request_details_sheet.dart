@@ -250,8 +250,7 @@ class _PaymentRequestDetailsSheetState
       var cashtag = handle.startsWith('\$') ? handle.substring(1) : handle;
       cashtag = cashtag.replaceAll(' ', '').trim();
 
-      final cashAppUrl =
-          Uri.parse('https://cash.app/\$${cashtag}/${amountStr}');
+      final cashAppUrl = Uri.parse('https://cash.app/\$$cashtag/$amountStr');
 
       if (Env.debug) {
         debugPrint('===========================================');

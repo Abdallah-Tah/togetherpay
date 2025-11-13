@@ -28,7 +28,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   late AnimationController _fadeAnimController;
   late Animation<double> _fadeAnimation;
 
-  final List<OnboardingPage> _pages = [
+  final List<OnboardingPage> _pages = const [
     OnboardingPage(
       title: 'Welcome to TogetherPay',
       description:
@@ -457,7 +457,6 @@ class _ModeOptionCardState extends State<_ModeOptionCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  bool _isHovered = false;
 
   @override
   void initState() {
@@ -505,12 +504,12 @@ class _ModeOptionCardState extends State<_ModeOptionCard>
               width: widget.selected ? 2 : 1.5,
             ),
             color: widget.selected
-                ? colorScheme.primaryContainer.withOpacity(0.3)
+                ? colorScheme.primaryContainer.withValues(alpha: 0.3)
                 : colorScheme.surface,
             boxShadow: widget.selected
                 ? [
                     BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.15),
+                      color: colorScheme.primary.withValues(alpha: 0.15),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -525,7 +524,7 @@ class _ModeOptionCardState extends State<_ModeOptionCard>
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: widget.selected
-                      ? colorScheme.primary.withOpacity(0.15)
+                      ? colorScheme.primary.withValues(alpha: 0.15)
                       : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -561,7 +560,7 @@ class _ModeOptionCardState extends State<_ModeOptionCard>
                               vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color: colorScheme.primary.withOpacity(0.2),
+                              color: colorScheme.primary.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(

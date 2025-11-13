@@ -4,10 +4,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'env.dart';
-import 'pay_screen.dart';
 import 'screens/groups/groups_list_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
@@ -16,6 +14,8 @@ import 'screens/reports/reports_screen.dart';
 import 'screens/settings/notification_preferences_screen.dart';
 import 'screens/settings/payment_methods_screen.dart';
 import 'screens/settings/security_screen.dart';
+import 'screens/legal/privacy_policy_screen.dart';
+import 'screens/legal/terms_of_service_screen.dart';
 import 'services/push_notifications_service.dart';
 import 'utils/theme.dart';
 
@@ -652,8 +652,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Privacy Policy'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Coming soon')),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const PrivacyPolicyScreen(),
+                  ),
                 );
               },
             ),
@@ -663,8 +665,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Terms of Service'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Coming soon')),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const TermsOfServiceScreen(),
+                  ),
                 );
               },
             ),

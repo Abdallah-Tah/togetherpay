@@ -97,10 +97,8 @@ title('Privacy Policy - TogetherPay');
                     </p>
                     <ul class="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300 mt-3">
                         <li>Encryption of data in transit and at rest</li>
-                        <li>Secure cloud infrastructure (AWS)</li>
                         <li>Regular security audits and updates</li>
                         <li>Access controls and authentication requirements</li>
-                        <li>Employee training on data protection</li>
                     </ul>
                 </section>
 
