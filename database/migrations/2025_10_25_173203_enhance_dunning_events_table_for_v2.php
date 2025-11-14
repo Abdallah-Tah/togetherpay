@@ -28,8 +28,10 @@ return new class extends Migration
             // Add updated_at for standard timestamps
             $table->timestamp('updated_at')->nullable();
 
-            // Update indexes
+            // Update indexes - drop foreign key first, then index, then recreate foreign key
+            $table->dropForeign(['payment_request_id']);
             $table->dropIndex(['payment_request_id', 'created_at']);
+            $table->foreign('payment_request_id')->references('id')->on('payment_requests')->onDelete('cascade');
             $table->index(['payment_request_id', 'kind']);
             $table->index(['sent_at', 'channel']);
         });

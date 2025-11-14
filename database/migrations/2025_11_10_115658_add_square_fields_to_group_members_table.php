@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('group_members', function (Blueprint $table) {
             // Square customer ID for this member (created when added to auto_square group)
-            $table->string('square_customer_id')->nullable()->after('cashapp_tag')->comment('Square customer ID for this member');
+            $table->string('square_customer_id')->nullable()->after('cash_email')->comment('Square customer ID for this member');
 
             // Square subscription ID for recurring billing
             $table->string('square_subscription_id')->nullable()->after('square_customer_id')->comment('Square subscription ID for recurring payments');

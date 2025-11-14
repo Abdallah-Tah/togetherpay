@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::table('billing_cycles', function (Blueprint $table) {
             // Add total_collected_cents if it doesn't exist
-            if (! Schema::hasColumn('billing_cycles', 'total_collected_cents')) {
-                $table->integer('total_collected_cents')->default(0)->after('total_expected_cents');
+            // Note: The original table already has 'collected_amount_cents', so we skip if that exists
+            if (! Schema::hasColumn('billing_cycles', 'total_collected_cents') && ! Schema::hasColumn('billing_cycles', 'collected_amount_cents')) {
+                $table->integer('total_collected_cents')->default(0)->after('total_amount_cents');
             }
         });
     }
