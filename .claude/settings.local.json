@@ -24,7 +24,17 @@
       "Bash(timeout 30 php artisan:*)",
       "Bash(wmic process where \"name=''''php.exe'''' and NOT commandline like ''''%devsense%'''' and NOT commandline like ''''%intelliphp%''''\" delete /nointeractive)",
       "Bash(composer update:*)",
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "Bash(chmod:*)",
+      "Bash(/Users/amohamed/Herd/togetherpay/test-production-api.sh)",
+      "Bash(adb devices:*)",
+      "Bash(flutter doctor:*)",
+      "Bash(flutter pub get:*)",
+      "Bash(flutter build:*)",
+      "Bash(flutter install:*)",
+      "Bash(flutter logs:*)",
+      "Bash(curl:*)",
+      "Bash(/Users/amohamed/Herd/togetherpay/test-registration-curl.sh)"
     ],
     "deny": [],
     "ask": []

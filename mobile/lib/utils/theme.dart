@@ -89,6 +89,43 @@ class AppTheme {
         ),
       ];
 
+  /// Enhanced shadow for cards
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.03),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
+  /// Elevated shadow for interactive elements
+  static List<BoxShadow> get elevatedShadow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.1),
+          blurRadius: 24,
+          offset: const Offset(0, 8),
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  /// Subtle inner shadow effect
+  static List<BoxShadow> get innerShadow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
   static TextTheme _textTheme(TextTheme base, Color displayColor) {
     final textTheme = GoogleFonts.interTextTheme(base).apply(
       bodyColor: displayColor,
@@ -183,15 +220,15 @@ class AppTheme {
         foregroundColor: gray900,
         titleTextStyle: textTheme.titleLarge,
       ),
-      cardTheme: const CardThemeData(
+      cardTheme: CardThemeData(
         color: surface,
         elevation: 0,
         margin: EdgeInsets.zero,
         surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.transparent,
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
           borderRadius: cardRadius,
-          side: BorderSide(color: gray200),
+          side: BorderSide(color: gray200.withValues(alpha: 0.6)),
         ),
       ),
       listTileTheme: ListTileThemeData(

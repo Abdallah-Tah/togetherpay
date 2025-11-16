@@ -71,52 +71,78 @@ class _GroupCardState extends State<GroupCard>
       scale: _scaleAnimation,
       child: Hero(
         tag: 'group_card_$groupId',
-        child: Card(
+        child: Container(
           margin: const EdgeInsets.symmetric(
             horizontal: AppTheme.spaceMedium,
             vertical: AppTheme.spaceSmall,
           ),
-          elevation: _isPressed ? 2 : 0,
-          shadowColor: Colors.black.withValues(alpha:0.1),
-          clipBehavior: Clip.antiAlias,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: widget.onTap,
-              onTapDown: _handleTapDown,
-              onTapUp: _handleTapUp,
-              onTapCancel: _handleTapCancel,
-              child: Container(
-                padding: const EdgeInsets.all(AppTheme.spaceMedium),
-                decoration: BoxDecoration(
-                  border: Border(
-                    left: BorderSide(
-                      color: isOwner
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.transparent,
-                      width: 4,
-                    ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            boxShadow: _isPressed ? AppTheme.elevatedShadow : AppTheme.cardShadow,
+          ),
+          child: Card(
+            margin: EdgeInsets.zero,
+            elevation: 0,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+              side: BorderSide(
+                color: isOwner
+                    ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+                    : Colors.grey.shade200.withValues(alpha: 0.5),
+                width: isOwner ? 1.5 : 1,
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onTap,
+                onTapDown: _handleTapDown,
+                onTapUp: _handleTapUp,
+                onTapCancel: _handleTapCancel,
+                child: Container(
+                  padding: const EdgeInsets.all(AppTheme.spaceMedium),
+                  decoration: BoxDecoration(
+                    gradient: isOwner
+                        ? LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.03),
+                              Theme.of(context).colorScheme.surface,
+                            ],
+                          )
+                        : null,
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     // Group name and owner badge
                     Row(
                       children: [
-                        // Icon with gradient background
+                        // Icon with enhanced gradient background
                         Container(
-                          width: 48,
-                          height: 48,
+                          width: 52,
+                          height: 52,
                           decoration: BoxDecoration(
                             gradient: AppTheme.primaryGradient,
                             borderRadius:
                                 BorderRadius.circular(AppTheme.radiusMedium),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: const Icon(
                             Icons.groups_rounded,
                             color: Colors.white,
-                            size: 24,
+                            size: 26,
                           ),
                         ),
                         const SizedBox(width: AppTheme.spaceMedium),
@@ -310,6 +336,7 @@ class _GroupCardState extends State<GroupCard>
           ),
         ),
       ),
+    ),
     );
   }
 }

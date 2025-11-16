@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../env.dart';
 import '../../services/api_service.dart';
 import '../../widgets/group_card.dart';
+import '../../widgets/skeleton_loader.dart';
 import 'group_details_screen.dart';
 import 'group_form_sheet.dart';
 
@@ -251,7 +252,11 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
 
   Widget _buildBody() {
     if (_loading && _groups.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return ListView.builder(
+        padding: const EdgeInsets.only(top: 8, bottom: 96),
+        itemCount: 5,
+        itemBuilder: (context, index) => const SkeletonGroupCard(),
+      );
     }
 
     if (_error != null && _groups.isEmpty) {

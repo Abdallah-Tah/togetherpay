@@ -96,7 +96,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } on DioException catch (e) {
       if (Env.debug) {
-        debugPrint('Registration error: ${e.response?.data}');
+        debugPrint('Registration error response: ${e.response?.data}');
+        debugPrint('Registration error status: ${e.response?.statusCode}');
+        debugPrint('Registration error type: ${e.type}');
+        debugPrint('Registration error message: ${e.message}');
+        debugPrint('Registration error details: ${e.error}');
       }
 
       // Extract validation errors if available
@@ -138,31 +142,93 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Account'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 16),
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.02),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 16),
 
-                Text(
-                  'Join TogetherPay',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  // Header section
+                  Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.person_add_rounded,
+                          size: 40,
+                          color: Colors.white,
+                        ),
                       ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Create an account to start splitting bills',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey,
+                      const SizedBox(height: 20),
+                      Text(
+                        'Join TogetherPay',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 28,
+                            ),
                       ),
-                ),
-                const SizedBox(height: 32),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Create an account to start splitting bills',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Form card
+                  Card(
+                    elevation: 8,
+                    shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
 
                 // Error message
                 if (_error != null) ...[
@@ -326,15 +392,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Terms notice
-                Text(
-                  'By creating an account, you agree to our Terms of Service and Privacy Policy',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
+                          // Terms notice
+                          Text(
+                            'By creating an account, you agree to our Terms of Service and Privacy Policy',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),

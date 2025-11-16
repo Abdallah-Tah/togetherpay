@@ -21,12 +21,30 @@ import 'utils/theme.dart';
 
 /// Global Dio instance for API calls
 final dio = Dio(BaseOptions(
-  baseUrl: Env.apiBase,
+  baseUrl: Env.effectiveApiBase,
   headers: {
     'ngrok-skip-browser-warning': 'true', // Bypass ngrok warning page
     'Accept': 'application/json',
   },
 ));
+
+void _configureDioLogging() {
+  // Always print API base for debugging
+  debugPrint('Using API base: ${Env.effectiveApiBase}');
+
+  if (!Env.debug) return;
+  dio.interceptors.add(
+    LogInterceptor(
+      request: true,
+      requestBody: true,
+      responseBody: true,
+      error: true,
+      requestHeader: true,
+      responseHeader: false,
+      logPrint: (Object? obj) => debugPrint(obj?.toString()),
+    ),
+  );
+}
 
 /// Secure storage for auth tokens
 const storage = FlutterSecureStorage();
@@ -42,6 +60,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _configureDioLogging();
 
   if (!kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.iOS ||

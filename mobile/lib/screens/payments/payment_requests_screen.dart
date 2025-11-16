@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../main.dart';
 import '../../env.dart';
 import '../../utils/theme.dart';
+import '../../widgets/skeleton_loader.dart';
 import 'payment_request_details_sheet.dart';
 
 /// Payment Requests Screen - Shows all payment requests for the authenticated user
@@ -227,15 +228,10 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
 
   Widget _buildBody(List<Map<String, dynamic>> requests) {
     if (_loading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading payment requests...'),
-          ],
-        ),
+      return ListView.builder(
+        padding: const EdgeInsets.all(AppTheme.spaceMedium),
+        itemCount: 6,
+        itemBuilder: (context, index) => const SkeletonPaymentCard(),
       );
     }
 
@@ -392,25 +388,33 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.spaceMedium),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
-        ),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        boxShadow: AppTheme.cardShadow,
       ),
-      child: InkWell(
-        onTap: () => _showPaymentRequestDetails(pr),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        child: Padding(
-          padding: const EdgeInsets.all(AppTheme.spaceMedium),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: statusColor.withValues(alpha: 0.15),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                statusColor.withValues(alpha: 0.02),
+                Colors.white,
+              ],
+            ),
+          ),
+          child: InkWell(
+            onTap: () => _showPaymentRequestDetails(pr),
+            child: Padding(
+              padding: const EdgeInsets.all(AppTheme.spaceMedium),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -567,6 +571,8 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
           ),
         ),
       ),
+    ),
+    ),
     );
   }
 

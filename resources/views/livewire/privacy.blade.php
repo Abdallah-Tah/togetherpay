@@ -7,19 +7,24 @@ title('Privacy Policy - TogetherPay');
 
 ?>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- Header -->
-    <div class="bg-white dark:bg-gray-800 shadow">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Privacy Policy</h1>
-            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Last updated: {{ date('F j, Y') }}</p>
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-brand-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <!-- Enhanced Header -->
+    <div class="relative bg-gradient-to-r from-gray-900 to-gray-800 dark:from-black dark:to-gray-900 overflow-hidden">
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-24 -right-24 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-600/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <div class="relative max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3 animate-fade-in-up">Privacy Policy</h1>
+            <p class="text-lg text-gray-300 animate-fade-in-up" style="animation-delay: 0.1s;">Last updated: {{ date('F j, Y') }}</p>
         </div>
     </div>
 
     <!-- Content -->
-    <div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-            <div class="px-4 py-5 sm:p-6 prose dark:prose-invert max-w-none">
+    <div class="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
+        <div class="bg-white dark:bg-gray-800 shadow-2xl shadow-gray-900/5 dark:shadow-brand-500/10 overflow-hidden sm:rounded-3xl border border-gray-100 dark:border-gray-700">
+            <div class="px-6 py-8 sm:p-12 prose prose-lg dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-white prose-a:text-brand-600 dark:prose-a:text-brand-400">
 
                 <section class="mb-8">
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Introduction</h2>
@@ -169,9 +174,12 @@ title('Privacy Policy - TogetherPay');
         </div>
 
         <!-- Back to Home -->
-        <div class="mt-6 text-center">
-            <a href="{{ route('welcome') }}" class="text-brand-600 dark:text-brand-400 hover:text-brand-500">
-                ← Back to Home
+        <div class="mt-10 text-center">
+            <a href="{{ route('welcome') }}" class="inline-flex items-center gap-2 text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors group">
+                <svg class="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Home
             </a>
         </div>
     </div>
