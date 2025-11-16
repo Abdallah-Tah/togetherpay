@@ -9,7 +9,7 @@ title('About TogetherPay');
 
 <div class="min-h-screen bg-gradient-to-br from-brand-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
     <!-- Hero Header with Gradient -->
-    <div class="relative bg-gradient-to-r from-brand-600 to-brand-700 dark:from-brand-700 dark:to-brand-800 overflow-hidden">
+    <div class="relative bg-gradient-to-r from-brand-600 via-brand-700 to-navy-800 dark:from-brand-700 dark:via-brand-800 dark:to-navy-900 overflow-hidden">
         <!-- Animated Background Elements -->
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
             <div class="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>

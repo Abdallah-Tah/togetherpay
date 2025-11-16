@@ -32,7 +32,7 @@ title('Welcome to TogetherPay');
                 </p>
                 <div class="mt-10 max-w-2xl mx-auto flex flex-col gap-4 sm:flex-row sm:justify-center animate-fade-in-up" style="animation-delay: 0.4s;">
                     <a href="#download-ios"
-                        class="group flex items-center justify-center px-8 py-4 rounded-2xl bg-gradient-to-r from-gray-900 to-black text-white font-semibold shadow-2xl hover:shadow-3xl transform hover:-translate-y-0.5 transition-all duration-300">
+                        class="group flex items-center justify-center px-8 py-4 rounded-2xl bg-gradient-to-r from-navy-800 to-navy-900 text-white font-semibold shadow-2xl hover:shadow-3xl transform hover:-translate-y-0.5 transition-all duration-300">
                         <svg class="w-8 h-8 mr-3 transition-transform group-hover:scale-110" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                             <path fill="#2196f3"
                                 d="M44,24c0,11.044-8.956,20-20,20S4,35.044,4,24S12.956,4,24,4S44,12.956,44,24z"></path>
@@ -333,7 +333,7 @@ title('Welcome to TogetherPay');
                         </span>
                     </a>
                     <a href="#download-android"
-                        class="group flex items-center justify-center px-8 py-4 rounded-2xl bg-gray-900 text-white font-semibold shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 transition-all duration-300 min-w-[240px]">
+                        class="group flex items-center justify-center px-8 py-4 rounded-2xl bg-gradient-to-r from-navy-800 to-navy-900 text-white font-semibold shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 transition-all duration-300 min-w-[240px]">
                         <svg class="w-8 h-8 mr-3 transition-transform group-hover:scale-110" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                             <path fill="#4db6ac"
                                 d="M7.705,4.043C7.292,4.15,7,4.507,7,5.121c0,1.802,0,18.795,0,18.795S7,42.28,7,43.091c0,0.446,0.197,0.745,0.5,0.856l20.181-20.064L7.705,4.043z">

@@ -9,7 +9,7 @@ title('Privacy Policy - TogetherPay');
 
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-brand-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
     <!-- Enhanced Header -->
-    <div class="relative bg-gradient-to-r from-gray-900 to-gray-800 dark:from-black dark:to-gray-900 overflow-hidden">
+    <div class="relative bg-gradient-to-r from-navy-900 to-navy-800 dark:from-navy-950 dark:to-navy-900 overflow-hidden">
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
             <div class="absolute -top-24 -right-24 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl"></div>
             <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-600/10 rounded-full blur-3xl"></div>
