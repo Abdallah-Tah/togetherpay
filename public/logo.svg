@@ -1,0 +1,18 @@
+<svg width="220" height="50" viewBox="0 0 220 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Wallet Icon -->
+  <g transform="translate(2, 5)">
+    <!-- Wallet Body -->
+    <rect x="0" y="8" width="40" height="30" rx="4" fill="#99F6ED"/>
+
+    <!-- Wallet Flap/Top -->
+    <path d="M4 8 C4 5 6 3 8 3 L32 3 C34 3 36 5 36 8 L36 12 L4 12 Z" fill="#2C3E50"/>
+
+    <!-- Wallet Button/Snap -->
+    <circle cx="30" cy="23" r="2.5" fill="#2C3E50"/>
+  </g>
+
+  <!-- TogetherPay Text -->
+  <text x="52" y="32" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="500" fill="currentColor" letter-spacing="-0.02em">
+    TogetherPay
+  </text>
+</svg>
