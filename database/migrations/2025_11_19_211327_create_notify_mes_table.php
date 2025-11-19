@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('payment_requests', function (Blueprint $table) {
-            $table->string('square_subscription_id')->nullable()->after('square_invoice_id');
+        Schema::create('notify_mes', function (Blueprint $table) {
+            $table->id();
+            $table->string('email')->unique();
+            $table->timestamps();
         });
     }
 
@@ -21,8 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('payment_requests', function (Blueprint $table) {
-            $table->dropColumn('square_subscription_id');
-        });
+        Schema::dropIfExists('notify_mes');
     }
 };
