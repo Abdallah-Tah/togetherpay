@@ -235,20 +235,8 @@ title('TogetherPay - Split Bills, Not Friendships');
             </p>
 
             <!-- Email Signup Form -->
-            <form class="max-w-md mx-auto flex flex-col sm:flex-row gap-3 mb-8">
-                <input 
-                    type="email" 
-                    placeholder="Enter your email" 
-                    class="flex-1 px-6 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent backdrop-blur-sm"
-                    required
-                />
-                <button 
-                    type="submit"
-                    class="px-8 py-4 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-all hover:scale-105 shadow-lg shadow-brand-500/30"
-                >
-                    Notify Me
-                </button>
-            </form>
+            <livewire:notify-me />
+
 
             <!-- Platform Badges -->
             <div class="flex flex-col sm:flex-row gap-4 justify-center items-center opacity-50">
