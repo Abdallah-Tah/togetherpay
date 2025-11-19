@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAnimations();
     initInteractions();
     initThemeToggle();
+    initSmoothScroll();
 });
 
 /**
@@ -26,7 +27,7 @@ function initAnimations() {
             if (entry.isIntersecting) {
                 entry.target.classList.add('animate-in');
                 entry.target.classList.remove('opacity-0');
-                
+
                 // Add specific animation classes if needed
                 if (entry.target.dataset.animation) {
                     entry.target.classList.add(entry.target.dataset.animation);
@@ -41,7 +42,7 @@ function initAnimations() {
         // el.classList.add('opacity-0'); 
         // Note: We're handling initial opacity in CSS for some elements, but let's ensure it here for others
         if (!el.classList.contains('animate-in')) {
-             // el.classList.add('opacity-0'); // Optional: depending on CSS strategy
+            // el.classList.add('opacity-0'); // Optional: depending on CSS strategy
         }
         observer.observe(el);
     });
@@ -69,11 +70,11 @@ function initInteractions() {
 
     // Add smooth hover effects to cards
     document.querySelectorAll('.glass-card, .card-elevated, [data-card]').forEach(card => {
-        card.addEventListener('mouseenter', function(e) {
+        card.addEventListener('mouseenter', function (e) {
             this.style.transform = 'translateY(-8px) scale(1.01)';
         });
 
-        card.addEventListener('mouseleave', function(e) {
+        card.addEventListener('mouseleave', function (e) {
             this.style.transform = 'translateY(0) scale(1)';
         });
     });
@@ -104,7 +105,7 @@ function createRipple(event) {
         button.style.position = 'relative';
     }
     button.style.overflow = 'hidden';
-    
+
     button.appendChild(ripple);
 
     setTimeout(() => ripple.remove(), 600);
@@ -150,6 +151,50 @@ function initThemeToggle() {
         document.documentElement.classList.remove('dark');
     }
 }
+
+/**
+ * Initialize smooth scrolling for anchor links
+ */
+function initSmoothScroll() {
+    // Use event delegation to handle dynamically added links (Livewire)
+    document.addEventListener('click', function (e) {
+        // Find the closest anchor element
+        const anchor = e.target.closest('a[href^="#"]');
+
+        if (anchor) {
+            const href = anchor.getAttribute('href');
+
+            // Skip if it's just "#" or empty
+            if (!href || href === '#') return;
+
+            const targetId = href.substring(1);
+            const targetElement = document.getElementById(targetId);
+
+            if (targetElement) {
+                e.preventDefault();
+
+                // Smooth scroll to the target
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+
+                // Update URL without jumping
+                if (history.pushState) {
+                    history.pushState(null, null, href);
+                }
+            }
+        }
+    });
+}
+
+// Re-initialize animations on Livewire navigation
+document.addEventListener('livewire:navigated', () => {
+    initAnimations();
+    initInteractions();
+    initThemeToggle();
+});
+
 
 // Add CSS for dynamic animations
 const style = document.createElement('style');

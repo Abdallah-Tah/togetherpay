@@ -234,6 +234,65 @@ title('TogetherPay - Split Bills, Not Friendships');
         </div>
     </div>
 
+    <!-- Download Section -->
+    <div id="download-ios" class="relative py-20 lg:py-32 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-500/20 backdrop-blur-md mb-8">
+                <span class="flex h-2 w-2 rounded-full bg-brand-500 animate-pulse"></span>
+                <span class="text-sm font-medium text-brand-400">Coming Soon</span>
+            </div>
+            
+            <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">
+                Available Soon on iOS & Android
+            </h2>
+            <p class="text-xl text-zinc-400 mb-10 max-w-2xl mx-auto">
+                We're putting the finishing touches on the TogetherPay mobile app. Sign up to be notified when we launch!
+            </p>
+
+            <!-- Email Signup Form -->
+            <form class="max-w-md mx-auto flex flex-col sm:flex-row gap-3 mb-8">
+                <input 
+                    type="email" 
+                    placeholder="Enter your email" 
+                    class="flex-1 px-6 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent backdrop-blur-sm"
+                    required
+                />
+                <button 
+                    type="submit"
+                    class="px-8 py-4 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-all hover:scale-105 shadow-lg shadow-brand-500/30"
+                >
+                    Notify Me
+                </button>
+            </form>
+
+            <!-- Platform Badges -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center opacity-50">
+                <div class="inline-flex items-center px-6 py-3.5 bg-white/5 border border-white/10 rounded-xl">
+                    <svg class="w-10 h-10 mr-3 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08l-.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" fill="currentColor"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="text-xs text-white/60 font-normal">Coming to</div>
+                        <div class="text-xl font-semibold text-white -mt-0.5">App Store</div>
+                    </div>
+                </div>
+
+                <div id="download-android" class="inline-flex items-center px-6 py-3.5 bg-white/5 border border-white/10 rounded-xl">
+                    <svg class="w-10 h-10 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3.609 3.784c-.18.244-.284.585-.284 1.002v14.428c0 .417.104.758.284 1.002l.022.021 8.084-8.084v-.192L3.631 3.763l-.022.021z" fill="#00D7FE" class="opacity-60"/>
+                        <path d="M14.411 14.747l-2.696-2.696v-.192l2.696-2.696.03.018 3.194 1.814c.912.518.912 1.365 0 1.883l-3.194 1.814-.03.055z" fill="#FFCE00" class="opacity-60"/>
+                        <path d="M14.441 14.692l-2.726-2.726L3.609 20.07c.301.32.799.36 1.365.024l9.467-5.402z" fill="#00AB4E" class="opacity-60"/>
+                        <path d="M14.441 9.308L4.974 3.906c-.566-.336-1.064-.296-1.365.024l8.106 8.104 2.726-2.726z" fill="#FF3E4C" class="opacity-60"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="text-xs text-white/60 font-normal">Coming to</div>
+                        <div class="text-xl font-semibold text-white -mt-0.5">Google Play</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
