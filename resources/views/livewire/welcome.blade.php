@@ -9,23 +9,8 @@ title('TogetherPay - Split Bills, Not Friendships');
 
 <div class="min-h-screen bg-zinc-50 dark:bg-zinc-950 selection:bg-brand-500 selection:text-white overflow-x-hidden">
     <!-- Navbar -->
-    <nav class="fixed top-0 w-full z-50 transition-all duration-300" id="navbar">
-        <div class="absolute inset-0 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl border-b border-zinc-200/50 dark:border-zinc-800/50"></div>
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <div class="flex items-center gap-3">
-                    <x-app-logo class="w-10 h-10 rounded-xl shadow-lg shadow-brand-500/20" />
-                    <span class="text-xl font-bold text-zinc-900 dark:text-white tracking-tight">TogetherPay</span>
-                </div>
-                <div class="hidden md:flex items-center gap-8">
-                    <a href="#features" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Features</a>
-                    <a href="{{ route('how-it-works') }}" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">How it Works</a>
-                    <a href="{{ route('about') }}" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">About</a>
-                    <a href="{{ route('contact') }}" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Contact</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar -->
+    <x-guest-navbar />
 
     <!-- Hero Section -->
     <div class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
@@ -294,25 +279,6 @@ title('TogetherPay - Split Bills, Not Friendships');
     </div>
 
     <!-- Footer -->
-    <footer class="bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
-                <div class="flex items-center gap-2">
-                    <x-app-logo class="w-8 h-8 rounded-lg" />
-                    <span class="font-bold text-zinc-900 dark:text-white">TogetherPay</span>
-                </div>
-                
-                <div class="flex gap-8 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                    <a href="{{ route('about') }}" class="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">About</a>
-                    <a href="{{ route('privacy') }}" class="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Privacy</a>
-                    <a href="{{ route('terms') }}" class="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Terms</a>
-                    <a href="{{ route('contact') }}" class="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Contact</a>
-                </div>
-                
-                <div class="text-sm text-zinc-500">
-                    &copy; {{ date('Y') }} TogetherPay. All rights reserved.
-                </div>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer -->
+    <x-guest-footer />
 </div>

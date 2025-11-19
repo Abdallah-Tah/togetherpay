@@ -5,5 +5,6 @@
     </head>
     <body class="antialiased">
         {{ $slot }}
+        @fluxScripts
     </body>
 </html>

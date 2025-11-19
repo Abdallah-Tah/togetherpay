@@ -9,23 +9,8 @@ title('How It Works - TogetherPay');
 
 <div class="min-h-screen bg-zinc-50 dark:bg-zinc-950 selection:bg-brand-500 selection:text-white overflow-x-hidden">
     <!-- Navbar -->
-    <nav class="fixed top-0 w-full z-50 transition-all duration-300" id="navbar">
-        <div class="absolute inset-0 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl border-b border-zinc-200/50 dark:border-zinc-800/50"></div>
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <div class="flex items-center gap-3">
-                    <x-app-logo class="w-10 h-10 rounded-xl shadow-lg shadow-brand-500/20" />
-                    <span class="text-xl font-bold text-zinc-900 dark:text-white tracking-tight">TogetherPay</span>
-                </div>
-                <div class="hidden md:flex items-center gap-8">
-                    <a href="{{ route('welcome') }}" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Home</a>
-                    <a href="{{ route('how-it-works') }}" class="text-sm font-medium text-zinc-900 dark:text-white hover:text-brand-600 dark:hover:text-brand-400 transition-colors">How it Works</a>
-                    <a href="{{ route('about') }}" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">About</a>
-                    <a href="{{ route('contact') }}" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Contact</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar -->
+    <x-guest-navbar />
 
     <!-- Hero Section -->
     <div class="relative pt-32 pb-20 lg:pt-40 lg:pb-24 overflow-hidden">
@@ -473,37 +458,6 @@ title('How It Works - TogetherPay');
     </div>
 
     <!-- Footer -->
-    <footer class="relative border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
-                <div>
-                    <h3 class="text-sm font-semibold text-zinc-900 dark:text-white mb-4">Product</h3>
-                    <ul class="space-y-3">
-                        <li><a href="{{ route('welcome') }}" class="text-sm text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Features</a></li>
-                        <li><a href="{{ route('how-it-works') }}" class="text-sm text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">How it Works</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="text-sm font-semibold text-zinc-900 dark:text-white mb-4">Company</h3>
-                    <ul class="space-y-3">
-                        <li><a href="{{ route('about') }}" class="text-sm text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">About</a></li>
-                        <li><a href="{{ route('contact') }}" class="text-sm text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Contact</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="text-sm font-semibold text-zinc-900 dark:text-white mb-4">Legal</h3>
-                    <ul class="space-y-3">
-                        <li><a href="{{ route('privacy') }}" class="text-sm text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Privacy</a></li>
-                        <li><a href="{{ route('terms') }}" class="text-sm text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Terms</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="pt-8 border-t border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center gap-3">
-                    <x-app-logo class="w-8 h-8 rounded-lg" />
-                    <span class="text-sm text-zinc-600 dark:text-zinc-400">© 2025 TogetherPay. All rights reserved.</span>
-                </div>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer -->
+    <x-guest-footer />
 </div>
