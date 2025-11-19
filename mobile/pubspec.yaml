@@ -42,10 +42,18 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   integration_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
 
   # Add app icons here later
-  # assets:
-  #   - assets/images/
+  assets:
+    - assets/images/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true

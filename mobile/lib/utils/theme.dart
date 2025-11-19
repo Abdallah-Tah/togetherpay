@@ -3,45 +3,67 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   /// Brand palette
-  static const Color primary = Color(0xFF00CDBE);
-  static const Color primaryDark = Color(0xFF00A79D);
-  static const Color primaryLight = Color(0xFFC8F8F3);
+  static const Color primary = Color(0xFF00CDBE); // Brand Teal
+  static const Color primaryDark = Color(0xFF00A095);
+  static const Color primaryLight = Color(0xFFCCFBF7);
 
-  static const Color background = Color(0xFFF7FAFB);
+  static const Color navy = Color(0xFF0F172A); // Slate 900
+  static const Color navyLight = Color(0xFF1E293B); // Slate 800
+
+  static const Color background = Color(0xFFFAFAFA); // Zinc 50
   static const Color surface = Colors.white;
 
-  static const Color gray900 = Color(0xFF1B1B1D);
-  static const Color gray700 = Color(0xFF3F3F42);
-  static const Color gray600 = Color(0xFF6B6B6E);
-  static const Color gray400 = Color(0xFF99999C);
-  static const Color gray200 = Color(0xFFECECEC);
-  static const Color gray100 = Color(0xFFF3F3F4);
+  static const Color gray900 = Color(0xFF18181B); // Zinc 900
+  static const Color gray700 = Color(0xFF3F3F46); // Zinc 700
+  static const Color gray600 = Color(0xFF52525B); // Zinc 600
+  static const Color gray400 = Color(0xFFA1A1AA); // Zinc 400
+  static const Color gray200 = Color(0xFFE4E4E7); // Zinc 200
+  static const Color gray100 = Color(0xFFF4F4F5); // Zinc 100
 
-  static const Color success = Color(0xFF00C46C);
-  static const Color warning = Color(0xFFF5A524);
-  static const Color error = Color(0xFFE5484D);
+  static const Color success = Color(0xFF10B981); // Emerald 500
+  static const Color warning = Color(0xFFF59E0B); // Amber 500
+  static const Color error = Color(0xFFEF4444); // Red 500
 
-  /// Gradients used throughout the app (keeps compatibility with legacy usage).
+  /// Gradients used throughout the app
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [primary, primaryDark],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
+  static const LinearGradient meshGradient = LinearGradient(
+    colors: [
+      Color(0xFFF0FDFA), // Teal 50
+      Color(0xFFF8FAFC), // Slate 50
+      Color(0xFFEFF6FF), // Blue 50
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient glassGradient = LinearGradient(
+    colors: [
+      Colors.white,
+      Color(0xFFF8FAFC),
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   static const LinearGradient successGradient = LinearGradient(
-    colors: [Color(0xFF12D68E), Color(0xFF08A36A)],
+    colors: [Color(0xFF10B981), Color(0xFF059669)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient warningGradient = LinearGradient(
-    colors: [Color(0xFFFFC05B), Color(0xFFF58A1F)],
+    colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient errorGradient = LinearGradient(
-    colors: [Color(0xFFFA5C5C), Color(0xFFDB1F3F)],
+    colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

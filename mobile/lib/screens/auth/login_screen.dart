@@ -126,57 +126,49 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // App logo/icon with enhanced design
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Theme.of(context).colorScheme.primary,
-                            Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                   // App logo/icon with enhanced design
+                    Center(
+                      child: Container(
+                        width: 128, // Combined size of previous inner(80) + padding(24*2)
+                        height: 128,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          // Optional: Background color if your logo has transparency
+                          // color: Theme.of(context).colorScheme.surface, 
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                            ),
                           ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/app_icon.png',
+                            fit: BoxFit.cover, // This ensures the image fills the circle completely
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        size: 56,
-                        color: Colors.white,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
                     // App name with better typography
-                    ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-                        ],
-                      ).createShader(bounds),
-                      child: Text(
-                        'TogetherPay',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 36,
-                              color: Colors.white,
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
+                    Text(
+                      'TogetherPay',
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 32,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            letterSpacing: -0.5,
+                          ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Split bills together',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey.shade600,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             fontSize: 16,
                           ),
                       textAlign: TextAlign.center,

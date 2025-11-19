@@ -41,7 +41,7 @@ title('TogetherPay - Split Bills, Not Friendships');
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 backdrop-blur-md mb-8 animate-fade-in-up">
                 <span class="flex h-2 w-2 rounded-full bg-brand-500 animate-pulse"></span>
-                <span class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Now available on iOS & Android</span>
+                <span class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Available Soon on iOS & Android</span>
             </div>
 
             <h1 class="text-5xl md:text-7xl font-bold tracking-tight text-zinc-900 dark:text-white mb-8 animate-fade-in-up" style="animation-delay: 0.1s">

@@ -1,0 +1,13 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Centered Wallet Icon (White) for adaptive icon -->
+  <g transform="translate(312, 312)">
+    <!-- Wallet Body -->
+    <rect x="0" y="60" width="400" height="280" rx="40" fill="#FFFFFF"/>
+
+    <!-- Wallet Flap/Top -->
+    <path d="M40 60 C40 40 60 20 80 20 L320 20 C340 20 360 40 360 60 L360 100 L40 100 Z" fill="#E0E0E0"/>
+
+    <!-- Wallet Button/Snap -->
+    <circle cx="290" cy="200" r="24" fill="#E0E0E0"/>
+  </g>
+</svg>

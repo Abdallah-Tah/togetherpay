@@ -8,8 +8,8 @@
             <div class="sm:mx-auto sm:w-full sm:max-w-md">
                 <!-- Logo -->
                 <a href="{{ route('welcome') }}" class="flex flex-col items-center gap-3 mb-8" wire:navigate>
-                    <div class="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-xl shadow-brand-500/30">
-                        <x-app-logo-icon class="h-10 w-10 text-white" />
+                    <div class="flex h-20 w-20 items-center justify-center">
+                        <x-app-logo-icon class="h-full w-full shadow-xl shadow-brand-500/30 rounded-full" />
                     </div>
                     <span class="text-2xl font-bold bg-gradient-to-r from-brand-600 to-brand-500 bg-clip-text text-transparent">
                         {{ config('app.name', 'TogetherPay') }}

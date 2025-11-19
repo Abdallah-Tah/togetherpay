@@ -1,9 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/scheduler.dart';
+import 'dart:ui' as ui;
 
 import '../../main.dart';
 import '../../env.dart';
+import '../../utils/animations.dart';
 import '../../utils/theme.dart';
 import '../../widgets/skeleton_loader.dart';
 import 'payment_request_details_sheet.dart';
@@ -118,10 +121,22 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
   @override
   Widget build(BuildContext context) {
     final filteredRequests = _filteredPaymentRequests;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Payment Requests'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: (isDark ? Colors.black : Colors.white).withOpacity(0.5),
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             tooltip: 'Refresh',
@@ -129,80 +144,87 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
             icon: const Icon(Icons.refresh),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: false,
-          tabs: [
-            Tab(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('All', overflow: TextOverflow.ellipsis),
-                    if (_stats != null) ...[
-                      const SizedBox(width: 1),
-                      _buildBadge(_stats!['total'] ?? 0, Colors.grey),
-                    ],
-                  ],
-                ),
-              ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(25),
             ),
-            Tab(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Pending', overflow: TextOverflow.ellipsis),
-                    if (_stats != null) ...[
-                      const SizedBox(width: 1),
-                      _buildBadge(_stats!['pending'] ?? 0, Colors.orange),
-                    ],
-                  ],
-                ),
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: false,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(25),
+                color: AppTheme.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
+              labelColor: Colors.white,
+              unselectedLabelColor: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              tabs: [
+                _buildTab('All', _stats?['total']),
+                _buildTab('Pending', _stats?['pending']),
+                _buildTab('Paid', _stats?['paid']),
+                _buildTab('Overdue', _stats?['overdue']),
+              ],
             ),
-            Tab(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Paid', overflow: TextOverflow.ellipsis),
-                    if (_stats != null) ...[
-                      const SizedBox(width: 1),
-                      _buildBadge(_stats!['paid'] ?? 0, Colors.green),
-                    ],
-                  ],
-                ),
+          ),
+        ),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? const LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : AppTheme.meshGradient,
+        ),
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: _loadPaymentRequests,
+            child: _buildBody(filteredRequests),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTab(String label, int? count) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label),
+          if (count != null && count > 0) ...[
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
               ),
-            ),
-            Tab(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Overdue', overflow: TextOverflow.ellipsis),
-                    if (_stats != null) ...[
-                      const SizedBox(width: 1),
-                      _buildBadge(_stats!['overdue'] ?? 0, Colors.red),
-                    ],
-                  ],
+              child: Text(
+                count.toString(),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ],
-        ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadPaymentRequests,
-        child: _buildBody(filteredRequests),
+        ],
       ),
     );
   }
@@ -312,7 +334,16 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
       itemCount: requests.length,
       itemBuilder: (context, index) {
         final pr = requests[index];
-        return _buildPaymentRequestCard(pr);
+        return SlideAnimation(
+          position: index,
+          itemCount: requests.length,
+          slideDirection: SlideDirection.fromBottom,
+          animationController: AnimationController(
+            vsync: ScrollableState(),
+            duration: const Duration(milliseconds: 375),
+          )..forward(),
+          child: _buildPaymentRequestCard(pr),
+        );
       },
     );
   }
@@ -724,4 +755,9 @@ extension StringExtension on String {
     if (isEmpty) return this;
     return '${this[0].toUpperCase()}${substring(1)}';
   }
+}
+
+class ScrollableState extends TickerProvider {
+  @override
+  Ticker createTicker(TickerCallback onTick) => Ticker(onTick);
 }

@@ -34,7 +34,19 @@
       "Bash(flutter install:*)",
       "Bash(flutter logs:*)",
       "Bash(curl:*)",
-      "Bash(/Users/amohamed/Herd/togetherpay/test-registration-curl.sh)"
+      "Bash(/Users/amohamed/Herd/togetherpay/test-registration-curl.sh)",
+      "Bash(flutter devices:*)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb -s emulator-5554 install -r /Users/amohamed/Herd/togetherpay/mobile/build/app/outputs/flutter-apk/app-debug.apk)",
+      "Bash(flutter pub run:*)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb -s 00152153L003383 install -r /Users/amohamed/Herd/togetherpay/mobile/build/app/outputs/flutter-apk/app-debug.apk)",
+      "Bash(identify -verbose:*)",
+      "Bash(sips -g all:*)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(brew install:*)",
+      "Bash(pkill:*)",
+      "Bash(~/Library/Android/sdk/platform-tools/adb:*)",
+      "Bash(qlmanage -t -s 1024 -o /Users/amohamed/Herd/togetherpay/mobile/assets/images/:*)"
     ],
     "deny": [],
     "ask": []

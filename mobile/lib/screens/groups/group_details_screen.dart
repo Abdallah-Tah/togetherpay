@@ -1,8 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+
+import 'package:flutter/scheduler.dart';
+import 'dart:ui' as ui;
 
 import '../../env.dart';
 import '../../services/api_service.dart';
+import '../../utils/animations.dart';
+import '../../utils/theme.dart';
 import '../../widgets/payment_request_card.dart';
 import '../../pay_screen.dart';
 import 'add_member_sheet.dart';
@@ -583,10 +589,23 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
           _groupData?['name'] as String? ?? 'Group Details',
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: (isDark ? Colors.black : Colors.white).withOpacity(0.5),
+            ),
+          ),
         ),
         actions: [
           IconButton(
@@ -643,7 +662,20 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
             ),
         ],
       ),
-      body: _buildBody(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? const LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : AppTheme.meshGradient,
+        ),
+        child: SafeArea(
+          child: _buildBody(),
+        ),
+      ),
     );
   }
 
@@ -691,11 +723,26 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         children: [
-          _buildGroupInfoCard(),
+          SlideAnimation(
+            position: 0,
+            itemCount: 3,
+            slideDirection: SlideDirection.fromBottom,
+            child: _buildGroupInfoCard(),
+          ),
           const SizedBox(height: 24),
-          _buildMembersSection(),
+          SlideAnimation(
+            position: 1,
+            itemCount: 3,
+            slideDirection: SlideDirection.fromBottom,
+            child: _buildMembersSection(),
+          ),
           const SizedBox(height: 24),
-          _buildPaymentRequestsSection(),
+          SlideAnimation(
+            position: 2,
+            itemCount: 3,
+            slideDirection: SlideDirection.fromBottom,
+            child: _buildPaymentRequestsSection(),
+          ),
           const SizedBox(height: 20),
           if (_error != null) ...[
             Container(
@@ -759,17 +806,17 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline,
+          color: Colors.white.withOpacity(0.2),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),

@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/scheduler.dart';
 
 import '../../env.dart';
 import '../../services/api_service.dart';
@@ -7,6 +9,8 @@ import '../../widgets/group_card.dart';
 import '../../widgets/skeleton_loader.dart';
 import 'group_details_screen.dart';
 import 'group_form_sheet.dart';
+import '../../utils/animations.dart';
+import '../../utils/theme.dart';
 
 class GroupsListScreen extends StatefulWidget {
   const GroupsListScreen({super.key});
@@ -225,9 +229,22 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('My Groups'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: (isDark ? Colors.black : Colors.white).withOpacity(0.5),
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -241,11 +258,27 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? const LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : AppTheme.meshGradient,
+        ),
+        child: SafeArea(
+          child: _buildBody(),
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _loading ? null : _showCreateGroupSheet,
         icon: const Icon(Icons.group_add_outlined),
         label: const Text('New Group'),
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
       ),
     );
   }
@@ -296,23 +329,31 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.groups_outlined,
-                size: 80,
-                color: Colors.grey.shade300,
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.groups_outlined,
+                  size: 80,
+                  color: Colors.grey.shade400,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               Text(
                 'No groups yet',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 'Create a group to start splitting bills with friends.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -321,6 +362,12 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
                 onPressed: _loading ? null : _showCreateGroupSheet,
                 icon: const Icon(Icons.add),
                 label: const Text('Create your first group'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                ),
               ),
             ],
           ),
@@ -335,9 +382,18 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
         itemCount: _groups.length,
         itemBuilder: (context, index) {
           final group = _groups[index];
-          return GroupCard(
-            group: group,
-            onTap: () => _navigateToGroupDetails(group),
+          return SlideAnimation(
+            position: index,
+            itemCount: _groups.length,
+            slideDirection: SlideDirection.fromBottom,
+            animationController: AnimationController(
+              vsync: ScrollableState(), // This is a hack, better to use flutter_staggered_animations or similar
+              duration: const Duration(milliseconds: 375),
+            )..forward(),
+            child: GroupCard(
+              group: group,
+              onTap: () => _navigateToGroupDetails(group),
+            ),
           );
         },
       ),
@@ -358,4 +414,9 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
 
     return body;
   }
+}
+
+class ScrollableState extends TickerProvider {
+  @override
+  Ticker createTicker(TickerCallback onTick) => Ticker(onTick);
 }
