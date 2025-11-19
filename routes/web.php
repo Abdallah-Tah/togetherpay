@@ -17,6 +17,7 @@ use Livewire\Volt\Volt;
 // Public pages
 Volt::route('/', 'welcome')->name('welcome');
 Volt::route('/about', 'about')->name('about');
+Volt::route('/how-it-works', 'how-it-works')->name('how-it-works');
 Volt::route('/privacy', 'privacy')->name('privacy');
 Volt::route('/terms', 'terms')->name('terms');
 Volt::route('/contact', 'contact')->name('contact');

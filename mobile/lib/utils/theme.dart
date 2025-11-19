@@ -148,11 +148,25 @@ class AppTheme {
         ),
       ];
 
+
   static TextTheme _textTheme(TextTheme base, Color displayColor) {
-    final textTheme = GoogleFonts.interTextTheme(base).apply(
-      bodyColor: displayColor,
-      displayColor: displayColor,
-    );
+    // Use GoogleFonts with fallback to prevent network-dependent errors
+    // If Inter font fails to load, it will use the system default
+    TextTheme textTheme;
+    try {
+      textTheme = GoogleFonts.interTextTheme(base).apply(
+        bodyColor: displayColor,
+        displayColor: displayColor,
+      );
+    } catch (e) {
+      // Fallback to base theme if font loading fails
+      textTheme = base.apply(
+        bodyColor: displayColor,
+        displayColor: displayColor,
+        fontFamily: 'Inter', // Will use system default if not available
+      );
+    }
+
 
     return textTheme.copyWith(
       headlineLarge: textTheme.headlineLarge?.copyWith(

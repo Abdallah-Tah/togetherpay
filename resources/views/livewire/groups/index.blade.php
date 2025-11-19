@@ -5,15 +5,15 @@
 
     <div class="space-y-8">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 rounded-3xl shadow-xl p-8 text-white">
+    <div class="card-gradient p-8 text-white animate-gradient fade-in">
         <div class="flex items-center justify-between">
-            <div>
+            <div class="slide-in-bottom">
                 <h1 class="text-3xl font-bold mb-2">Your Groups</h1>
                 <p class="text-brand-100 text-lg">Manage and monitor all your bill-splitting groups</p>
             </div>
-            <div class="hidden md:block">
+            <div class="hidden md:block slide-in-right">
                 <a href="{{ route('app.groups.create') }}" wire:navigate
-                   class="inline-flex items-center px-6 py-3 bg-white text-brand-700 font-semibold rounded-2xl hover:bg-brand-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                   class="btn-primary inline-flex items-center px-6 py-3 bg-white text-brand-700 font-semibold rounded-2xl hover:bg-brand-50 transition-smooth shadow-lg hover:shadow-xl transform hover:scale-105" data-ripple>
                     <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
@@ -24,7 +24,7 @@
     </div>
 
     <!-- Search Bar -->
-    <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-700 p-6">
+    <div class="card-elevated glass bg-white/80 dark:bg-zinc-800/80 p-6 fade-in" style="animation-delay: 0.1s;">
         <div class="relative max-w-xl">
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <svg class="h-5 w-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,24 +34,24 @@
             <input wire:model.live="search"
                    type="search"
                    placeholder="Search groups by name..."
-                   class="block w-full pl-11 pr-4 py-3.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow">
+                   class="block w-full pl-11 pr-4 py-3.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow">
         </div>
     </div>
 
     <!-- Groups Grid -->
     @if($groups->count() > 0)
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-stagger>
             @foreach($groups as $group)
-                <div class="group bg-white dark:bg-zinc-800 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-zinc-100 dark:border-zinc-700 transform hover:-translate-y-1 flex flex-col h-full">
+                <div class="card-elevated glass bg-white dark:bg-zinc-800 flex flex-col h-full group hover:border-brand-200 dark:hover:border-brand-800 transition-smooth scale-in" data-stagger-item>
 
                     <!-- Clickable area for group details -->
                     <a href="{{ route('app.groups.show', $group) }}" wire:navigate class="flex-1 flex flex-col">
                         <!-- Group Header with Icon -->
-                        <div class="p-6 border-b border-zinc-100 dark:border-zinc-700">
+                        <div class="p-6 border-b border-zinc-100 dark:border-zinc-700/50">
                             <div class="flex items-start justify-between mb-4">
                                 <div class="flex items-center space-x-4 flex-1 min-w-0">
                                     <div class="flex-shrink-0">
-                                        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-lg shadow-lg animate-float">
                                             {{ strtoupper(substr($group->name, 0, 1)) }}
                                         </div>
                                     </div>
@@ -64,7 +64,7 @@
                                         </p>
                                     </div>
                                 </div>
-                                <span class="flex-shrink-0 px-3 py-1 text-xs font-semibold rounded-full {{ $group->status === 'active' ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300' }}">
+                                <span class="flex-shrink-0 px-3 py-1 text-xs font-semibold rounded-full transition-smooth {{ $group->status === 'active' ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400 shadow-glow' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300' }}">
                                     {{ ucfirst($group->status) }}
                                 </span>
                             </div>
@@ -75,7 +75,7 @@
                             <!-- Amount -->
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-3">
-                                    <div class="p-2.5 bg-brand-50 dark:bg-brand-900/20 rounded-lg">
+                                    <div class="p-2.5 bg-brand-50 dark:bg-brand-900/20 rounded-lg group-hover:bg-brand-100 dark:group-hover:bg-brand-900/40 transition-colors">
                                         <svg class="h-5 w-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
@@ -85,7 +85,7 @@
                                         <p class="text-base font-semibold text-zinc-900 dark:text-white">${{ number_format($group->total_amount, 2) }}</p>
                                     </div>
                                 </div>
-                                <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-700 px-3 py-1.5 rounded-full">
+                                <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-700/50 px-3 py-1.5 rounded-full">
                                     {{ ucfirst(strtolower(str_replace('_', ' ', $group->cadence))) }}
                                 </span>
                             </div>
@@ -101,15 +101,15 @@
                             @if($group->currentCycle())
                                 @php $cycle = $group->currentCycle(); @endphp
                                 <!-- Collection Progress -->
-                                <div class="pt-4 border-t border-zinc-100 dark:border-zinc-700">
+                                <div class="pt-4 border-t border-zinc-100 dark:border-zinc-700/50">
                                     <div class="flex items-center justify-between text-sm mb-2">
                                         <span class="text-zinc-600 dark:text-zinc-400 font-medium">Collection Progress</span>
                                         <span class="font-bold text-brand-600 dark:text-brand-400">
                                             {{ round($cycle->collection_rate) }}%
                                         </span>
                                     </div>
-                                    <div class="w-full bg-zinc-100 dark:bg-zinc-700 rounded-full h-2.5 overflow-hidden">
-                                        <div class="bg-gradient-to-r from-brand-500 to-brand-600 h-2.5 rounded-full transition-all duration-500 ease-out shadow-sm"
+                                    <div class="w-full bg-zinc-100 dark:bg-zinc-700/50 rounded-full h-2.5 overflow-hidden">
+                                        <div class="bg-gradient-to-r from-brand-500 to-brand-600 h-2.5 rounded-full transition-all duration-1000 ease-out shadow-sm"
                                              style="width: {{ $cycle->collection_rate }}%"></div>
                                     </div>
                                     <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
@@ -121,21 +121,21 @@
                     </a>
 
                     <!-- Footer - Independent action area -->
-                    <div class="px-6 py-4 bg-zinc-50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-700 mt-auto">
+                    <div class="px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/30 border-t border-zinc-100 dark:border-zinc-700/50 mt-auto backdrop-blur-sm">
                         <div class="flex items-center justify-between gap-2">
                             <span class="text-xs text-zinc-500 dark:text-zinc-400">
                                 Created {{ $group->created_at->diffForHumans() }}
                             </span>
                             <div class="flex gap-3">
                                 <a href="{{ route('app.groups.invoices', $group) }}" wire:navigate
-                                   class="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors duration-200">
+                                   class="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-smooth shadow-sm hover:shadow-md" data-ripple>
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                     </svg>
                                     Invoices
                                 </a>
                                 <a href="{{ route('app.groups.show', $group) }}" wire:navigate
-                                   class="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-lg transition-colors duration-200">
+                                   class="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-lg transition-smooth shadow-sm hover:shadow-md" data-ripple>
                                     View
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -149,9 +149,9 @@
         </div>
     @else
         <!-- Empty State -->
-        <div class="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-700">
+        <div class="card-elevated glass bg-white dark:bg-zinc-800 fade-in">
             <div class="px-6 py-16 text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-700 mb-4">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-700/50 mb-4 animate-pulse-slow">
                     <svg class="h-8 w-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
@@ -172,7 +172,7 @@
                 </p>
                 @if(!$search)
                     <a href="{{ route('app.groups.create') }}" wire:navigate
-                       class="inline-flex items-center px-5 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors duration-200 shadow-sm">
+                       class="btn-primary inline-flex items-center px-5 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-smooth shadow-sm hover:scale-105" data-ripple>
                         <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>

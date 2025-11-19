@@ -19,11 +19,9 @@ title('TogetherPay - Split Bills, Not Friendships');
                 </div>
                 <div class="hidden md:flex items-center gap-8">
                     <a href="#features" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Features</a>
-                    <a href="#how-it-works" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">How it Works</a>
-                    <a href="{{ route('login') }}" class="text-sm font-medium text-zinc-900 dark:text-white hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Log in</a>
-                    <a href="{{ route('register') }}" class="px-5 py-2.5 text-sm font-semibold text-white bg-zinc-900 dark:bg-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all hover:-translate-y-0.5 shadow-lg shadow-zinc-900/20 dark:shadow-white/10">
-                        Get Started
-                    </a>
+                    <a href="{{ route('how-it-works') }}" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">How it Works</a>
+                    <a href="{{ route('about') }}" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">About</a>
+                    <a href="{{ route('contact') }}" class="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Contact</a>
                 </div>
             </div>
         </div>
