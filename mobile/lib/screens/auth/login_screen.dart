@@ -126,7 +126,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // App logo/icon with enhanced design
-                   // App logo/icon with enhanced design
                     Center(
                       child: Container(
                         width: 128, // Combined size of previous inner(80) + padding(24*2)

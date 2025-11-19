@@ -277,13 +277,13 @@ class _SplashScreenState extends State<SplashScreen>
                     ScaleTransition(
                       scale: _scaleAnimation,
                       child: Container(
-                        width: 140,
-                        height: 140,
+                        width: 128,
+                        height: 128,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primary.withOpacity(0.3),
+                              color: AppTheme.primary.withOpacity(0.2),
                               blurRadius: 30,
                               offset: const Offset(0, 15),
                             ),
@@ -291,7 +291,7 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                         child: ClipOval(
                           child: Image.asset(
-                            'assets/images/logo.png',
+                            'assets/images/app_icon.png',
                             fit: BoxFit.cover,
                           ),
                         ),
