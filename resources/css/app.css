@@ -1,8 +1,8 @@
 @import 'tailwindcss';
 @import '../../vendor/livewire/flux/dist/flux.css';
 
-[x-cloak] { 
-    display: none !important; 
+[x-cloak] {
+    display: none !important;
 }
 
 @source '../views';
@@ -15,7 +15,7 @@
 @theme {
     --font-sans: 'Inter', 'Outfit', ui-sans-serif, system-ui, sans-serif;
 
-    /* Premium Brand Colors - Deep Teal & Electric Purple Accents */
+    /* Premium Brand Colors - Deep Teal & Emerald Green Accents */
     --color-brand-50: #f0fdfa;
     --color-brand-100: #ccfbf1;
     --color-brand-200: #99f6e4;
@@ -43,7 +43,8 @@
     /* Deepest background */
 
     /* Accent Colors */
-    --color-accent-purple: #8b5cf6;
+    --color-accent-purple: #10b981;
+    /* Changed to emerald green */
     --color-accent-pink: #ec4899;
     --color-accent-blue: #3b82f6;
 
