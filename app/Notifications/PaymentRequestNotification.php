@@ -58,28 +58,26 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
         $cycle = $this->paymentRequest->cycle;
         $group = $cycle?->group ?? $this->paymentRequest->group;
         $amount = number_format($this->paymentRequest->amount_cents / 100, 2);
-        $dueDate = $cycle?->due_at?->timezone($group->timezone ?? config('app.timezone'))
-            ?->format('M d, Y') ?? now()->format('M d, Y');
-        $payLink = url("/pay/{$this->paymentRequest->id}");
 
-        $message = (new MailMessage)
-            ->subject('💰 Payment Due'.($group ? ": {$group->name}" : ''))
-            ->greeting("Hi {$notifiable->name}! 👋")
-            ->line("**💵 Amount:** \${$amount}")
-            ->line("**📅 Due Date:** {$dueDate}")
-            ->line('')
-            ->action('Pay Now', $payLink)
-            ->line('')
-            ->line('After paying, click "I\'ve Sent the Payment" on the payment page.')
-            ->line('')
-            ->line('Questions? Reply to this email.')
-            ->salutation('Thank you!');
-
-        if ($group) {
-            $message->line("Your share for **{$group->name}** is now due.")->line('');
+        // Fix: Handle null due_at safely
+        $dueDate = 'N/A';
+        if ($cycle?->due_at) {
+            $dueDate = $cycle->due_at->timezone($group->timezone ?? config('app.timezone'))
+                ->format('M d, Y');
         }
 
-        return $message;
+        $payLink = url("/pay/{$this->paymentRequest->id}");
+
+        return (new MailMessage)
+            ->subject('Payment Due'.($group ? ": {$group->name}" : ''))
+            ->markdown('emails.payment-request', [
+                'notifiable' => $notifiable,
+                'paymentRequest' => $this->paymentRequest,
+                'group' => $group,
+                'amount' => $amount,
+                'dueDate' => $dueDate,
+                'payLink' => $payLink,
+            ]);
     }
 
     public function toTwilio(object $notifiable): TwilioSmsMessage
