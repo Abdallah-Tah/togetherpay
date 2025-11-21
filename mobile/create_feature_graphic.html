@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TogetherPay Feature Graphic</title>
+</head>
+<body>
+    <canvas id="canvas" width="1024" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Background gradient (teal)
+        const gradient = ctx.createLinearGradient(0, 0, 1024, 500);
+        gradient.addColorStop(0, '#5CCFC9');
+        gradient.addColorStop(1, '#4CB5AE');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 1024, 500);
+
+        // Draw circle for logo
+        ctx.beginPath();
+        ctx.arc(200, 250, 120, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fill();
+
+        // Draw wallet icon (simplified)
+        ctx.fillStyle = '#5CCFC9';
+        ctx.fillRect(140, 230, 120, 80);
+        ctx.fillRect(150, 210, 100, 30);
+
+        // Circle snap
+        ctx.beginPath();
+        ctx.arc(240, 270, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#4CB5AE';
+        ctx.fill();
+
+        // Text
+        ctx.font = 'bold 72px -apple-system, system-ui, sans-serif';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('TogetherPay', 360, 280);
+
+        ctx.font = '32px -apple-system, system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillText('Split bills together', 360, 330);
+
+        // Download
+        setTimeout(() => {
+            const link = document.createElement('a');
+            link.download = 'feature_graphic_1024x500.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            document.body.innerHTML = '<h1>Feature Graphic Downloaded!</h1><p>Check your Downloads folder for feature_graphic_1024x500.png</p>';
+        }, 100);
+    </script>
+</body>
+</html>

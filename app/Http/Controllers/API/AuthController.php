@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\API\LoginRequest;
 use App\Http\Requests\API\RegisterRequest;
+use App\Notifications\WelcomeNotification;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -26,6 +27,9 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'role' => 'member',
         ]);
+
+        // Send welcome email
+        $user->notify(new WelcomeNotification());
 
         $token = $user->createToken('mobile-app')->plainTextToken;
 

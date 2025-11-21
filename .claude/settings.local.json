@@ -46,7 +46,9 @@
       "Bash(brew install:*)",
       "Bash(pkill:*)",
       "Bash(~/Library/Android/sdk/platform-tools/adb:*)",
-      "Bash(qlmanage -t -s 1024 -o /Users/amohamed/Herd/togetherpay/mobile/assets/images/:*)"
+      "Bash(qlmanage -t -s 1024 -o /Users/amohamed/Herd/togetherpay/mobile/assets/images/:*)",
+      "Bash(sips:*)",
+      "Bash(open:*)"
     ],
     "deny": [],
     "ask": []

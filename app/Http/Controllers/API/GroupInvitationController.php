@@ -8,6 +8,7 @@ use App\Models\GroupInvitation;
 use App\Models\GroupMember;
 use App\Models\User;
 use App\Notifications\GroupInvitationNotification;
+use App\Notifications\WelcomeNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -172,6 +173,9 @@ class GroupInvitationController extends Controller
             // Mark invitation as accepted
             $invitation->markAsAccepted($user);
         });
+
+        // Send welcome email for invitation signup
+        $user->notify(new WelcomeNotification(isInvitation: true));
 
         // Create auth token for immediate login
         $token = $user->createToken('mobile-app')->plainTextToken;

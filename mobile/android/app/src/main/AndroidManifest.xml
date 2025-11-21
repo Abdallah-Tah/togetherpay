@@ -50,6 +50,17 @@
                     android:scheme="https"
                     android:host="togetherpay.app"
                     android:pathPrefix="/pay"/>
+
+                <!-- Handle invitation links -->
+                <data
+                    android:scheme="https"
+                    android:host="togetherpay.app"
+                    android:pathPrefix="/accept-invitation"/>
+
+                <data
+                    android:scheme="https"
+                    android:host="www.togetherpay.app"
+                    android:pathPrefix="/accept-invitation"/>
             </intent-filter>
         </activity>
 

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -16,6 +19,7 @@ import 'screens/settings/payment_methods_screen.dart';
 import 'screens/settings/security_screen.dart';
 import 'screens/legal/privacy_policy_screen.dart';
 import 'screens/legal/terms_of_service_screen.dart';
+import 'screens/invitations/accept_invitation_screen.dart';
 import 'services/push_notifications_service.dart';
 import 'utils/theme.dart';
 
@@ -82,11 +86,74 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
   String? _authToken;
   bool _isInitializing = true;
   bool _needsOnboarding = false;
+  late AppLinks _appLinks;
+  StreamSubscription? _deepLinkSubscription;
 
   @override
   void initState() {
     super.initState();
+    _appLinks = AppLinks();
     _setupApp();
+    _initDeepLinks();
+  }
+
+  @override
+  void dispose() {
+    _deepLinkSubscription?.cancel();
+    super.dispose();
+  }
+
+  /// Initialize deep link handling
+  Future<void> _initDeepLinks() async {
+    // Handle initial deep link when app is launched from link
+    try {
+      final initialLink = await _appLinks.getInitialLink();
+      if (initialLink != null) {
+        _handleDeepLink(initialLink);
+      }
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Error getting initial deep link: $e');
+      }
+    }
+
+    // Listen for deep links while app is running
+    _deepLinkSubscription = _appLinks.uriLinkStream.listen(
+      (Uri uri) {
+        _handleDeepLink(uri);
+      },
+      onError: (err) {
+        if (Env.debug) {
+          debugPrint('Deep link error: $err');
+        }
+      },
+    );
+  }
+
+  /// Handle deep link navigation
+  void _handleDeepLink(Uri uri) {
+    if (Env.debug) {
+      debugPrint('Deep link received: $uri');
+    }
+
+    // Handle invitation links: /accept-invitation/{token}
+    if (uri.path.startsWith('/accept-invitation/')) {
+      final token = uri.pathSegments.last;
+      if (token.isNotEmpty && globalNavigatorKey.currentContext != null) {
+        Navigator.of(globalNavigatorKey.currentContext!).push(
+          MaterialPageRoute(
+            builder: (_) => AcceptInvitationScreen(token: token),
+          ),
+        );
+      }
+    }
+    // Handle payment links: /pay/{token} or /p/{token}
+    else if (uri.path.startsWith('/pay/') || uri.path.startsWith('/p/')) {
+      // TODO: Implement payment deep link handling
+      if (Env.debug) {
+        debugPrint('Payment link not yet implemented: ${uri.path}');
+      }
+    }
   }
 
   Future<void> _setupApp() async {

@@ -12,6 +12,7 @@ import '../../utils/theme.dart';
 import '../../widgets/payment_request_card.dart';
 import '../../pay_screen.dart';
 import 'add_member_sheet.dart';
+import 'send_invitation_sheet.dart';
 import 'group_form_sheet.dart';
 
 /// Group details screen showing members, billing cadence, and recent payments.
@@ -513,6 +514,22 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
     }
   }
 
+  Future<void> _showSendInvitationSheet() async {
+    if (!_isOwner) return;
+
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => SendInvitationSheet(
+        groupId: widget.groupId,
+      ),
+    );
+
+    if (result == true) {
+      await _loadGroupDetails();
+    }
+  }
+
   Future<void> _confirmDeleteGroup() async {
     if (!_isOwner) return;
 
@@ -624,6 +641,9 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
               icon: const Icon(Icons.more_vert_rounded),
               onSelected: (value) {
                 switch (value) {
+                  case 'send_invitation':
+                    _showSendInvitationSheet();
+                    break;
                   case 'add_member':
                     _showAddMemberSheet();
                     break;
@@ -634,13 +654,26 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
               },
               itemBuilder: (context) => [
                 PopupMenuItem(
+                  value: 'send_invitation',
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.mail_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: const Text('Send invitation'),
+                    subtitle: const Text('Invite via email'),
+                    dense: true,
+                  ),
+                ),
+                PopupMenuItem(
                   value: 'add_member',
                   child: ListTile(
                     leading: Icon(
                       Icons.person_add_alt_1_rounded,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: const Text('Add member'),
+                    title: const Text('Add member directly'),
+                    subtitle: const Text('No invitation sent'),
                     dense: true,
                   ),
                 ),

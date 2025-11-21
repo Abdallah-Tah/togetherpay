@@ -1,7 +1,7 @@
 name: togetherpay
 description: TogetherPay Mobile - P2P bill splitting with push notifications
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -30,6 +30,7 @@ dependencies:
 
   # Deep linking & URL launching (wallet apps)
   url_launcher: ^6.2.2
+  app_links: ^6.3.3
 
   # UI
   cupertino_icons: ^1.0.6
