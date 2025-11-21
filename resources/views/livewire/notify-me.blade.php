@@ -24,8 +24,18 @@ new class extends Component {
                 'was_existing' => !$notifyMe->wasRecentlyCreated
             ]);
 
-            Mail::to($this->email)->send(new NotifyMeConfirmation());
-            \Log::info('NotifyMe: Email queued for sending');
+            $recipientEmail = $this->email;
+            \Log::info('NotifyMe: About to queue email', [
+                'recipient' => $recipientEmail,
+                'queue_connection' => config('queue.default'),
+                'mail_driver' => config('mail.default'),
+            ]);
+
+            Mail::to($recipientEmail)->send(new NotifyMeConfirmation());
+
+            \Log::info('NotifyMe: Email queued successfully', [
+                'recipient' => $recipientEmail,
+            ]);
             
             // Show success toast via browser event
             $this->dispatch('show-toast', 
