@@ -59,11 +59,8 @@ echo "✅ Application cache cleared"
 php artisan route:clear
 echo "✅ Route cache cleared"
 
-php artisan view:clear
-echo "✅ View cache cleared"
-
 echo ""
-echo "📝 Step 4: Optimizing for production..."
+echo "📝 Step 4: Optimizing for production (API only)..."
 
 # Rebuild optimized caches
 php artisan config:cache
@@ -72,8 +69,8 @@ echo "✅ Config cached"
 php artisan route:cache
 echo "✅ Routes cached"
 
-php artisan view:cache
-echo "✅ Views cached"
+# Skip view cache - not needed for API
+echo "⏭️  Skipped view cache (API-only app)"
 
 echo ""
 echo "📝 Step 5: Verifying cache configuration..."
