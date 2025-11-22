@@ -83,7 +83,7 @@ state([
                             <p class="text-sm text-gray-600">Your data is protected</p>
                         </div>
                         <div class="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-100">
-                            <flux:icon.lightning-bolt class="mx-auto mb-3 size-8 text-purple-600" />
+                            <flux:icon.bolt class="mx-auto mb-3 size-8 text-purple-600" />
                             <h3 class="mb-1 font-semibold text-gray-900">Fast</h3>
                             <p class="text-sm text-gray-600">Optimized for performance</p>
                         </div>
