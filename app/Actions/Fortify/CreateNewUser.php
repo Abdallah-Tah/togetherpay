@@ -38,7 +38,7 @@ class CreateNewUser implements CreatesNewUsers
         ]);
 
         // Send welcome email
-        $user->notify(new WelcomeNotification());
+        $user->notify(new WelcomeNotification);
 
         return $user;
     }

@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Log;
 class SquareApiClient
 {
     private string $accessToken;
+
     private string $baseUrl;
+
     private string $version = '2025-01-23';
 
     public function __construct(User $user)
@@ -52,7 +54,7 @@ class SquareApiClient
         ];
 
         // Remove null values
-        $payload = array_filter($payload, fn($v) => $v !== null);
+        $payload = array_filter($payload, fn ($v) => $v !== null);
 
         Log::info('Square API: Creating customer', [
             'email' => $payload['email_address'] ?? 'N/A',
@@ -61,17 +63,17 @@ class SquareApiClient
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/customers', $payload);
+            ])->post($this->baseUrl.'/customers', $payload);
 
             if ($response->failed()) {
                 Log::error('Square API: Create customer failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-                throw new \Exception('Failed to create customer: ' . $response->body());
+                throw new \Exception('Failed to create customer: '.$response->body());
             }
 
             $customerId = $response->json('customer.id');
@@ -100,10 +102,10 @@ class SquareApiClient
         try {
             // Retrieve plan and include related variations directly from Square
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/catalog/batch-retrieve', [
+            ])->post($this->baseUrl.'/catalog/batch-retrieve', [
                 'object_ids' => [$planId],
                 'include_related_objects' => true,
             ]);
@@ -113,7 +115,7 @@ class SquareApiClient
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-                throw new \Exception('Failed to retrieve plan variations: ' . $response->body());
+                throw new \Exception('Failed to retrieve plan variations: '.$response->body());
             }
 
             $relatedObjects = $response->json('related_objects', []);
@@ -156,7 +158,7 @@ class SquareApiClient
         ];
 
         // Add card ID if provided (optional)
-        if (!empty($data['card_id'])) {
+        if (! empty($data['card_id'])) {
             $payload['card_id'] = $data['card_id'];
         }
 
@@ -169,17 +171,17 @@ class SquareApiClient
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/subscriptions', $payload);
+            ])->post($this->baseUrl.'/subscriptions', $payload);
 
             if ($response->failed()) {
                 Log::error('Square API: Create subscription failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-                throw new \Exception('Failed to create subscription: ' . $response->body());
+                throw new \Exception('Failed to create subscription: '.$response->body());
             }
 
             $subscriptionId = $response->json('subscription.id');
@@ -208,9 +210,9 @@ class SquareApiClient
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
-            ])->get($this->baseUrl . '/subscriptions/' . $subscriptionId);
+            ])->get($this->baseUrl.'/subscriptions/'.$subscriptionId);
 
             if ($response->failed()) {
                 Log::error('Square API: Get subscription failed', [
@@ -240,9 +242,9 @@ class SquareApiClient
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
-            ])->post($this->baseUrl . '/subscriptions/' . $subscriptionId . '/cancel');
+            ])->post($this->baseUrl.'/subscriptions/'.$subscriptionId.'/cancel');
 
             if ($response->failed()) {
                 Log::error('Square API: Cancel subscription failed', [
@@ -274,9 +276,9 @@ class SquareApiClient
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
-            ])->get($this->baseUrl . '/customers/' . $customerId);
+            ])->get($this->baseUrl.'/customers/'.$customerId);
 
             if ($response->failed()) {
                 Log::error('Square API: Get customer failed', [
@@ -307,17 +309,17 @@ class SquareApiClient
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/orders', $data);
+            ])->post($this->baseUrl.'/orders', $data);
 
             if ($response->failed()) {
                 Log::error('Square API: Create order failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-                throw new \Exception('Failed to create order: ' . $response->body());
+                throw new \Exception('Failed to create order: '.$response->body());
             }
 
             $orderId = $response->json('order.id');
@@ -347,17 +349,17 @@ class SquareApiClient
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/invoices', $data);
+            ])->post($this->baseUrl.'/invoices', $data);
 
             if ($response->failed()) {
                 Log::error('Square API: Create invoice failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-                throw new \Exception('Failed to create invoice: ' . $response->body());
+                throw new \Exception('Failed to create invoice: '.$response->body());
             }
 
             $invoice = $response->json('invoice');
@@ -391,17 +393,17 @@ class SquareApiClient
             ];
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/invoices/' . $invoiceId . '/publish', $payload);
+            ])->post($this->baseUrl.'/invoices/'.$invoiceId.'/publish', $payload);
 
             if ($response->failed()) {
                 Log::error('Square API: Publish invoice failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-                throw new \Exception('Failed to publish invoice: ' . $response->body());
+                throw new \Exception('Failed to publish invoice: '.$response->body());
             }
 
             $invoice = $response->json('invoice');
@@ -431,9 +433,9 @@ class SquareApiClient
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
-            ])->get($this->baseUrl . '/invoices/' . $invoiceId);
+            ])->get($this->baseUrl.'/invoices/'.$invoiceId);
 
             if ($response->failed()) {
                 Log::error('Square API: Get invoice failed', [
@@ -459,8 +461,8 @@ class SquareApiClient
      */
     public function createPlan(array $data): string
     {
-        $planId = '#' . $data['plan_name'] . '_' . uniqid();
-        $variationId = '#' . $data['plan_name'] . '_var_' . uniqid();
+        $planId = '#'.$data['plan_name'].'_'.uniqid();
+        $variationId = '#'.$data['plan_name'].'_var_'.uniqid();
 
         Log::info('Square API: Creating catalog subscription plan with variation', [
             'plan_name' => $data['plan_name'] ?? 'Monthly Subscription',
@@ -472,10 +474,10 @@ class SquareApiClient
         try {
             // Create plan and variation together in batch
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
                 'Square-Version' => $this->version,
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/catalog/batch-upsert', [
+            ])->post($this->baseUrl.'/catalog/batch-upsert', [
                 'idempotency_key' => $data['idempotency_key'] ?? uniqid('plan_'),
                 'batches' => [
                     [
@@ -535,7 +537,7 @@ class SquareApiClient
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-                throw new \Exception('Failed to create plan: ' . $response->body());
+                throw new \Exception('Failed to create plan: '.$response->body());
             }
 
             $responseData = $response->json();
@@ -553,7 +555,7 @@ class SquareApiClient
                 }
             }
 
-            if (!$createdPlanId || !$createdVariationId) {
+            if (! $createdPlanId || ! $createdVariationId) {
                 Log::warning('Square API: Missing IDs in batch response, attempting fallback retrieval', [
                     'plan_id' => $createdPlanId,
                     'variation_id' => $createdVariationId,
@@ -562,12 +564,12 @@ class SquareApiClient
                 $variations = $this->getPlanVariations($createdPlanId ?? $planId);
                 $createdVariationId = $createdVariationId ?? ($variations[0]['id'] ?? null);
 
-                if (!$createdPlanId && isset($variations[0]['subscription_plan_variation_data']['subscription_plan_id'])) {
+                if (! $createdPlanId && isset($variations[0]['subscription_plan_variation_data']['subscription_plan_id'])) {
                     $createdPlanId = $variations[0]['subscription_plan_variation_data']['subscription_plan_id'];
                 }
             }
 
-            if (!$createdPlanId || !$createdVariationId) {
+            if (! $createdPlanId || ! $createdVariationId) {
                 throw new \Exception('Failed to extract plan or variation ID from batch response or fallback lookup');
             }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Square;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentRequest;
+use App\Services\Square\SquareWebhookService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -22,11 +23,35 @@ use Illuminate\Support\Facades\Log;
  */
 class SquareWebhookController extends Controller
 {
+    public function __construct(
+        private SquareWebhookService $webhookService
+    ) {}
+
     /**
      * Handle incoming Square webhook
      */
     public function handle(Request $request)
     {
+        // Verify webhook signature if signing key is configured
+        $signature = $request->header('X-Square-Signature');
+        $timestamp = $request->header('X-Square-Hmacsha256-Timestamp');
+
+        if ($signature && $timestamp) {
+            $isValid = $this->webhookService->verifySignature(
+                $request->getContent(),
+                $signature,
+                $timestamp
+            );
+
+            if (! $isValid) {
+                Log::warning('Square webhook signature verification failed', [
+                    'ip' => $request->ip(),
+                ]);
+
+                return response()->json(['error' => 'Invalid signature'], 401);
+            }
+        }
+
         $eventType = $request->input('type');
         $data = $request->input('data', []);
 
@@ -52,10 +77,11 @@ class SquareWebhookController extends Controller
             Log::error('Square webhook handling failed', [
                 'event_type' => $eventType,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            // Return 200 anyway - we logged the error
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 200);
+            // Return 200 to prevent retries, but don't expose error details
+            return response()->json(['success' => false], 200);
         }
     }
 
@@ -68,8 +94,9 @@ class SquareWebhookController extends Controller
         $invoice = $data['object']['invoice'] ?? [];
         $invoiceId = $invoice['id'] ?? null;
 
-        if (!$invoiceId) {
+        if (! $invoiceId) {
             Log::warning('Invoice payment webhook missing invoice ID', $data);
+
             return;
         }
 
@@ -83,10 +110,10 @@ class SquareWebhookController extends Controller
         $paymentRequest = PaymentRequest::where('square_invoice_id', $invoiceId)->first();
 
         if ($paymentRequest) {
-            $paymentRequest->update([
-                'status' => 'auto_verified',
-                'verified_at' => now(),
-            ]);
+            // Get payment ID from invoice
+            $paymentId = $invoice['payment_requests'][0]['computed_amount_money']['amount'] ?? $invoiceId;
+
+            $paymentRequest->confirmViaSquare($paymentId);
 
             Log::info('Payment request marked as auto_verified', [
                 'payment_request_id' => $paymentRequest->id,
@@ -108,8 +135,9 @@ class SquareWebhookController extends Controller
         $invoice = $data['object']['invoice'] ?? [];
         $invoiceId = $invoice['id'] ?? null;
 
-        if (!$invoiceId) {
+        if (! $invoiceId) {
             Log::warning('Invoice charge failed webhook missing invoice ID', $data);
+
             return;
         }
 
@@ -141,8 +169,9 @@ class SquareWebhookController extends Controller
         $subscription = $data['object']['subscription'] ?? [];
         $subscriptionId = $subscription['id'] ?? null;
 
-        if (!$subscriptionId) {
+        if (! $subscriptionId) {
             Log::warning('Subscription charge succeeded webhook missing subscription ID', $data);
+
             return;
         }
 
@@ -156,10 +185,8 @@ class SquareWebhookController extends Controller
         $paymentRequest = PaymentRequest::where('square_subscription_id', $subscriptionId)->first();
 
         if ($paymentRequest) {
-            $paymentRequest->update([
-                'status' => 'auto_verified',
-                'verified_at' => now(),
-            ]);
+            // Use subscription ID as payment identifier
+            $paymentRequest->confirmViaSquare($subscriptionId);
 
             Log::info('Payment request marked as auto_verified', [
                 'payment_request_id' => $paymentRequest->id,
@@ -181,8 +208,9 @@ class SquareWebhookController extends Controller
         $subscription = $data['object']['subscription'] ?? [];
         $subscriptionId = $subscription['id'] ?? null;
 
-        if (!$subscriptionId) {
+        if (! $subscriptionId) {
             Log::warning('Subscription charge failed webhook missing subscription ID', $data);
+
             return;
         }
 

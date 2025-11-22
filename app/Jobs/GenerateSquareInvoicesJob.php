@@ -25,28 +25,29 @@ class GenerateSquareInvoicesJob implements ShouldQueue
 
     public function __construct(
         private BillingCycle $cycle
-    ) {
-    }
+    ) {}
 
     public function handle(SquareInvoiceService $invoiceService): void
     {
         $group = $this->cycle->group;
 
         // Only process auto_square groups
-        if (!$group->isAutoSquareMode()) {
+        if (! $group->isAutoSquareMode()) {
             Log::info('Skipping non-auto-square group', [
                 'group_id' => $group->id,
                 'billing_mode' => $group->billing_mode,
             ]);
+
             return;
         }
 
         // Owner must have Square connected
-        if (!$group->ownerHasSquare()) {
+        if (! $group->ownerHasSquare()) {
             Log::warning('Auto-square group has no Square account connected', [
                 'group_id' => $group->id,
                 'owner_id' => $group->owner_id,
             ]);
+
             return;
         }
 
@@ -71,14 +72,16 @@ class GenerateSquareInvoicesJob implements ShouldQueue
                         'member_id' => $member->id,
                         'payment_request_id' => $existingRequest->id,
                     ]);
+
                     continue;
                 }
 
                 // Ensure member has Square customer ID
-                if (!$member->square_customer_id) {
+                if (! $member->square_customer_id) {
                     Log::warning('Member missing Square customer ID', [
                         'member_id' => $member->id,
                     ]);
+
                     continue;
                 }
 
@@ -97,7 +100,7 @@ class GenerateSquareInvoicesJob implements ShouldQueue
                     'member_id' => $member->id,
                     'amount_cents' => $amountCents,
                     'method_hint' => $member->preferred_channel,
-                    'pr_code' => 'PR-' . strtoupper(Str::random(8)),
+                    'pr_code' => 'PR-'.strtoupper(Str::random(8)),
                     'note' => "{$group->name} - {$this->cycle->period_start->format('M Y')}",
                     'status' => 'sent',
                     'square_invoice_id' => $invoiceId,

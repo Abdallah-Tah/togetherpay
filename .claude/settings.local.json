@@ -49,7 +49,8 @@
       "Bash(qlmanage -t -s 1024 -o /Users/amohamed/Herd/togetherpay/mobile/assets/images/:*)",
       "Bash(sips:*)",
       "Bash(open:*)",
-      "Bash(.gitignore)"
+      "Bash(.gitignore)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

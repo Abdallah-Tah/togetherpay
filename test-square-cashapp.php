@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Square + Cash App Pay Test Script
  *
@@ -8,14 +9,13 @@
  * Run: php artisan tinker < test-square-cashapp.php
  */
 
-use App\Models\User;
+use App\Models\BillingCycle;
 use App\Models\Group;
 use App\Models\GroupMember;
-use App\Models\BillingCycle;
 use App\Models\PaymentRequest;
+use App\Models\User;
 use App\Services\Square\SquareCustomerService;
 use App\Services\Square\SquareSubscriptionService;
-use Illuminate\Support\Facades\Log;
 
 echo "\n=== Square + Cash App Pay Test ===\n\n";
 
@@ -29,7 +29,7 @@ $owner = User::factory()->create([
 
 // Simulate Square connection (in real flow, this would be done via OAuth)
 $owner->update([
-    'square_merchant_id' => 'TEST_MERCHANT_' . time(),
+    'square_merchant_id' => 'TEST_MERCHANT_'.time(),
     'square_access_token' => encrypt(config('square.access_token')),
     'square_location_id' => config('square.location_id') ?: 'MAIN',
     'square_connected_at' => now(),
@@ -53,7 +53,7 @@ $group = Group::factory()->create([
 
 echo "✓ Group created in auto_square mode\n";
 echo "  ID: {$group->id}, Name: {$group->name}\n";
-echo "  Total: $" . ($group->total_amount_cents / 100) . "\n";
+echo '  Total: $'.($group->total_amount_cents / 100)."\n";
 echo "  Billing Mode: {$group->billing_mode}\n\n";
 
 // Step 3: Create test member with Cash App
@@ -81,7 +81,7 @@ echo "✓ Member created with Cash App\n";
 echo "  ID: {$member->id}, User: {$memberUser->name}\n";
 echo "  Channel: {$member->preferred_channel}\n";
 echo "  Cash Tag: {$member->cash_tag}\n";
-echo "  Share: {$member->share_value}% = $" . ($member->calculateAmount($group->total_amount_cents) / 100) . "\n\n";
+echo "  Share: {$member->share_value}% = $".($member->calculateAmount($group->total_amount_cents) / 100)."\n\n";
 
 // Step 4: Create billing cycle
 echo "Step 4: Creating billing cycle...\n";
@@ -121,14 +121,14 @@ try {
 
     // For testing, we'll use a mock customer ID
     $member->update([
-        'square_customer_id' => 'MOCK_CUSTOMER_' . time(),
+        'square_customer_id' => 'MOCK_CUSTOMER_'.time(),
     ]);
     echo "  Using mock customer ID for testing: {$member->square_customer_id}\n\n";
 }
 
 // Step 6: Create Square Cash App invoice (auto-pay)
-echo "Step 6: Creating Square Cash App Pay invoice...
-";
+echo 'Step 6: Creating Square Cash App Pay invoice...
+';
 try {
     $subscriptionService = app(SquareSubscriptionService::class);
 
@@ -141,29 +141,29 @@ try {
         'square_subscription_created_at' => now(),
     ]);
 
-    echo "✓ Square Cash App invoice created
-";
+    echo '✓ Square Cash App invoice created
+';
     echo "  Invoice ID: {$subscriptionId}
 ";
     if ($publicUrl) {
         echo "  Public URL: {$publicUrl}
 ";
     }
-    echo "  Amount: $" . ($member->calculateAmount($group->total_amount_cents) / 100) . "/month
-";
-    echo "  Payment Method: Cash App Pay
+    echo '  Amount: $'.($member->calculateAmount($group->total_amount_cents) / 100).'/month
+';
+    echo '  Payment Method: Cash App Pay
 
-";
+';
 } catch (\Exception $e) {
     echo "✗ Failed to create Square Cash App invoice: {$e->getMessage()}
 ";
-    echo "  This is expected in test mode if Square API credentials are not configured.
+    echo '  This is expected in test mode if Square API credentials are not configured.
 
-";
+';
 
     // For testing, we'll use a mock subscription ID
     $member->update([
-        'square_subscription_id' => 'MOCK_SUB_' . time(),
+        'square_subscription_id' => 'MOCK_SUB_'.time(),
         'square_subscription_created_at' => now(),
     ]);
     echo "  Using mock subscription ID for testing: {$member->square_subscription_id}
@@ -179,17 +179,17 @@ $paymentRequest = PaymentRequest::create([
     'member_id' => $member->id,
     'amount_cents' => $member->calculateAmount($group->total_amount_cents),
     'method_hint' => 'CASH_APP',
-    'pr_code' => 'PR-' . strtoupper(substr(md5(uniqid()), 0, 8)),
+    'pr_code' => 'PR-'.strtoupper(substr(md5(uniqid()), 0, 8)),
     'note' => "Netflix Premium - {$cycle->period_start->format('M Y')}",
     'status' => 'pending',
-    'square_invoice_id' => 'INV_' . time(), // Would be from Square API
+    'square_invoice_id' => 'INV_'.time(), // Would be from Square API
     'initiated_at' => now(),
 ]);
 
 echo "✓ Payment request created\n";
 echo "  ID: {$paymentRequest->id}\n";
 echo "  Code: {$paymentRequest->pr_code}\n";
-echo "  Amount: $" . ($paymentRequest->amount_cents / 100) . "\n";
+echo '  Amount: $'.($paymentRequest->amount_cents / 100)."\n";
 echo "  Status: {$paymentRequest->status}\n";
 echo "  Square Invoice: {$paymentRequest->square_invoice_id}\n\n";
 
@@ -197,7 +197,7 @@ echo "  Square Invoice: {$paymentRequest->square_invoice_id}\n\n";
 echo "Step 8: Simulating Square webhook payment confirmation...\n";
 sleep(1);
 
-$squarePaymentId = 'PAY_' . strtoupper(substr(md5(uniqid()), 0, 12));
+$squarePaymentId = 'PAY_'.strtoupper(substr(md5(uniqid()), 0, 12));
 $paymentRequest->confirmViaSquare($squarePaymentId);
 
 echo "✓ Payment confirmed via Square webhook\n";
@@ -209,9 +209,9 @@ echo "  Confirmed At: {$paymentRequest->square_confirmed_at->format('Y-m-d H:i:s
 $cycle->refresh();
 echo "Step 9: Verifying billing cycle updated...\n";
 echo "✓ Cycle collected amount updated\n";
-echo "  Total Amount: $" . ($cycle->total_amount_cents / 100) . "\n";
-echo "  Collected: $" . ($cycle->total_collected_cents / 100) . "\n";
-echo "  Remaining: $" . (($cycle->total_amount_cents - $cycle->total_collected_cents) / 100) . "\n\n";
+echo '  Total Amount: $'.($cycle->total_amount_cents / 100)."\n";
+echo '  Collected: $'.($cycle->total_collected_cents / 100)."\n";
+echo '  Remaining: $'.(($cycle->total_amount_cents - $cycle->total_collected_cents) / 100)."\n\n";
 
 // Step 10: Summary
 echo "=== Test Summary ===\n";

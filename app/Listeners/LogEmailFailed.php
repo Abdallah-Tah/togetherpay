@@ -15,7 +15,7 @@ class LogEmailFailed
         $message = $event->message;
 
         // Get recipients
-        $to = collect($message->getTo())->map(fn($addr) => $addr->getAddress())->implode(', ');
+        $to = collect($message->getTo())->map(fn ($addr) => $addr->getAddress())->implode(', ');
         $subject = $message->getSubject();
 
         // Log failed email send

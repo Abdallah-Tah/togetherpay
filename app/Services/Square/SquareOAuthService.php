@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
  */
 class SquareOAuthService
 {
-    public function getAuthorizationUrl(string $state = null): string
+    public function getAuthorizationUrl(?string $state = null): string
     {
         $state = $state ?? Str::random(40);
         $config = config('payment_requests.square');
@@ -31,7 +31,7 @@ class SquareOAuthService
             ? 'https://connect.squareup.com/oauth2/authorize'
             : 'https://connect.squareupsandbox.com/oauth2/authorize';
 
-        $authUrl = $baseUrl . '?' . http_build_query($params);
+        $authUrl = $baseUrl.'?'.http_build_query($params);
 
         Log::info('Square OAuth: Generating authorization URL', [
             'mode' => $mode,
@@ -70,7 +70,7 @@ class SquareOAuthService
             'mode' => $mode,
             'token_url' => $tokenUrl,
             'client_id' => $oauthConfig['client_id'],
-            'code' => substr($code, 0, 10) . '...', // Log first 10 chars for security
+            'code' => substr($code, 0, 10).'...', // Log first 10 chars for security
             'redirect_uri' => $oauthConfig['redirect_uri'],
         ]);
 
@@ -82,20 +82,20 @@ class SquareOAuthService
                 'response_body' => $response->body(),
                 'request_payload' => [
                     'client_id' => $oauthConfig['client_id'],
-                    'code' => substr($code, 0, 10) . '...',
+                    'code' => substr($code, 0, 10).'...',
                     'redirect_uri' => $oauthConfig['redirect_uri'],
                 ],
             ]);
-            throw new \Exception('Failed to exchange code for token: ' . $response->body());
+            throw new \Exception('Failed to exchange code for token: '.$response->body());
         }
 
         $responseData = $response->json();
         Log::info('Square OAuth: Token exchange successful', [
             'merchant_id' => $responseData['merchant_id'] ?? null,
-            'access_token' => substr($responseData['access_token'] ?? '', 0, 10) . '...', // Log first 10 chars
+            'access_token' => substr($responseData['access_token'] ?? '', 0, 10).'...', // Log first 10 chars
             'token_type' => $responseData['token_type'] ?? null,
             'expires_in' => $responseData['expires_in'] ?? null,
-            'refresh_token' => isset($responseData['refresh_token']) ? substr($responseData['refresh_token'], 0, 10) . '...' : null,
+            'refresh_token' => isset($responseData['refresh_token']) ? substr($responseData['refresh_token'], 0, 10).'...' : null,
         ]);
 
         return $responseData;
@@ -125,7 +125,7 @@ class SquareOAuthService
             'mode' => $mode,
             'token_url' => $tokenUrl,
             'client_id' => $oauthConfig['client_id'],
-            'refresh_token' => substr($refreshToken, 0, 10) . '...', // Log first 10 chars for security
+            'refresh_token' => substr($refreshToken, 0, 10).'...', // Log first 10 chars for security
         ]);
 
         $response = Http::post($tokenUrl, $payload);
@@ -135,12 +135,12 @@ class SquareOAuthService
                 'status' => $response->status(),
                 'response_body' => $response->body(),
             ]);
-            throw new \Exception('Failed to refresh token: ' . $response->body());
+            throw new \Exception('Failed to refresh token: '.$response->body());
         }
 
         $responseData = $response->json();
         Log::info('Square OAuth: Token refresh successful', [
-            'access_token' => substr($responseData['access_token'] ?? '', 0, 10) . '...',
+            'access_token' => substr($responseData['access_token'] ?? '', 0, 10).'...',
             'token_type' => $responseData['token_type'] ?? null,
             'expires_in' => $responseData['expires_in'] ?? null,
         ]);
@@ -170,7 +170,7 @@ class SquareOAuthService
             'mode' => $mode,
             'revoke_url' => $revokeUrl,
             'client_id' => $oauthConfig['client_id'],
-            'access_token' => substr($accessToken, 0, 10) . '...', // Log first 10 chars for security
+            'access_token' => substr($accessToken, 0, 10).'...', // Log first 10 chars for security
         ]);
 
         $response = Http::post($revokeUrl, $payload);
@@ -207,7 +207,7 @@ class SquareOAuthService
         Log::info('Square OAuth: Fetching merchant info via /me endpoint', [
             'mode' => $mode,
             'endpoint' => $meUrl,
-            'access_token' => substr($accessToken, 0, 10) . '...', // Log first 10 chars for security
+            'access_token' => substr($accessToken, 0, 10).'...', // Log first 10 chars for security
         ]);
 
         $response = Http::withToken($accessToken)->get($meUrl);
@@ -218,11 +218,12 @@ class SquareOAuthService
                 'merchant_id' => $merchantData['merchant']['id'] ?? null,
                 'merchant_name' => $merchantData['merchant']['business_name'] ?? null,
                 'location_count' => count($merchantData['merchant']['locations'] ?? []),
-                'locations' => array_map(fn($loc) => [
+                'locations' => array_map(fn ($loc) => [
                     'id' => $loc['id'] ?? null,
                     'name' => $loc['name'] ?? null,
                 ], $merchantData['merchant']['locations'] ?? []),
             ]);
+
             return $merchantData;
         }
 
@@ -245,6 +246,7 @@ class SquareOAuthService
             Log::info('Square OAuth: Merchant list fetched via fallback endpoint', [
                 'merchant_count' => count($merchantsData['merchants'] ?? []),
             ]);
+
             return $merchantsData;
         }
 
@@ -257,7 +259,7 @@ class SquareOAuthService
         // If both endpoints fail, return an empty structure with a warning
         // This allows OAuth to continue without merchant info
         Log::warning('Square OAuth: Unable to fetch merchant info, continuing without it', [
-            'access_token' => substr($accessToken, 0, 10) . '...',
+            'access_token' => substr($accessToken, 0, 10).'...',
         ]);
 
         return [

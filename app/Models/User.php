@@ -378,7 +378,7 @@ class User extends Authenticatable
      */
     public function setPreferredBillingMode(string $mode): void
     {
-        if (!in_array($mode, ['manual', 'auto_square'])) {
+        if (! in_array($mode, ['manual', 'auto_square'])) {
             throw new \InvalidArgumentException("Invalid billing mode: {$mode}");
         }
 

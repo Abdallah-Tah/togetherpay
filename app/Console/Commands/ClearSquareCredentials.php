@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class ClearSquareCredentials extends Command
 {
     protected $signature = 'square:clear-credentials {--user-id=1 : The user ID to clear}';
+
     protected $description = 'Clear Square credentials for a user to allow re-authentication';
 
     public function handle(): void
@@ -15,8 +16,9 @@ class ClearSquareCredentials extends Command
         $userId = $this->option('user-id');
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             $this->error("User {$userId} not found");
+
             return;
         }
 

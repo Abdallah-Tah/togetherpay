@@ -17,14 +17,15 @@ class SquareWebhookService
     {
         $signingKey = config('payment_requests.square.webhook.signing_key');
 
-        if (!$signingKey) {
+        if (! $signingKey) {
             Log::warning('Square webhook signing key not configured');
+
             return false;
         }
 
         // Construct the signed content
         $url = config('payment_requests.square.webhook.endpoint');
-        $signedContent = $url . $body . $timestamp;
+        $signedContent = $url.$body.$timestamp;
 
         // Compute HMAC
         $hash = hash_hmac('sha256', $signedContent, $signingKey, true);
@@ -40,24 +41,27 @@ class SquareWebhookService
     {
         $invoice = $data['data']['object']['invoice'] ?? null;
 
-        if (!$invoice) {
+        if (! $invoice) {
             Log::warning('Invalid invoice payment made webhook data', $data);
+
             return;
         }
 
         $invoiceId = $invoice['id'];
         $paymentId = $invoice['payment_requests'][0]['payment_ids'][0] ?? null;
 
-        if (!$paymentId) {
+        if (! $paymentId) {
             Log::warning('No payment ID in invoice payment made', $data);
+
             return;
         }
 
         // Find payment request by Square invoice ID
         $paymentRequest = PaymentRequest::where('square_invoice_id', $invoiceId)->first();
 
-        if (!$paymentRequest) {
+        if (! $paymentRequest) {
             Log::warning('Payment request not found for Square invoice', ['invoice_id' => $invoiceId]);
+
             return;
         }
 
@@ -85,8 +89,9 @@ class SquareWebhookService
     {
         $payment = $data['data']['object']['payment'] ?? null;
 
-        if (!$payment) {
+        if (! $payment) {
             Log::warning('Invalid payment updated webhook data', $data);
+
             return;
         }
 
@@ -96,14 +101,16 @@ class SquareWebhookService
         // Only process completed payments
         if ($status !== 'COMPLETED') {
             Log::info('Payment not completed, skipping', ['status' => $status]);
+
             return;
         }
 
         // Find payment request by Square payment ID
         $paymentRequest = PaymentRequest::where('square_payment_id', $squarePaymentId)->first();
 
-        if (!$paymentRequest) {
+        if (! $paymentRequest) {
             Log::warning('Payment request not found for Square payment', ['payment_id' => $squarePaymentId]);
+
             return;
         }
 
@@ -130,8 +137,9 @@ class SquareWebhookService
     {
         $subscription = $data['data']['object']['subscription'] ?? null;
 
-        if (!$subscription) {
+        if (! $subscription) {
             Log::warning('Invalid subscription updated webhook data', $data);
+
             return;
         }
 

@@ -1,7 +1,6 @@
 <?php
 
 use App\Jobs\CloseCyclesJob;
-use App\Jobs\CreateAutoSquareSubscriptionsJob;
 use App\Jobs\CreateUpcomingCyclesJob;
 use App\Jobs\GeneratePaymentRequestsJob;
 use App\Jobs\GenerateSquareInvoicesJob;
@@ -25,10 +24,10 @@ Schedule::call(function () {
         now()->addDays(2)->startOfDay(),
         now()->addDays(2)->endOfDay(),
     ])
-    ->where('status', 'active')
-    ->whereHas('group', fn($q) => $q->where('billing_mode', 'auto_square'))
-    ->whereDoesntHave('paymentRequests')
-    ->each(fn($cycle) => GenerateSquareInvoicesJob::dispatch($cycle));
+        ->where('status', 'active')
+        ->whereHas('group', fn ($q) => $q->where('billing_mode', 'auto_square'))
+        ->whereDoesntHave('paymentRequests')
+        ->each(fn ($cycle) => GenerateSquareInvoicesJob::dispatch($cycle));
 })->dailyAt('09:00')->name('generate-square-invoices');
 
 Schedule::job(new ProcessDunningJob)->dailyAt('10:00')->name('process-dunning-morning');

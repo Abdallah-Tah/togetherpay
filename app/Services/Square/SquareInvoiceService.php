@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 class SquareInvoiceService
 {
     private SquareOrderService $orderService;
+
     private SquareApiClient $client;
 
     /**
@@ -21,16 +22,16 @@ class SquareInvoiceService
      */
     public function createInvoiceForMember(GroupMember $member, User $owner, BillingCycle $cycle): array
     {
-        if (!$member->square_customer_id) {
-            throw new \Exception("Member does not have a Square customer ID");
+        if (! $member->square_customer_id) {
+            throw new \Exception('Member does not have a Square customer ID');
         }
 
-        if (!$owner->square_location_id) {
-            throw new \Exception("Owner does not have a Square location ID");
+        if (! $owner->square_location_id) {
+            throw new \Exception('Owner does not have a Square location ID');
         }
 
         $this->client = new SquareApiClient($owner);
-        $this->orderService = new SquareOrderService();
+        $this->orderService = new SquareOrderService;
 
         // Calculate the member's share
         $amountCents = $member->calculateAmount($cycle->total_amount_cents);
@@ -40,12 +41,12 @@ class SquareInvoiceService
         $orderId = $this->orderService->createOrder(
             $owner,
             $amountCents,
-            "Group contribution for cycle " . $cycle->id
+            'Group contribution for cycle '.$cycle->id
         );
 
         // Step 2: Create the invoice with the order
         $invoiceData = [
-            'idempotency_key' => 'invoice_' . Str::random(12),
+            'idempotency_key' => 'invoice_'.Str::random(12),
             'invoice' => [
                 'location_id' => $owner->square_location_id,
                 'order_id' => $orderId,
@@ -89,6 +90,7 @@ class SquareInvoiceService
     public function getInvoice(string $invoiceId, User $owner): array
     {
         $this->client = new SquareApiClient($owner);
+
         return $this->client->getInvoice($invoiceId);
     }
 }

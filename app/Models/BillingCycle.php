@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Jobs\CreateAutoSquareInvoices;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BillingCycle extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'group_id',
         'period_start',

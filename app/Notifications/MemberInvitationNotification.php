@@ -45,7 +45,7 @@ class MemberInvitationNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $invitationUrl = config('app.frontend_url')
-            ? config('app.frontend_url') . "/register?token={$this->token}"
+            ? config('app.frontend_url')."/register?token={$this->token}"
             : url("/register?token={$this->token}");
 
         return (new MailMessage)
@@ -59,7 +59,7 @@ class MemberInvitationNotification extends Notification implements ShouldQueue
             ->line('• Get notified when payments are due')
             ->action('Complete Registration', $invitationUrl)
             ->line('Click the button above to set up your account with a password and start receiving payment requests.')
-            ->line("This invitation link will expire in 7 days.")
+            ->line('This invitation link will expire in 7 days.')
             ->salutation('Thanks,
 The TogetherPay Team');
     }
@@ -75,7 +75,7 @@ The TogetherPay Team');
             'invited_by' => $this->invitedBy->name,
             'token' => $this->token,
             'action_url' => config('app.frontend_url')
-                ? config('app.frontend_url') . "/register?token={$this->token}"
+                ? config('app.frontend_url')."/register?token={$this->token}"
                 : url("/register?token={$this->token}"),
         ];
     }

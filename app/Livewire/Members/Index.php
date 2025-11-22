@@ -69,13 +69,13 @@ class Index extends Component
             $query->where(function ($subQuery) {
                 $subQuery
                     ->whereHas('user', function ($userQuery) {
-                        $userQuery->where('name', 'like', '%' . $this->search . '%')
-                            ->orWhere('email', 'like', '%' . $this->search . '%');
+                        $userQuery->where('name', 'like', '%'.$this->search.'%')
+                            ->orWhere('email', 'like', '%'.$this->search.'%');
                     })
                     ->orWhereHas('group', function ($groupQuery) {
-                        $groupQuery->where('name', 'like', '%' . $this->search . '%');
+                        $groupQuery->where('name', 'like', '%'.$this->search.'%');
                     })
-                    ->orWhere('preferred_channel', 'like', '%' . $this->search . '%');
+                    ->orWhere('preferred_channel', 'like', '%'.$this->search.'%');
             });
         }
 
@@ -105,7 +105,7 @@ class Index extends Component
                 'string',
                 Rule::requiredIf($this->formPreferredChannel === 'VENMO'),
                 function ($attribute, $value, $fail) {
-                    if ($this->formPreferredChannel !== 'VENMO' && !empty($value)) {
+                    if ($this->formPreferredChannel !== 'VENMO' && ! empty($value)) {
                         $fail('Venmo username must be empty unless Venmo is selected.');
                     }
                 },
@@ -114,7 +114,7 @@ class Index extends Component
                 'nullable',
                 'string',
                 function ($attribute, $value, $fail) {
-                    if ($this->formPreferredChannel !== 'CASH_APP' && !empty($value)) {
+                    if ($this->formPreferredChannel !== 'CASH_APP' && ! empty($value)) {
                         $fail('Cash App tag must be empty unless Cash App is selected.');
                     }
                 },
@@ -123,7 +123,7 @@ class Index extends Component
                 'nullable',
                 'string',
                 function ($attribute, $value, $fail) {
-                    if ($this->formPreferredChannel !== 'CASH_APP' && !empty($value)) {
+                    if ($this->formPreferredChannel !== 'CASH_APP' && ! empty($value)) {
                         $fail('Cash App phone must be empty unless Cash App is selected.');
                     }
                 },
@@ -132,7 +132,7 @@ class Index extends Component
                 'nullable',
                 'email',
                 function ($attribute, $value, $fail) {
-                    if ($this->formPreferredChannel !== 'CASH_APP' && !empty($value)) {
+                    if ($this->formPreferredChannel !== 'CASH_APP' && ! empty($value)) {
                         $fail('Cash App email must be empty unless Cash App is selected.');
                     }
                 },
@@ -317,7 +317,7 @@ class Index extends Component
     public function editMember(int $memberId): void
     {
         $member = GroupMember::where('id', $memberId)
-            ->whereHas('group', fn($q) => $q->where('owner_id', auth()->id()))
+            ->whereHas('group', fn ($q) => $q->where('owner_id', auth()->id()))
             ->with(['group', 'user'])
             ->firstOrFail();
 
@@ -346,7 +346,7 @@ class Index extends Component
         $this->validate();
 
         $member = GroupMember::where('id', $this->editingMemberId)
-            ->whereHas('group', fn($q) => $q->where('owner_id', auth()->id()))
+            ->whereHas('group', fn ($q) => $q->where('owner_id', auth()->id()))
             ->firstOrFail();
 
         // Ensure only relevant payment handle fields are saved based on channel
@@ -373,7 +373,7 @@ class Index extends Component
     public function confirmRemoval(int $memberId): void
     {
         $member = GroupMember::where('id', $memberId)
-            ->whereHas('group', fn($q) => $q->where('owner_id', auth()->id()))
+            ->whereHas('group', fn ($q) => $q->where('owner_id', auth()->id()))
             ->firstOrFail();
 
         $this->editingMemberId = $member->id;
@@ -387,7 +387,7 @@ class Index extends Component
         }
 
         $member = GroupMember::where('id', $this->editingMemberId)
-            ->whereHas('group', fn($q) => $q->where('owner_id', auth()->id()))
+            ->whereHas('group', fn ($q) => $q->where('owner_id', auth()->id()))
             ->firstOrFail();
 
         $member->update(['status' => 'left']);

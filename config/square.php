@@ -23,7 +23,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'oauth' => [
-        'redirect_uri' => env('SQUARE_OAUTH_REDIRECT_URI', env('APP_URL') . '/square/callback'),
+        'redirect_uri' => env('SQUARE_OAUTH_REDIRECT_URI', env('APP_URL').'/square/callback'),
     ],
 
     /*

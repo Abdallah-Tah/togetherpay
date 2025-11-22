@@ -15,7 +15,7 @@ class LogEmailSent
         $message = $event->sent->getSymfonySentMessage()->getOriginalMessage();
 
         // Get recipients
-        $to = collect($message->getTo())->map(fn($addr) => $addr->getAddress())->implode(', ');
+        $to = collect($message->getTo())->map(fn ($addr) => $addr->getAddress())->implode(', ');
         $subject = $message->getSubject();
 
         // Get notification type if available

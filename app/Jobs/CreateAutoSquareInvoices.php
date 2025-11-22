@@ -22,9 +22,7 @@ class CreateAutoSquareInvoices implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(private BillingCycle $cycle)
-    {
-    }
+    public function __construct(private BillingCycle $cycle) {}
 
     public function handle(): void
     {
@@ -33,21 +31,23 @@ class CreateAutoSquareInvoices implements ShouldQueue
         // Only process auto_square groups
         if ($group->billing_mode !== 'auto_square') {
             Log::info('Skipping non-auto_square group', ['group_id' => $group->id]);
+
             return;
         }
 
         $owner = $group->owner;
 
         // Verify owner has Square connection
-        if (!$owner->hasSquareAccount()) {
+        if (! $owner->hasSquareAccount()) {
             Log::error('Owner missing Square connection', [
                 'owner_id' => $owner->id,
                 'group_id' => $group->id,
             ]);
+
             return;
         }
 
-        $customerService = new SquareCustomerService();
+        $customerService = new SquareCustomerService;
         $subscriptionService = app(SquareSubscriptionService::class);
 
         Log::info('Starting Cash App invoice generation for cycle', [
@@ -68,11 +68,12 @@ class CreateAutoSquareInvoices implements ShouldQueue
                         'member_id' => $member->id,
                         'payment_request_id' => $existingRequest->id,
                     ]);
+
                     continue;
                 }
 
                 // Step 1: Ensure member has Square customer ID
-                if (!$member->square_customer_id) {
+                if (! $member->square_customer_id) {
                     Log::info('Creating Square customer for member', [
                         'member_id' => $member->id,
                         'group_id' => $group->id,
@@ -106,7 +107,7 @@ class CreateAutoSquareInvoices implements ShouldQueue
                     'member_id' => $member->id,
                     'amount_cents' => $amountCents,
                     'method_hint' => 'CASH_APP',
-                    'pr_code' => 'PR-' . strtoupper(Str::random(8)),
+                    'pr_code' => 'PR-'.strtoupper(Str::random(8)),
                     'note' => "{$group->name} - {$this->cycle->period_start->format('M Y')}",
                     'status' => 'sent',
                     'square_invoice_id' => $invoiceId,

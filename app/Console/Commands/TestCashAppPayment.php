@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Models\BillingCycle;
 use App\Models\Group;
 use App\Models\GroupMember;
-use App\Models\BillingCycle;
 use App\Models\PaymentRequest;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -27,9 +27,10 @@ class TestCashAppPayment extends Command
         $cashTag = ltrim($cashTag, '$');
         if (empty($cashTag)) {
             $this->error('Cash App tag cannot be empty!');
+
             return;
         }
-        $cashTag = '$' . $cashTag;
+        $cashTag = '$'.$cashTag;
 
         $this->info('╔════════════════════════════════════════════════════════════════╗');
         $this->info('║        Creating Direct Cash App Payment Request                ║');
@@ -38,7 +39,7 @@ class TestCashAppPayment extends Command
 
         // Find owner
         $owner = User::whereNotNull('square_merchant_id')->first();
-        if (!$owner) {
+        if (! $owner) {
             $owner = User::first();
         }
 
@@ -49,7 +50,7 @@ class TestCashAppPayment extends Command
         $this->info('Step 1: Creating test group...');
         $group = Group::create([
             'owner_id' => $owner->id,
-            'name' => 'Cash App Test - ' . now()->format('H:i:s'),
+            'name' => 'Cash App Test - '.now()->format('H:i:s'),
             'description' => 'Testing direct Cash App payment requests',
             'total_amount_cents' => (int) ($amount * 100),
             'billing_mode' => 'manual',
@@ -84,7 +85,7 @@ class TestCashAppPayment extends Command
             'verified_at' => now(),
         ]);
 
-        $this->line("✓ Member created");
+        $this->line('✓ Member created');
         $this->line("  Name: {$memberName}");
         $this->line("  Email: {$memberEmail}");
         $this->line("  Cash App: {$cashTag}");
@@ -103,7 +104,7 @@ class TestCashAppPayment extends Command
             'status' => 'active',
         ]);
 
-        $this->line("✓ Billing cycle created");
+        $this->line('✓ Billing cycle created');
         $this->newLine();
 
         // Generate Cash App deep-link
@@ -136,7 +137,7 @@ class TestCashAppPayment extends Command
             'sent_at' => now(),
         ]);
 
-        $this->line("✓ Payment request created");
+        $this->line('✓ Payment request created');
         $this->line("  PR ID: {$paymentRequest->id}");
         $this->newLine();
 
@@ -145,40 +146,40 @@ class TestCashAppPayment extends Command
         $this->info('╚════════════════════════════════════════════════════════════════╝');
         $this->newLine();
 
-        $this->line("<fg=yellow>Payment Details:</>");
+        $this->line('<fg=yellow>Payment Details:</>');
         $this->line("  Recipient: {$cashTag}");
         $this->line("  Amount: \${$amount}");
         $this->line("  Note: Group payment - {$group->name}");
         $this->newLine();
 
-        $this->line("<fg=green>💳 How to Send Payment:</>");
+        $this->line('<fg=green>💳 How to Send Payment:</>');
         $this->newLine();
 
-        $this->line("<fg=cyan>Option 1: Mobile (Recommended)</>");
-        $this->line("  1. Open this URL on your phone:");
+        $this->line('<fg=cyan>Option 1: Mobile (Recommended)</>');
+        $this->line('  1. Open this URL on your phone:');
         $this->line("  <fg=bright-blue>{$deepLink}</>");
-        $this->line("  2. Cash App will open with payment pre-filled");
-        $this->line("  3. Swipe to confirm and send");
+        $this->line('  2. Cash App will open with payment pre-filled');
+        $this->line('  3. Swipe to confirm and send');
         $this->newLine();
 
-        $this->line("<fg=cyan>Option 2: Web Browser</>");
-        $this->line("  1. Open this link:");
+        $this->line('<fg=cyan>Option 2: Web Browser</>');
+        $this->line('  1. Open this link:');
         $this->line("  <fg=bright-blue>{$webLink}</>");
         $this->line("  2. Or open Cash App and search for {$cashTag}");
         $this->line("  3. Enter amount: \${$amount}");
-        $this->line("  4. Swipe to confirm");
+        $this->line('  4. Swipe to confirm');
         $this->newLine();
 
-        $this->line("<fg=cyan>Option 3: Manual in Cash App</>");
-        $this->line("  1. Open Cash App");
-        $this->line("  2. Tap the \$\$ button (send money)");
+        $this->line('<fg=cyan>Option 3: Manual in Cash App</>');
+        $this->line('  1. Open Cash App');
+        $this->line('  2. Tap the $$ button (send money)');
         $this->line("  3. Search for: {$cashTag}");
         $this->line("  4. Enter amount: \${$amount}");
-        $this->line("  5. Add note: Group payment");
-        $this->line("  6. Swipe to send");
+        $this->line('  5. Add note: Group payment');
+        $this->line('  6. Swipe to send');
         $this->newLine();
 
-        $this->line("<fg=yellow>📊 Test Data:</>");
+        $this->line('<fg=yellow>📊 Test Data:</>');
         $this->line("  Owner: {$owner->name}");
         $this->line("  Group ID: {$group->id}");
         $this->line("  Member: {$memberName}");
@@ -187,14 +188,14 @@ class TestCashAppPayment extends Command
         $this->newLine();
 
         $this->info('Next Steps:');
-        $this->line("  1. Click/copy one of the links above");
-        $this->line("  2. Open it on your phone (Cash App must be installed)");
-        $this->line("  3. Confirm the payment details");
-        $this->line("  4. Swipe to send the payment");
-        $this->line("  5. Payment will be marked as completed");
+        $this->line('  1. Click/copy one of the links above');
+        $this->line('  2. Open it on your phone (Cash App must be installed)');
+        $this->line('  3. Confirm the payment details');
+        $this->line('  4. Swipe to send the payment');
+        $this->line('  5. Payment will be marked as completed');
         $this->newLine();
 
-        $this->line("<fg=cyan>Track payment status:</>");
+        $this->line('<fg=cyan>Track payment status:</>');
         $this->line("  Group ID: {$group->id}");
         $this->line("  DB: payment_requests table, ID {$paymentRequest->id}");
         $this->newLine();

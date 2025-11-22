@@ -15,15 +15,15 @@ class SquareOrderService
      * Create an order for a billing charge
      * Returns the order ID to be used in invoice creation
      */
-    public function createOrder(User $owner, int $amountCents, string $description = null): string
+    public function createOrder(User $owner, int $amountCents, ?string $description = null): string
     {
-        if (!$owner->square_location_id) {
-            throw new \Exception("Owner does not have a Square location ID");
+        if (! $owner->square_location_id) {
+            throw new \Exception('Owner does not have a Square location ID');
         }
 
         $client = new SquareApiClient($owner);
 
-        $idempotencyKey = 'order_' . Str::random(12);
+        $idempotencyKey = 'order_'.Str::random(12);
 
         $payload = [
             'idempotency_key' => $idempotencyKey,

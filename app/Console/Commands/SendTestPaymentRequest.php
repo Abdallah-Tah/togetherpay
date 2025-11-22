@@ -27,7 +27,7 @@ class SendTestPaymentRequest extends Command
 
         $this->line("Payment Request: {$paymentRequest->pr_code}");
         $this->line("To: {$memberUser->name} ({$memberUser->email})");
-        $this->line("Amount: $" . ($paymentRequest->amount_cents / 100));
+        $this->line('Amount: $'.($paymentRequest->amount_cents / 100));
         $this->line("Group: {$group->name}");
         $this->line("Channel: {$member->preferred_channel}");
         $this->newLine();
@@ -49,8 +49,8 @@ class SendTestPaymentRequest extends Command
 
         $this->line('📱 Push Notification:');
         $this->line("   Title: Payment Request from {$group->name}");
-        $this->line("   Body: Please pay $" . ($paymentRequest->amount_cents / 100) . " for {$group->name}");
-        $this->line("   Action: Opens Cash App with pre-filled payment");
+        $this->line('   Body: Please pay $'.($paymentRequest->amount_cents / 100)." for {$group->name}");
+        $this->line('   Action: Opens Cash App with pre-filled payment');
         $this->newLine();
 
         $this->line('📧 Email:');
@@ -61,7 +61,7 @@ class SendTestPaymentRequest extends Command
 
         $this->line('💬 SMS:');
         $this->line("   To: {$memberUser->phone}");
-        $this->line("   Message: Pay $" . ($paymentRequest->amount_cents / 100) . " for {$group->name}");
+        $this->line('   Message: Pay $'.($paymentRequest->amount_cents / 100)." for {$group->name}");
         $this->line("   Link: {$paymentRequest->deep_link}");
         $this->newLine();
 

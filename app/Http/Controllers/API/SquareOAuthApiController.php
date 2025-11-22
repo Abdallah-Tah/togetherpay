@@ -11,9 +11,7 @@ use Illuminate\Support\Str;
 
 class SquareOAuthApiController extends Controller
 {
-    public function __construct(private SquareOAuthService $oauthService)
-    {
-    }
+    public function __construct(private SquareOAuthService $oauthService) {}
 
     /**
      * Generate a Square authorization URL for the authenticated user.

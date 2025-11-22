@@ -7,7 +7,6 @@ use App\Models\BillingCycle;
 use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class TestAutoSquareCash extends Command
@@ -22,9 +21,10 @@ class TestAutoSquareCash extends Command
         $this->info('This will create a real test using your connected Square account');
         $this->newLine();
 
-        if (!$this->option('force')) {
-            if (!$this->confirm('Continue with test?')) {
+        if (! $this->option('force')) {
+            if (! $this->confirm('Continue with test?')) {
                 $this->info('Cancelled.');
+
                 return;
             }
         }
@@ -34,9 +34,10 @@ class TestAutoSquareCash extends Command
             ->whereNotNull('square_merchant_id')
             ->first();
 
-        if (!$owner) {
+        if (! $owner) {
             $this->error('No user with connected Square account found!');
             $this->line('Please connect your Square account first in settings.');
+
             return;
         }
 
@@ -49,7 +50,7 @@ class TestAutoSquareCash extends Command
         $this->info('Step 1: Creating test group with auto_square billing...');
         $group = Group::create([
             'owner_id' => $owner->id,
-            'name' => 'Auto-Square Test - ' . now()->format('H:i:s'),
+            'name' => 'Auto-Square Test - '.now()->format('H:i:s'),
             'description' => 'Real test of Square auto-cash collection',
             'total_amount_cents' => 1000, // $10.00
             'billing_mode' => 'auto_square',
@@ -59,7 +60,7 @@ class TestAutoSquareCash extends Command
 
         $this->line("✓ Group created: {$group->name}");
         $this->line("  Group ID: {$group->id}");
-        $this->line("  Billing Mode: auto_square");
+        $this->line('  Billing Mode: auto_square');
         $this->newLine();
 
         // Step 2: Add test members (you as a member)
@@ -69,14 +70,14 @@ class TestAutoSquareCash extends Command
         $testMembers = [
             [
                 'name' => 'Test Member 1',
-                'email' => 'test1-' . time() . '@togetherpay.local',
+                'email' => 'test1-'.time().'@togetherpay.local',
                 'phone' => '+12065551001',
                 'cash_tag' => '$TestMember1',
                 'share' => 500, // $5.00
             ],
             [
                 'name' => 'Test Member 2',
-                'email' => 'test2-' . time() . '@togetherpay.local',
+                'email' => 'test2-'.time().'@togetherpay.local',
                 'phone' => '+12065551002',
                 'cash_tag' => '$TestMember2',
                 'share' => 500, // $5.00
@@ -127,9 +128,9 @@ class TestAutoSquareCash extends Command
             'status' => 'active',
         ]);
 
-        $this->line("✓ Billing cycle created");
+        $this->line('✓ Billing cycle created');
         $this->line("  Cycle ID: {$cycle->id}");
-        $this->line("  Total Amount: \$10.00");
+        $this->line('  Total Amount: $10.00');
         $this->line("  Due Date: {$cycle->due_at->format('M d, Y')}");
         $this->newLine();
 
@@ -140,7 +141,7 @@ class TestAutoSquareCash extends Command
         try {
             CreateAutoSquareInvoices::dispatch($cycle);
 
-            $this->line("✓ Job dispatched successfully!");
+            $this->line('✓ Job dispatched successfully!');
             $this->newLine();
 
             $this->info('=== What Happens Next ===');

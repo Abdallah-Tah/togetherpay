@@ -14,9 +14,7 @@ use Illuminate\Support\Str;
 
 class SquareOAuthController extends Controller
 {
-    public function __construct(private SquareOAuthService $oauthService)
-    {
-    }
+    public function __construct(private SquareOAuthService $oauthService) {}
 
     /**
      * Redirect user to Square OAuth authorization
@@ -28,7 +26,7 @@ class SquareOAuthController extends Controller
 
         Log::info('Square OAuth: Initiating authorization flow', [
             'user_id' => $user->id,
-            'state' => substr($state, 0, 10) . '...', // Log first 10 chars for security
+            'state' => substr($state, 0, 10).'...', // Log first 10 chars for security
         ]);
 
         // Store state in session for verification
@@ -40,7 +38,7 @@ class SquareOAuthController extends Controller
 
         Log::info('Square OAuth: Redirecting to Square authorization', [
             'user_id' => $user->id,
-            'auth_url_prefix' => substr($authUrl, 0, 50) . '...', // Log first 50 chars
+            'auth_url_prefix' => substr($authUrl, 0, 50).'...', // Log first 50 chars
         ]);
 
         return redirect($authUrl);
@@ -58,18 +56,18 @@ class SquareOAuthController extends Controller
 
         logger()->info('Square OAuth: Callback received', [
             'user_id' => $sessionUser?->id,
-            'has_code' => !empty($code),
-            'has_state' => !empty($state),
-            'has_error' => !empty($error),
+            'has_code' => ! empty($code),
+            'has_state' => ! empty($state),
+            'has_error' => ! empty($error),
             'error_message' => $error,
-            'code_prefix' => $code ? substr($code, 0, 10) . '...' : null,
-            'state_prefix' => $state ? substr($state, 0, 10) . '...' : null,
+            'code_prefix' => $code ? substr($code, 0, 10).'...' : null,
+            'state_prefix' => $state ? substr($state, 0, 10).'...' : null,
         ]);
 
         // Check for errors
         if ($error) {
             logger()->warning('Square OAuth: Authorization error returned', [
-                'state' => $state ? substr($state, 0, 10) . '...' : null,
+                'state' => $state ? substr($state, 0, 10).'...' : null,
                 'error' => $error,
             ]);
 
@@ -91,8 +89,8 @@ class SquareOAuthController extends Controller
 
         if (! $stateData) {
             logger()->warning('Square OAuth: State mismatch detected', [
-                'received_state' => $state ? substr($state, 0, 10) . '...' : null,
-                'session_state' => $sessionState ? substr($sessionState, 0, 10) . '...' : null,
+                'received_state' => $state ? substr($state, 0, 10).'...' : null,
+                'session_state' => $sessionState ? substr($sessionState, 0, 10).'...' : null,
             ]);
 
             return redirect()
@@ -127,7 +125,7 @@ class SquareOAuthController extends Controller
             $locationId = null;
             if (isset($merchantInfo['merchant']) && isset($merchantInfo['merchant']['locations'])) {
                 $locations = $merchantInfo['merchant']['locations'];
-                if (!empty($locations)) {
+                if (! empty($locations)) {
                     $locationId = $locations[0]['id'] ?? null;
                     logger()->info('Square OAuth: Location selected', [
                         'user_id' => $user->id,
@@ -192,7 +190,7 @@ class SquareOAuthController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->hasSquareAccount()) {
+        if (! $user->hasSquareAccount()) {
             return redirect()
                 ->route('square-account.edit')
                 ->with('error', 'No Square account connected');

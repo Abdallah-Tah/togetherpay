@@ -84,7 +84,7 @@ class TestCashAppPaymentLink extends Command
             'member_id' => $member->id,
             'amount_cents' => 500,
             'method_hint' => 'CASH_APP',
-            'pr_code' => 'PR-' . strtoupper(substr(md5(uniqid()), 0, 8)),
+            'pr_code' => 'PR-'.strtoupper(substr(md5(uniqid()), 0, 8)),
             'note' => "Netflix - {$cycle->period_start->format('M Y')}",
             'deep_link' => $deepLink,
             'status' => 'sent',
@@ -100,7 +100,7 @@ class TestCashAppPaymentLink extends Command
         $this->line("<fg=yellow>PR Code:</> {$paymentRequest->pr_code}");
         $this->line("<fg=yellow>From (Owner):</> {$owner->name} (\$IkramBarkad)");
         $this->line("<fg=yellow>To (Member):</> {$memberUser->name} (\$AbdallahTM)");
-        $this->line("<fg=yellow>Amount:</> \$5.00");
+        $this->line('<fg=yellow>Amount:</> $5.00');
         $this->newLine();
 
         $this->info('=== CASH APP PAYMENT LINK ===');

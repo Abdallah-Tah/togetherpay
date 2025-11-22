@@ -42,8 +42,9 @@ class Settings extends Component
         ]);
 
         // If switching to auto_square, verify user has Square connected
-        if ($this->billing_mode === 'auto_square' && !auth()->user()->hasSquareAccount()) {
+        if ($this->billing_mode === 'auto_square' && ! auth()->user()->hasSquareAccount()) {
             $this->addError('billing_mode', 'You must connect your Square account before enabling automatic billing.');
+
             return;
         }
 

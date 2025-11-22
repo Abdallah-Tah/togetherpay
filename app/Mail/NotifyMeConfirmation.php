@@ -15,7 +15,9 @@ class NotifyMeConfirmation extends Mailable implements ShouldQueue
     use Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 120;
+
     public $recipient;
 
     /**

@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\API\LoginRequest;
 use App\Http\Requests\API\RegisterRequest;
+use App\Models\User;
 use App\Notifications\WelcomeNotification;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -29,7 +29,7 @@ class AuthController extends Controller
         ]);
 
         // Send welcome email
-        $user->notify(new WelcomeNotification());
+        $user->notify(new WelcomeNotification);
 
         $token = $user->createToken('mobile-app')->plainTextToken;
 
@@ -160,7 +160,7 @@ class AuthController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'email' => 'sometimes|email|unique:users,email,'.$user->id,
             'phone' => 'sometimes|string|nullable',
             'cash_tag' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^\$?[A-Za-z0-9_-]+$/'],
             'cash_phone' => ['sometimes', 'nullable', 'string', 'max:255'],

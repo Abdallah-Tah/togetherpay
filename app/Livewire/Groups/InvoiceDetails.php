@@ -16,6 +16,7 @@ class InvoiceDetails extends Component
     use AuthorizesRequests;
 
     public Group $group;
+
     public string $activeTab = 'all';
 
     public function mount(Group $group): void
@@ -46,19 +47,19 @@ class InvoiceDetails extends Component
     #[Computed]
     public function paidRequests()
     {
-        return $this->allPaymentRequests->filter(fn($pr) => $pr->status === 'paid');
+        return $this->allPaymentRequests->filter(fn ($pr) => $pr->status === 'paid');
     }
 
     #[Computed]
     public function pendingRequests()
     {
-        return $this->allPaymentRequests->filter(fn($pr) => $pr->status === 'pending');
+        return $this->allPaymentRequests->filter(fn ($pr) => $pr->status === 'pending');
     }
 
     #[Computed]
     public function failedRequests()
     {
-        return $this->allPaymentRequests->filter(fn($pr) => $pr->status === 'failed');
+        return $this->allPaymentRequests->filter(fn ($pr) => $pr->status === 'failed');
     }
 
     #[Computed]
@@ -111,7 +112,7 @@ class InvoiceDetails extends Component
             Log::error('Failed to download Square invoice', [
                 'error' => $e->getMessage(),
             ]);
-            $this->dispatch('error', 'Failed to download invoice: ' . $e->getMessage());
+            $this->dispatch('error', 'Failed to download invoice: '.$e->getMessage());
         }
     }
 
@@ -135,7 +136,7 @@ class InvoiceDetails extends Component
             Log::error('Failed to generate receipt', [
                 'error' => $e->getMessage(),
             ]);
-            $this->dispatch('error', 'Failed to generate receipt: ' . $e->getMessage());
+            $this->dispatch('error', 'Failed to generate receipt: '.$e->getMessage());
         }
     }
 

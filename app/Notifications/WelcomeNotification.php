@@ -42,7 +42,7 @@ class WelcomeNotification extends Notification implements ShouldQueue
 
         $introLine = $this->isInvitation
             ? "Your account has been successfully created and you've been added to your group."
-            : "Your TogetherPay account has been successfully created!";
+            : 'Your TogetherPay account has been successfully created!';
 
         return (new MailMessage)
             ->subject('Welcome to TogetherPay')

@@ -26,12 +26,12 @@ class TestSquareCashAppPayment extends Command
         $this->info('Step 1: Setting up owner with Square account...');
         $owner = User::factory()->create([
             'name' => 'Test Owner',
-            'email' => 'owner-' . time() . '@test.com',
+            'email' => 'owner-'.time().'@test.com',
             'phone' => '+1234567890',
         ]);
 
         $owner->update([
-            'square_merchant_id' => 'TEST_MERCHANT_' . time(),
+            'square_merchant_id' => 'TEST_MERCHANT_'.time(),
             'square_access_token' => encrypt(config('square.access_token')),
             'square_location_id' => config('square.location_id') ?: 'MAIN',
             'square_connected_at' => now(),
@@ -45,7 +45,7 @@ class TestSquareCashAppPayment extends Command
         $this->info('Step 2: Creating auto_square billing group...');
         $group = Group::create([
             'owner_id' => $owner->id,
-            'name' => 'Netflix Squad ' . time(),
+            'name' => 'Netflix Squad '.time(),
             'description' => 'Premium Netflix subscription split',
             'total_amount_cents' => 2499,
             'billing_mode' => 'auto_square',
@@ -54,7 +54,7 @@ class TestSquareCashAppPayment extends Command
         ]);
 
         $this->line("✓ Group created: {$group->name}");
-        $this->line("  Total: $" . ($group->total_amount_cents / 100));
+        $this->line('  Total: $'.($group->total_amount_cents / 100));
         $this->line("  Billing Mode: {$group->billing_mode}");
         $this->newLine();
 
@@ -62,7 +62,7 @@ class TestSquareCashAppPayment extends Command
         $this->info('Step 3: Creating test member with Cash App...');
         $memberUser = User::factory()->create([
             'name' => 'Test Member',
-            'email' => 'member-' . time() . '@test.com',
+            'email' => 'member-'.time().'@test.com',
             'phone' => '+1987654321',
         ]);
 
@@ -83,7 +83,7 @@ class TestSquareCashAppPayment extends Command
         $this->line("✓ Member created: {$memberUser->email}");
         $this->line("  Channel: {$member->preferred_channel}");
         $this->line("  Cash Tag: {$member->cash_tag}");
-        $this->line("  Share: {$member->share_value}% = $" . ($memberAmount / 100));
+        $this->line("  Share: {$member->share_value}% = $".($memberAmount / 100));
         $this->newLine();
 
         // Step 4: Create billing cycle
@@ -113,7 +113,7 @@ class TestSquareCashAppPayment extends Command
             $this->line("✓ Square customer created: {$customerId}");
         } catch (\Exception $e) {
             $this->warn("Square API call failed: {$e->getMessage()}");
-            $member->update(['square_customer_id' => 'MOCK_CUSTOMER_' . time()]);
+            $member->update(['square_customer_id' => 'MOCK_CUSTOMER_'.time()]);
             $this->line("  Using mock customer ID: {$member->square_customer_id}");
         }
         $this->newLine();
@@ -133,12 +133,12 @@ class TestSquareCashAppPayment extends Command
             if ($publicUrl) {
                 $this->line("  Public URL: {$publicUrl}");
             }
-            $this->line("  Amount: $" . ($memberAmount / 100) . "/month");
-            $this->line("  Payment Method: Cash App Pay");
+            $this->line('  Amount: $'.($memberAmount / 100).'/month');
+            $this->line('  Payment Method: Cash App Pay');
         } catch (\Exception $e) {
             $this->warn("Square API call failed: {$e->getMessage()}");
             $member->update([
-                'square_subscription_id' => 'MOCK_SUB_' . time(),
+                'square_subscription_id' => 'MOCK_SUB_'.time(),
                 'square_subscription_created_at' => now(),
             ]);
             $this->line("  Using mock subscription ID: {$member->square_subscription_id}");
@@ -153,25 +153,25 @@ class TestSquareCashAppPayment extends Command
             'member_id' => $member->id,
             'amount_cents' => $memberAmount,
             'method_hint' => 'CASH_APP',
-            'pr_code' => 'PR-' . strtoupper(substr(md5(uniqid()), 0, 8)),
+            'pr_code' => 'PR-'.strtoupper(substr(md5(uniqid()), 0, 8)),
             'note' => "Netflix Premium - {$cycle->period_start->format('M Y')}",
             'status' => 'pending',
-            'square_invoice_id' => 'INV_' . time(),
+            'square_invoice_id' => 'INV_'.time(),
             'initiated_at' => now(),
         ]);
 
         $this->line("✓ Payment request created: {$paymentRequest->pr_code}");
-        $this->line("  Amount: $" . ($paymentRequest->amount_cents / 100));
+        $this->line('  Amount: $'.($paymentRequest->amount_cents / 100));
         $this->line("  Status: {$paymentRequest->status}");
         $this->line("  Square Invoice: {$paymentRequest->square_invoice_id}");
         $this->newLine();
 
         // Step 8: Simulate webhook
         $this->info('Step 8: Simulating Square webhook payment confirmation...');
-        $squarePaymentId = 'PAY_' . strtoupper(substr(md5(uniqid()), 0, 12));
+        $squarePaymentId = 'PAY_'.strtoupper(substr(md5(uniqid()), 0, 12));
         $paymentRequest->confirmViaSquare($squarePaymentId);
 
-        $this->line("✓ Payment confirmed via Square webhook");
+        $this->line('✓ Payment confirmed via Square webhook');
         $this->line("  Square Payment ID: {$squarePaymentId}");
         $this->line("  Status: {$paymentRequest->status}");
         $this->line("  Confirmed: {$paymentRequest->square_confirmed_at->format('Y-m-d H:i:s')}");
@@ -180,10 +180,10 @@ class TestSquareCashAppPayment extends Command
         // Step 9: Verify cycle
         $cycle->refresh();
         $this->info('Step 9: Verifying billing cycle updated...');
-        $this->line("✓ Cycle collection updated");
-        $this->line("  Total: $" . ($cycle->total_amount_cents / 100));
-        $this->line("  Collected: $" . ($cycle->total_collected_cents / 100));
-        $this->line("  Remaining: $" . (($cycle->total_amount_cents - $cycle->total_collected_cents) / 100));
+        $this->line('✓ Cycle collection updated');
+        $this->line('  Total: $'.($cycle->total_amount_cents / 100));
+        $this->line('  Collected: $'.($cycle->total_collected_cents / 100));
+        $this->line('  Remaining: $'.(($cycle->total_amount_cents - $cycle->total_collected_cents) / 100));
         $this->newLine();
 
         // Summary
@@ -218,7 +218,7 @@ class TestSquareCashAppPayment extends Command
 
         $this->info('Test completed successfully!');
         $this->newLine();
-        $this->comment("Test data IDs for inspection:");
+        $this->comment('Test data IDs for inspection:');
         $this->line("  Owner ID: {$owner->id}");
         $this->line("  Group ID: {$group->id}");
         $this->line("  Member ID: {$member->id}");

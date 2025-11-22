@@ -18,7 +18,7 @@ class SquareCustomerService
         $client = new SquareApiClient($owner);
 
         return $client->createCustomer([
-            'idempotency_key' => uniqid('gm_' . $member->id . '_'),
+            'idempotency_key' => uniqid('gm_'.$member->id.'_'),
             'given_name' => $member->user->name ?? 'Member',
             'email_address' => $member->user->email,
             'phone_number' => $member->user->phone,
@@ -32,6 +32,7 @@ class SquareCustomerService
     public function getCustomer(string $customerId, User $owner): array
     {
         $client = new SquareApiClient($owner);
+
         return $client->getCustomer($customerId);
     }
 }

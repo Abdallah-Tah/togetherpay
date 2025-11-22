@@ -13,9 +13,7 @@ use App\Models\User;
  */
 class SquareSubscriptionService
 {
-    public function __construct(private SquareInvoiceService $invoiceService)
-    {
-    }
+    public function __construct(private SquareInvoiceService $invoiceService) {}
 
     /**
      * Create a Cash App Pay invoice for this cycle/member.
@@ -23,12 +21,12 @@ class SquareSubscriptionService
      */
     public function createSubscription(GroupMember $member, User $owner, BillingCycle $cycle): array
     {
-        if (!$member->square_customer_id) {
-            throw new \Exception("Member does not have a Square customer ID");
+        if (! $member->square_customer_id) {
+            throw new \Exception('Member does not have a Square customer ID');
         }
 
-        if (!$owner->square_location_id) {
-            throw new \Exception("Owner does not have a Square location ID");
+        if (! $owner->square_location_id) {
+            throw new \Exception('Owner does not have a Square location ID');
         }
 
         return $this->invoiceService->createInvoiceForMember($member, $owner, $cycle);
@@ -49,6 +47,7 @@ class SquareSubscriptionService
     public function getSubscription(string $subscriptionId, User $owner): array
     {
         $client = new SquareApiClient($owner);
+
         return $client->getSubscription($subscriptionId);
     }
 }
