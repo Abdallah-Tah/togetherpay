@@ -15,8 +15,8 @@ title('Terms of Service - TogetherPay');
     <!-- Header -->
     <div class="relative pt-32 pb-12 overflow-hidden">
         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full z-0 pointer-events-none">
-            <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-500/5 rounded-full blur-[120px] animate-pulse-slow"></div>
-            <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent-purple/5 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 2s"></div>
+            <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-400/5 dark:bg-brand-500/5 rounded-full blur-[120px] animate-pulse-slow"></div>
+            <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-brand-300/5 dark:bg-accent-teal/5 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 2s"></div>
         </div>
 
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">

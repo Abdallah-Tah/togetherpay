@@ -7,17 +7,21 @@ title('How It Works - TogetherPay');
 
 ?>
 
-<div class="min-h-screen bg-zinc-50 dark:bg-zinc-950 selection:bg-brand-500 selection:text-white overflow-x-hidden">
+<div class="min-h-screen selection:bg-brand-500 selection:text-white overflow-x-hidden">
     <!-- Navbar -->
     <!-- Navbar -->
     <x-guest-navbar />
 
     <!-- Hero Section -->
     <div class="relative pt-32 pb-20 lg:pt-40 lg:pb-24 overflow-hidden">
-        <!-- Background Effects -->
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full z-0 pointer-events-none">
-            <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-500/10 rounded-full blur-[120px] animate-pulse-slow"></div>
-            <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent-purple/10 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 2s"></div>
+        <!-- Animated Background Layers -->
+        <div class="bg-animated-aurora"></div>
+        <div class="bg-animated-grid"></div>
+
+        <!-- Floating Orbs -->
+        <div class="bg-floating-orbs">
+            <div class="floating-orb floating-orb-1"></div>
+            <div class="floating-orb floating-orb-3"></div>
         </div>
 
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -86,10 +90,10 @@ title('How It Works - TogetherPay');
             <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center mb-32" data-stagger>
                 <div class="fade-in-up" data-stagger-item>
                     <div class="inline-flex items-center gap-3 mb-6">
-                        <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-accent-purple to-accent-pink text-white font-bold text-xl shadow-lg shadow-accent-purple/30">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-accent-teal to-accent-amber text-white font-bold text-xl shadow-lg shadow-accent-teal/30">
                             2
                         </div>
-                        <span class="text-sm font-semibold text-accent-purple dark:text-accent-pink uppercase tracking-wider">Step Two</span>
+                        <span class="text-sm font-semibold text-accent-teal dark:text-accent-amber uppercase tracking-wider">Step Two</span>
                     </div>
                     <h2 class="text-4xl font-bold text-zinc-900 dark:text-white mb-6">
                         Add Members
@@ -99,24 +103,24 @@ title('How It Works - TogetherPay');
                     </p>
                     <ul class="space-y-4">
                         <li class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-accent-purple/10 dark:bg-accent-purple/20 flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-accent-teal/10 dark:bg-accent-teal/20 flex items-center justify-center mt-0.5">
+                                <svg class="w-4 h-4 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                             </div>
                             <span class="text-zinc-700 dark:text-zinc-300">Send email invitations instantly</span>
                         </li>
                         <li class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-accent-purple/10 dark:bg-accent-purple/20 flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-accent-teal/10 dark:bg-accent-teal/20 flex items-center justify-center mt-0.5">
+                                <svg class="w-4 h-4 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                             </div>
                             <span class="text-zinc-700 dark:text-zinc-300">Set individual amounts for each member</span>
                         </li>
                         <li class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-accent-purple/10 dark:bg-accent-purple/20 flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-accent-teal/10 dark:bg-accent-teal/20 flex items-center justify-center mt-0.5">
+                                <svg class="w-4 h-4 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                             </div>
@@ -361,7 +365,7 @@ title('How It Works - TogetherPay');
 
     <!-- CTA Section -->
     <div class="relative py-20 lg:py-32 overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-brand-500 via-brand-600 to-accent-purple opacity-10"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-brand-500 via-brand-600 to-accent-teal opacity-10"></div>
         <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-white mb-6">
                 Ready to Split Bills Smarter?

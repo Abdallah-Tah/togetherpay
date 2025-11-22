@@ -43,10 +43,39 @@
     /* Deepest background */
 
     /* Accent Colors */
-    --color-accent-purple: #10b981;
-    /* Changed to emerald green */
-    --color-accent-pink: #ec4899;
-    --color-accent-blue: #3b82f6;
+    /* Accent Colors */
+    --color-accent-teal: #0f766e;
+    /* Deep Teal */
+    --color-accent-amber: #f59e0b;
+    /* Amber/Orange */
+    --color-accent-blue: #0ea5e9;
+    /* Sky Blue */
+
+    /* Warning Colors (Amber) */
+    --color-warning-50: #fffbeb;
+    --color-warning-100: #fef3c7;
+    --color-warning-200: #fde68a;
+    --color-warning-300: #fcd34d;
+    --color-warning-400: #fbbf24;
+    --color-warning-500: #f59e0b;
+    --color-warning-600: #d97706;
+    --color-warning-700: #b45309;
+    --color-warning-800: #92400e;
+    --color-warning-900: #78350f;
+    --color-warning-950: #451a03;
+
+    /* Success Colors (Emerald) */
+    --color-success-50: #ecfdf5;
+    --color-success-100: #d1fae5;
+    --color-success-200: #a7f3d0;
+    --color-success-300: #6ee7b7;
+    --color-success-400: #34d399;
+    --color-success-500: #10b981;
+    --color-success-600: #059669;
+    --color-success-700: #047857;
+    --color-success-800: #065f46;
+    --color-success-900: #064e3b;
+    --color-success-950: #022c22;
 
     --color-zinc-850: #1f1f22;
     --color-zinc-925: #121214;
@@ -75,7 +104,7 @@
     }
 
     body {
-        @apply bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-500;
+        @apply bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-500;
     }
 
     /* Custom Scrollbar */
@@ -94,13 +123,13 @@
 
 @layer components {
 
-    /* Premium Glassmorphism */
+    /* Premium Glassmorphism - Softer Shadows */
     .glass-premium {
-        @apply bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/5 shadow-xl;
+        @apply bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl border border-zinc-200/60 dark:border-white/5 shadow-xl shadow-zinc-900/5 dark:shadow-black/30;
     }
 
     .glass-card {
-        @apply bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-lg hover:shadow-xl transition-all duration-300;
+        @apply bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-700/30 shadow-lg shadow-zinc-900/5 dark:shadow-black/20 hover:shadow-xl hover:shadow-zinc-900/10 dark:hover:shadow-black/30 transition-all duration-300;
     }
 
     /* Buttons */
@@ -118,29 +147,108 @@
     }
 
     .btn-secondary-glass {
-        @apply inline-flex items-center justify-center px-8 py-4 bg-white/10 dark:bg-white/5 backdrop-blur-md border border-zinc-200/50 dark:border-white/10 text-zinc-900 dark:text-white font-semibold rounded-2xl hover:bg-white/20 dark:hover:bg-white/10 hover:-translate-y-1 transition-all duration-300 ease-out;
+        @apply inline-flex items-center justify-center px-8 py-4 bg-zinc-50 dark:bg-white/5 backdrop-blur-md border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white font-semibold rounded-2xl hover:bg-zinc-100 dark:hover:bg-white/10 hover:-translate-y-1 transition-all duration-300 ease-out;
     }
 
-    /* Text Gradients */
+    /* Text Gradients - More Refined */
     .text-gradient-hero {
-        @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-accent-purple to-white;
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-700 via-brand-600 to-brand-700 dark:from-brand-300 dark:via-brand-400 dark:to-brand-300;
         background-size: 200% 200%;
         animation: gradient-x 8s ease infinite;
     }
 
     .text-gradient-sub {
-        @apply bg-clip-text text-transparent bg-gradient-to-r from-zinc-900 via-zinc-700 to-zinc-900 dark:from-white dark:via-zinc-400 dark:to-white;
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-zinc-700 via-zinc-600 to-zinc-700 dark:from-zinc-200 dark:via-zinc-300 dark:to-zinc-200;
     }
 
     /* Background Gradients */
 
+    /* Animated Aurora Background - Darker & More Subtle */
+    .bg-animated-aurora {
+        @apply fixed inset-0 -z-50;
+        background:
+            radial-gradient(at 0% 0%, rgba(20, 184, 166, 0.08) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(45, 212, 191, 0.06) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(20, 184, 166, 0.08) 0px, transparent 50%),
+            radial-gradient(at 0% 100%, rgba(45, 212, 191, 0.06) 0px, transparent 50%),
+            linear-gradient(to bottom right, #f9fafb, #f3f4f6);
+        background-size: 200% 200%;
+        animation: aurora-flow 8s ease infinite alternate;
+    }
+
+    .dark .bg-animated-aurora {
+        background:
+            radial-gradient(at 0% 0%, rgba(20, 184, 166, 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(13, 148, 136, 0.12) 0px, transparent 50%),
+            linear-gradient(to bottom right, #09090b, #18181b);
+    }
+
+    /* Animated Mesh Grid Background */
+    .bg-animated-grid {
+        @apply fixed inset-0 -z-40;
+        background-image:
+            linear-gradient(rgba(20, 184, 166, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(20, 184, 166, 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        animation: grid-move 20s linear infinite;
+    }
+
+    .dark .bg-animated-grid {
+        background-image:
+            linear-gradient(rgba(20, 184, 166, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(20, 184, 166, 0.05) 1px, transparent 1px);
+    }
+
+    /* Floating Orbs Background */
+    .bg-floating-orbs {
+        @apply fixed inset-0 -z-30 overflow-hidden pointer-events-none;
+    }
+
+    .floating-orb {
+        @apply absolute rounded-full blur-3xl opacity-20;
+        animation: float-orb 20s ease-in-out infinite;
+    }
+
+    .floating-orb-1 {
+        @apply w-96 h-96 bg-brand-400;
+        top: 10%;
+        left: 10%;
+        animation-delay: 0s;
+    }
+
+    .floating-orb-2 {
+        @apply w-80 h-80 bg-brand-500;
+        top: 60%;
+        right: 15%;
+        animation-delay: 5s;
+    }
+
+    .floating-orb-3 {
+        @apply w-72 h-72 bg-brand-600;
+        bottom: 15%;
+        left: 50%;
+        animation-delay: 10s;
+    }
+
+    /* Animated Dots Background */
+    .bg-dots-pattern {
+        @apply fixed inset-0 -z-45;
+        background-image: radial-gradient(circle, rgba(20, 184, 166, 0.15) 1px, transparent 1px);
+        background-size: 20px 20px;
+        animation: dots-drift 60s linear infinite;
+    }
+
+    .dark .bg-dots-pattern {
+        background-image: radial-gradient(circle, rgba(20, 184, 166, 0.08) 1px, transparent 1px);
+    }
 
     .bg-gradient-mesh {
+        /* Deprecated in favor of aurora, keeping for fallback */
         background-image:
-            radial-gradient(at 0% 0%, rgba(var(--color-brand-500), 0.15) 0px, transparent 50%),
-            radial-gradient(at 100% 0%, rgba(var(--color-accent-purple), 0.15) 0px, transparent 50%),
-            radial-gradient(at 100% 100%, rgba(var(--color-accent-pink), 0.15) 0px, transparent 50%),
-            radial-gradient(at 0% 100%, rgba(var(--color-brand-400), 0.15) 0px, transparent 50%);
+            radial-gradient(at 0% 0%, rgba(var(--color-brand-300), 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(var(--color-brand-400), 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(var(--color-accent-blue), 0.1) 0px, transparent 50%),
+            radial-gradient(at 0% 100%, rgba(var(--color-brand-300), 0.15) 0px, transparent 50%);
     }
 }
 
@@ -200,6 +308,16 @@
 
         50% {
             background-position: 100% 50%;
+        }
+    }
+
+    @keyframes aurora-flow {
+        0% {
+            background-position: 0% 0%;
+        }
+
+        100% {
+            background-position: 100% 100%;
         }
     }
 
@@ -272,6 +390,36 @@
 
         100% {
             opacity: 1;
+        }
+    }
+
+    @keyframes grid-move {
+        0% {
+            background-position: 0 0;
+        }
+        100% {
+            background-position: 50px 50px;
+        }
+    }
+
+    @keyframes float-orb {
+        0%, 100% {
+            transform: translate(0, 0) scale(1);
+        }
+        33% {
+            transform: translate(30px, -30px) scale(1.1);
+        }
+        66% {
+            transform: translate(-20px, 20px) scale(0.9);
+        }
+    }
+
+    @keyframes dots-drift {
+        0% {
+            transform: translate(0, 0);
+        }
+        100% {
+            transform: translate(20px, 20px);
         }
     }
 

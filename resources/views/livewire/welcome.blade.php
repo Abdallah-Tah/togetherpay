@@ -7,18 +7,22 @@ title('TogetherPay - Split Bills, Not Friendships');
 
 ?>
 
-<div class="min-h-screen bg-zinc-50 dark:bg-zinc-950 selection:bg-brand-500 selection:text-white overflow-x-hidden">
+<div class="min-h-screen selection:bg-brand-500 selection:text-white overflow-x-hidden">
     <!-- Navbar -->
     <!-- Navbar -->
     <x-guest-navbar />
 
     <!-- Hero Section -->
     <div class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-        <!-- Background Effects -->
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full z-0 pointer-events-none">
-            <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-500/10 rounded-full blur-[120px] animate-pulse-slow"></div>
-            <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent-purple/10 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 2s"></div>
-            <div class="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-accent-pink/10 rounded-full blur-[100px] animate-pulse-slow" style="animation-delay: 4s"></div>
+        <!-- Animated Background Layers -->
+        <div class="bg-animated-aurora"></div>
+        <div class="bg-animated-grid"></div>
+
+        <!-- Floating Orbs -->
+        <div class="bg-floating-orbs">
+            <div class="floating-orb floating-orb-1"></div>
+            <div class="floating-orb floating-orb-2"></div>
+            <div class="floating-orb floating-orb-3"></div>
         </div>
 
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -85,7 +89,7 @@ title('TogetherPay - Split Bills, Not Friendships');
                         <div class="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-sm border border-zinc-100 dark:border-zinc-800 flex flex-col gap-4 animate-float-delayed">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-accent-purple/10 flex items-center justify-center text-accent-purple font-bold">AS</div>
+                                    <div class="w-10 h-10 rounded-full bg-accent-teal/10 flex items-center justify-center text-accent-teal font-bold">AS</div>
                                     <div>
                                         <div class="text-sm font-bold text-zinc-900 dark:text-white">Alice Smith</div>
                                         <div class="text-xs text-zinc-500">Pending Request</div>
@@ -102,7 +106,7 @@ title('TogetherPay - Split Bills, Not Friendships');
                         <div class="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-sm border border-zinc-100 dark:border-zinc-800 flex flex-col gap-4 animate-float">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-accent-pink/10 flex items-center justify-center text-accent-pink font-bold">MK</div>
+                                    <div class="w-10 h-10 rounded-full bg-accent-amber/10 flex items-center justify-center text-accent-amber font-bold">MK</div>
                                     <div>
                                         <div class="text-sm font-bold text-zinc-900 dark:text-white">Mike K.</div>
                                         <div class="text-xs text-zinc-500">Paid via Cash App</div>
@@ -142,8 +146,8 @@ title('TogetherPay - Split Bills, Not Friendships');
 
                 <!-- Feature 2 -->
                 <div class="glass-card p-8 rounded-3xl group" data-stagger-item>
-                    <div class="w-14 h-14 rounded-2xl bg-accent-purple/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                        <svg class="w-7 h-7 text-accent-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="w-14 h-14 rounded-2xl bg-accent-teal/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-7 h-7 text-accent-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
@@ -153,8 +157,8 @@ title('TogetherPay - Split Bills, Not Friendships');
 
                 <!-- Feature 3 -->
                 <div class="glass-card p-8 rounded-3xl group" data-stagger-item>
-                    <div class="w-14 h-14 rounded-2xl bg-accent-pink/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                        <svg class="w-7 h-7 text-accent-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="w-14 h-14 rounded-2xl bg-accent-amber/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-7 h-7 text-accent-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
@@ -175,8 +179,8 @@ title('TogetherPay - Split Bills, Not Friendships');
 
                 <!-- Feature 5 -->
                 <div class="glass-card p-8 rounded-3xl group" data-stagger-item>
-                    <div class="w-14 h-14 rounded-2xl bg-accent-purple/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                        <svg class="w-7 h-7 text-accent-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="w-14 h-14 rounded-2xl bg-accent-teal/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-7 h-7 text-accent-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                     </div>
@@ -186,8 +190,8 @@ title('TogetherPay - Split Bills, Not Friendships');
 
                 <!-- Feature 6 -->
                 <div class="glass-card p-8 rounded-3xl group" data-stagger-item>
-                    <div class="w-14 h-14 rounded-2xl bg-accent-pink/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                        <svg class="w-7 h-7 text-accent-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="w-14 h-14 rounded-2xl bg-accent-amber/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-7 h-7 text-accent-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                     </div>
@@ -199,21 +203,39 @@ title('TogetherPay - Split Bills, Not Friendships');
     </div>
 
     <!-- CTA Section -->
-    <div class="py-24 relative overflow-hidden">
-        <div class="absolute inset-0 bg-zinc-900 dark:bg-black">
-            <div class="absolute inset-0 bg-gradient-to-br from-brand-900/50 to-transparent"></div>
-        </div>
-        
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-4xl md:text-5xl font-bold text-white mb-8">Ready to simplify bill splitting?</h2>
-            <p class="text-xl text-zinc-300 mb-12 max-w-2xl mx-auto">Join thousands of users who have stopped chasing payments and started enjoying their shared experiences.</p>
-            
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="#download-ios" class="btn-primary-glow group min-w-[200px]">
-                    <span>Download Now</span>
-                    <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+    <div class="relative py-20 lg:py-32 overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-brand-500 via-brand-600 to-accent-teal opacity-10"></div>
+        <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-white mb-6">
+                Ready to Split Bills Smarter?
+            </h2>
+            <p class="text-xl text-zinc-600 dark:text-zinc-400 mb-10">
+                Download TogetherPay today and never chase friends for money again.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <!-- App Store Button -->
+                <a href="#download-ios" class="inline-flex items-center px-6 py-3.5 bg-black dark:bg-white rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all hover:scale-105 shadow-lg group">
+                    <svg class="w-10 h-10 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08l-.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" fill="currentColor" class="text-white dark:text-black"/>
                     </svg>
+                    <div class="text-left">
+                        <div class="text-xs text-white/80 dark:text-black/80 font-normal">Download on the</div>
+                        <div class="text-xl font-semibold text-white dark:text-black -mt-0.5">App Store</div>
+                    </div>
+                </a>
+
+                <!-- Google Play Button -->
+                <a href="#download-android" class="inline-flex items-center px-6 py-3.5 bg-black dark:bg-white rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all hover:scale-105 shadow-lg group">
+                    <svg class="w-10 h-10 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3.609 3.784c-.18.244-.284.585-.284 1.002v14.428c0 .417.104.758.284 1.002l.022.021 8.084-8.084v-.192L3.631 3.763l-.022.021z" fill="#00D7FE" class="dark:opacity-80"/>
+                        <path d="M14.411 14.747l-2.696-2.696v-.192l2.696-2.696.03.018 3.194 1.814c.912.518.912 1.365 0 1.883l-3.194 1.814-.03.055z" fill="#FFCE00" class="dark:opacity-80"/>
+                        <path d="M14.441 14.692l-2.726-2.726L3.609 20.07c.301.32.799.36 1.365.024l9.467-5.402z" fill="#00AB4E" class="dark:opacity-80"/>
+                        <path d="M14.441 9.308L4.974 3.906c-.566-.336-1.064-.296-1.365.024l8.106 8.104 2.726-2.726z" fill="#FF3E4C" class="dark:opacity-80"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="text-xs text-white/80 dark:text-black/80 font-normal">GET IT ON</div>
+                        <div class="text-xl font-semibold text-white dark:text-black -mt-0.5">Google Play</div>
+                    </div>
                 </a>
             </div>
         </div>
