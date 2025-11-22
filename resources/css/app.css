@@ -123,7 +123,7 @@
 
     /* Text Gradients */
     .text-gradient-hero {
-        @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-accent-purple to-accent-pink;
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-accent-purple to-white;
         background-size: 200% 200%;
         animation: gradient-x 8s ease infinite;
     }
