@@ -217,6 +217,9 @@ class GroupController extends Controller
             ]);
 
             $existingMember->update([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
                 'preferred_channel' => $request->preferred_channel ?? $existingMember->preferred_channel,
                 'venmo_username' => $request->venmo_username ?? $existingMember->venmo_username,
                 'cash_tag' => $request->cash_tag ?? $existingMember->cash_tag,
@@ -238,6 +241,9 @@ class GroupController extends Controller
             $member = GroupMember::create([
                 'group_id' => $group->id,
                 'user_id' => $user->id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
                 'preferred_channel' => $request->preferred_channel ?? 'VENMO',
                 'venmo_username' => $request->venmo_username,
                 'cash_tag' => $request->cash_tag,
