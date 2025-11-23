@@ -126,7 +126,7 @@ title('About TogetherPay');
                             <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-2">Need help getting started?</h2>
                             <p class="text-zinc-600 dark:text-zinc-400">We’ll walk you through moving off spreadsheets, connecting Square, or inviting your first members.</p>
                         </div>
-                        <a href="{{ route('contact') }}" class="btn-primary-glow whitespace-nowrap">Talk to support</a>
+                        <a href="{{ route('contact') }}" class="btn-beam whitespace-nowrap">Talk to support</a>
                     </div>
                 </section>
             </div>

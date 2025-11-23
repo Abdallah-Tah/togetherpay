@@ -150,6 +150,36 @@
         @apply inline-flex items-center justify-center px-8 py-4 bg-zinc-50 dark:bg-white/5 backdrop-blur-md border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white font-semibold rounded-2xl hover:bg-zinc-100 dark:hover:bg-white/10 hover:-translate-y-1 transition-all duration-300 ease-out;
     }
 
+    /* Beam Button */
+    .btn-beam {
+        @apply relative inline-flex items-center justify-center px-8 py-4 text-white font-bold rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-brand-500/50;
+        background-color: transparent;
+    }
+
+    .btn-beam::before {
+        content: "";
+        position: absolute;
+        inset: -100%;
+        background: conic-gradient(from 90deg at 50% 50%, #0000 0%, var(--color-brand-500) 50%, white 55%, #0000 100%);
+        animation: beam-rotate 3s linear infinite;
+        z-index: -2;
+    }
+
+    .btn-beam::after {
+        content: "";
+        position: absolute;
+        inset: 3px;
+        border-radius: 13px;
+        background-color: var(--color-brand-600);
+        /* Fallback/Base color */
+        background-image: linear-gradient(to right, var(--color-brand-600), var(--color-brand-500));
+        z-index: -1;
+    }
+
+    .btn-beam:hover::before {
+        animation-duration: 1.5s;
+    }
+
     /* Text Gradients - More Refined */
     .text-gradient-hero {
         @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-700 via-brand-600 to-brand-700 dark:from-brand-300 dark:via-brand-400 dark:to-brand-300;
@@ -311,6 +341,12 @@
         }
     }
 
+    @keyframes beam-rotate {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
     @keyframes aurora-flow {
         0% {
             background-position: 0% 0%;
@@ -397,18 +433,23 @@
         0% {
             background-position: 0 0;
         }
+
         100% {
             background-position: 50px 50px;
         }
     }
 
     @keyframes float-orb {
-        0%, 100% {
+
+        0%,
+        100% {
             transform: translate(0, 0) scale(1);
         }
+
         33% {
             transform: translate(30px, -30px) scale(1.1);
         }
+
         66% {
             transform: translate(-20px, 20px) scale(0.9);
         }
@@ -418,6 +459,7 @@
         0% {
             transform: translate(0, 0);
         }
+
         100% {
             transform: translate(20px, 20px);
         }

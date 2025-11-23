@@ -45,9 +45,14 @@ $submit = function () {
 
     <!-- Header -->
     <div class="relative pt-32 pb-12 overflow-hidden">
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full z-0 pointer-events-none">
-            <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-400/5 dark:bg-brand-500/10 rounded-full blur-[120px] animate-pulse-slow"></div>
-            <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-brand-300/10 dark:bg-accent-teal/10 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 2s"></div>
+        <!-- Animated Background Layers -->
+        <div class="bg-animated-aurora"></div>
+        <div class="bg-animated-grid"></div>
+
+        <!-- Floating Orbs -->
+        <div class="bg-floating-orbs">
+            <div class="floating-orb floating-orb-1"></div>
+            <div class="floating-orb floating-orb-2"></div>
         </div>
 
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
@@ -216,7 +221,7 @@ $submit = function () {
                         <div class="pt-2">
                             <button
                                 type="submit"
-                                class="w-full btn-primary-glow justify-center py-4 text-lg shadow-xl shadow-brand-500/20"
+                                class="w-full btn-beam justify-center py-4 text-lg shadow-xl shadow-brand-500/20"
                             >
                                 Send Message
                             </button>
