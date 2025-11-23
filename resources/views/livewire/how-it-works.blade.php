@@ -90,10 +90,10 @@ title('How It Works - TogetherPay');
             <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center mb-32" data-stagger>
                 <div class="fade-in-up" data-stagger-item>
                     <div class="inline-flex items-center gap-3 mb-6">
-                        <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-accent-teal to-accent-amber text-white font-bold text-xl shadow-lg shadow-accent-teal/30">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 via-purple-500 to-purple-600 text-white font-bold text-xl shadow-lg shadow-purple-500/25">
                             2
                         </div>
-                        <span class="text-sm font-semibold text-accent-teal dark:text-accent-amber uppercase tracking-wider">Step Two</span>
+                        <span class="text-sm font-semibold text-purple-600 dark:text-purple-300 uppercase tracking-wider">Step Two</span>
                     </div>
                     <h2 class="text-4xl font-bold text-zinc-900 dark:text-white mb-6">
                         Add Members
@@ -103,24 +103,24 @@ title('How It Works - TogetherPay');
                     </p>
                     <ul class="space-y-4">
                         <li class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-accent-teal/10 dark:bg-accent-teal/20 flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mt-0.5">
+                                <svg class="w-4 h-4 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                             </div>
                             <span class="text-zinc-700 dark:text-zinc-300">Send email invitations instantly</span>
                         </li>
                         <li class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-accent-teal/10 dark:bg-accent-teal/20 flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mt-0.5">
+                                <svg class="w-4 h-4 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                             </div>
                             <span class="text-zinc-700 dark:text-zinc-300">Set individual amounts for each member</span>
                         </li>
                         <li class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-accent-teal/10 dark:bg-accent-teal/20 flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mt-0.5">
+                                <svg class="w-4 h-4 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                             </div>
