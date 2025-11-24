@@ -46,6 +46,7 @@ class GroupInvitationMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
+            to: $this->invitation->email,
             subject: "You've been invited to join {$this->group->name} on TogetherPay",
         );
     }
