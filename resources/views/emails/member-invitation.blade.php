@@ -7,16 +7,28 @@
 
     <div class="payment-details">
         <div class="row">
-            <span class="label">✓ Receive automatic payment requests</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#14b8a6" style="width: 20px; height: 20px; margin-right: 10px; flex-shrink: 0; vertical-align: middle;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            <span class="label">Receive automatic payment requests</span>
         </div>
         <div class="row">
-            <span class="label">✓ Pay instantly via Venmo or Cash App</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#14b8a6" style="width: 20px; height: 20px; margin-right: 10px; flex-shrink: 0; vertical-align: middle;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            <span class="label">Pay instantly via Venmo or Cash App</span>
         </div>
         <div class="row">
-            <span class="label">✓ Track your payment history</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#14b8a6" style="width: 20px; height: 20px; margin-right: 10px; flex-shrink: 0; vertical-align: middle;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            <span class="label">Track your payment history</span>
         </div>
         <div class="row">
-            <span class="label">✓ Get reminders before due dates</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#14b8a6" style="width: 20px; height: 20px; margin-right: 10px; flex-shrink: 0; vertical-align: middle;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            <span class="label">Get reminders before due dates</span>
         </div>
     </div>
 
