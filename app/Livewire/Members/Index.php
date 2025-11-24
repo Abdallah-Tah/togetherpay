@@ -256,6 +256,9 @@ class Index extends Component
 
         $user = $userQuery->first();
 
+        // Track if this is a new invitation
+        $isNewInvitation = false;
+
         // If user doesn't exist, create a placeholder user and send invitation
         if (! $user) {
             $user = User::create([
@@ -263,22 +266,11 @@ class Index extends Component
                 'email' => $this->formEmail ?: null,
                 'phone' => $this->formPhone ?: null,
                 'password' => bcrypt(Str::random(32)), // Random password
+                'role' => 'member',
                 'is_placeholder' => true,
             ]);
 
-            // Generate invitation token
-            $token = $user->generateInvitationToken();
-
-            // Send invitation notification (queued, won't block if mail fails)
-            try {
-                $user->notify(new \App\Notifications\MemberInvitationNotification($group, auth()->user(), $token));
-            } catch (\Exception $e) {
-                // Log the error but don't block member creation
-                \Illuminate\Support\Facades\Log::warning('Failed to send member invitation notification', [
-                    'user_id' => $user->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            $isNewInvitation = true;
         }
 
         if ($group->members()->where('user_id', $user->id)->exists()) {
@@ -303,8 +295,46 @@ class Index extends Component
             'status' => 'active',
         ]);
 
-        $successMessage = $user->is_placeholder
-            ? 'Member added successfully. An invitation has been sent to their email/phone.'
+        // Send invitation if this is a new user
+        if ($isNewInvitation && $this->formEmail) {
+            $invitation = \App\Models\GroupInvitation::create([
+                'group_id' => $group->id,
+                'invited_by_user_id' => auth()->id(),
+                'email' => $this->formEmail,
+                'phone' => $this->formPhone,
+                'token' => \App\Models\GroupInvitation::generateToken(),
+                'status' => 'pending',
+                'expires_at' => now()->addDays(7),
+                'member_data' => [
+                    'preferred_channel' => $this->formPreferredChannel,
+                    'venmo_username' => $paymentHandles['venmo_username'],
+                    'cash_tag' => $paymentHandles['cash_tag'],
+                    'cash_phone' => $paymentHandles['cash_phone'],
+                    'cash_email' => $paymentHandles['cash_email'],
+                    'share_type' => $this->formShareType,
+                    'share_value' => (float) $this->formShareValue,
+                ],
+            ]);
+
+            // Send invitation notification (queued, won't block if mail fails)
+            try {
+                $user->notify(new \App\Notifications\GroupInvitationNotification($invitation));
+                Log::info('Invitation email queued for new member', [
+                    'user_id' => $user->id,
+                    'email' => $this->formEmail,
+                    'group_id' => $group->id,
+                ]);
+            } catch (\Exception $e) {
+                // Log the error but don't block member creation
+                Log::warning('Failed to queue member invitation notification', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $successMessage = $isNewInvitation
+            ? 'Member added successfully. An invitation has been sent to their email.'
             : 'Member added successfully.';
 
         session()->flash('success', $successMessage);

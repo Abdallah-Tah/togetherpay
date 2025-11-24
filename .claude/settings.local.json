@@ -50,7 +50,22 @@
       "Bash(sips:*)",
       "Bash(open:*)",
       "Bash(.gitignore)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(chown:*)",
+      "Bash(sudo tail:*)",
+      "Bash(sudo cat:*)",
+      "Bash(sudo nginx:*)",
+      "Bash(sudo chown:*)",
+      "Bash(sudo chmod:*)",
+      "Bash(sudo systemctl status:*)",
+      "Bash(sudo find:*)",
+      "Bash(sudo ls:*)",
+      "Bash(sudo netstat:*)",
+      "Bash(sudo supervisorctl status:*)",
+      "Bash(sudo supervisorctl restart:*)",
+      "Bash(timeout 10 php artisan tinker:*)"
     ],
     "deny": [],
     "ask": []

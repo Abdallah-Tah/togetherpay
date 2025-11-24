@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Mail;
+
+use App\Models\Group;
+use App\Models\User;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
+
+class MemberInvitationMail extends Mailable implements ShouldQueue
+{
+    use Queueable, SerializesModels;
+
+    public $tries = 3;
+    public $timeout = 120;
+
+    public $group;
+    public $invitedBy;
+    public $token;
+    public $invitationUrl;
+
+    /**
+     * Create a new message instance.
+     */
+    public function __construct(Group $group, User $invitedBy, string $token)
+    {
+        $this->group = $group;
+        $this->invitedBy = $invitedBy;
+        $this->token = $token;
+
+        // Build universal link for mobile app
+        $frontendUrl = config('app.frontend_url', config('app.url'));
+        $this->invitationUrl = "{$frontendUrl}/register?token={$this->token}";
+    }
+
+    /**
+     * Get the message envelope.
+     */
+    public function envelope(): Envelope
+    {
+        return new Envelope(
+            subject: "You've been invited to join {$this->group->name} on TogetherPay",
+        );
+    }
+
+    /**
+     * Get the message content definition.
+     */
+    public function content(): Content
+    {
+        return new Content(
+            view: 'emails.member-invitation',
+            with: [
+                'group' => $this->group,
+                'invitedBy' => $this->invitedBy,
+                'token' => $this->token,
+                'invitationUrl' => $this->invitationUrl,
+            ],
+        );
+    }
+
+    /**
+     * Get the attachments for the message.
+     *
+     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     */
+    public function attachments(): array
+    {
+        return [];
+    }
+}
