@@ -69,12 +69,12 @@ $accept = function () {
         GroupMember::create([
             'group_id' => $invitation->group_id,
             'user_id' => $user->id,
-            'name' => $invitation->member_data['name'],
+            'name' => $invitation->member_data['name'] ?? $user->name,
             'email' => $user->email,
             'phone' => $invitation->phone ?? $user->phone,
-            'share_count' => $invitation->member_data['share_count'],
-            'venmo_username' => $invitation->member_data['venmo_username'] ?? null,
-            'cashapp_cashtag' => $invitation->member_data['cashapp_cashtag'] ?? null,
+            'share_count' => $invitation->member_data['share_count'] ?? 1,
+            'venmo_username' => $invitation->member_data['venmo_username'] ?? $user->venmo_username ?? null,
+            'cashapp_cashtag' => $invitation->member_data['cashapp_cashtag'] ?? $user->cash_tag ?? null,
         ]);
 
         $invitation->markAsAccepted($user);
@@ -140,21 +140,25 @@ $decline = function () {
                     </div>
 
                     <div class="space-y-2 text-sm text-zinc-600">
+                        @if(!empty($invitation->member_data['name']))
                         <div class="flex justify-between">
                             <span>Your name:</span>
                             <span class="font-medium text-zinc-900">{{ $invitation->member_data['name'] }}</span>
                         </div>
+                        @endif
+                        @if(!empty($invitation->member_data['share_count']))
                         <div class="flex justify-between">
                             <span>Share count:</span>
                             <span class="font-medium text-zinc-900">{{ $invitation->member_data['share_count'] }}</span>
                         </div>
-                        @if ($invitation->member_data['venmo_username'])
+                        @endif
+                        @if (!empty($invitation->member_data['venmo_username']))
                             <div class="flex justify-between">
                                 <span>Venmo:</span>
                                 <span class="font-medium text-zinc-900">{{ $invitation->member_data['venmo_username'] }}</span>
                             </div>
                         @endif
-                        @if ($invitation->member_data['cashapp_cashtag'])
+                        @if (!empty($invitation->member_data['cashapp_cashtag']))
                             <div class="flex justify-between">
                                 <span>Cash App:</span>
                                 <span class="font-medium text-zinc-900">{{ $invitation->member_data['cashapp_cashtag'] }}</span>
