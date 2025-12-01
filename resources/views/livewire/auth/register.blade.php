@@ -5,6 +5,12 @@
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
+        @if(request('invitation'))
+            <flux:banner variant="info" class="text-sm">
+                Creating account for invitation to join a group
+            </flux:banner>
+        @endif
+
         <form method="POST" action="{{ route('register.store') }}" class="flex flex-col gap-6">
             @csrf
 
@@ -23,7 +29,7 @@
                 autocomplete="name"
                 :placeholder="__('Full name')"
                 value="{{ old('name', request('name')) }}"
-                @if(request('invitation')) readonly @endif
+                @if(request('invitation')) readonly class="bg-zinc-100 dark:bg-zinc-800" @endif
             />
 
             <!-- Email Address -->
@@ -35,7 +41,7 @@
                 autocomplete="email"
                 placeholder="email@example.com"
                 value="{{ old('email', request('email')) }}"
-                @if(request('invitation')) readonly @endif
+                @if(request('invitation')) readonly class="bg-zinc-100 dark:bg-zinc-800" @endif
             />
 
             <!-- Password -->
