@@ -17,23 +17,27 @@ class GroupInvitationMail extends Mailable implements ShouldQueue
     public $tries = 3;
     public $timeout = 120;
 
-    public $invitation;
     public $group;
     public $invitedBy;
     public $token;
     public $invitationUrl;
     public $expiresAt;
+    public $recipientEmail;
 
     /**
      * Create a new message instance.
      */
     public function __construct(GroupInvitation $invitation)
     {
-        $this->invitation = $invitation->loadMissing(['group', 'invitedBy']);
-        $this->group = $this->invitation->group;
-        $this->invitedBy = $this->invitation->invitedBy;
-        $this->token = $this->invitation->token;
-        $this->expiresAt = $this->invitation->expires_at;
+        // Load relationships but extract only the data we need
+        // This prevents serialization issues with Eloquent models in queues
+        $invitation->loadMissing(['group', 'invitedBy']);
+
+        $this->group = $invitation->group;
+        $this->invitedBy = $invitation->invitedBy;
+        $this->token = $invitation->token;
+        $this->expiresAt = $invitation->expires_at;
+        $this->recipientEmail = $invitation->email;
 
         // Build universal link for mobile app
         $frontendUrl = config('app.frontend_url', config('app.url'));
@@ -46,7 +50,7 @@ class GroupInvitationMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            to: $this->invitation->email,
+            to: $this->recipientEmail,
             subject: "You've been invited to join {$this->group->name} on TogetherPay",
         );
     }
