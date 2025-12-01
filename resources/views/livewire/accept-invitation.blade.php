@@ -220,7 +220,7 @@ $decline = function () {
                             <flux:button href="{{ route('login') }}" variant="primary" class="flex-1">
                                 Log In
                             </flux:button>
-                            <flux:button href="{{ route('register') }}" variant="outline" class="flex-1">
+                            <flux:button href="{{ route('register', ['invitation' => $invitation->token, 'email' => $invitation->email, 'name' => $invitation->member_data['name'] ?? '']) }}" variant="outline" class="flex-1">
                                 Sign Up
                             </flux:button>
                         </div>
