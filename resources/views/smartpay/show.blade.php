@@ -21,9 +21,11 @@
             <p class="text-gray-600">
                 {{ $group->name }}
             </p>
+            @if($request->due_at)
             <p class="text-sm text-gray-500 mt-1">
                 Due: {{ $request->due_at->format('M d, Y') }}
             </p>
+            @endif
         </div>
 
         <!-- Payment Options -->
