@@ -22,21 +22,21 @@
             <div class="flex flex-col">
                 <!-- Name -->
                 <flux:input name="name" :label="__('Name')" type="text" required autofocus autocomplete="name"
-                    class="mt-1" :placeholder="__('Full name')" value="{{ old('name', request('name')) }}"
+                    :placeholder="__('Full name')" value="{{ old('name', request('name')) }}"
                     @if (request('invitation')) readonly @endif />
 
                 <!-- Email Address -->
                 <flux:input name="email" :label="__('Email address')" type="email" required autocomplete="email"
-                    class="mt-1" placeholder="email@example.com" value="{{ old('email', request('email')) }}"
+                    placeholder="email@example.com" value="{{ old('email', request('email')) }}"
                     @if (request('invitation')) readonly @endif />
 
                 <!-- Password -->
                 <flux:input name="password" :label="__('Password')" type="password" required autocomplete="new-password"
-                    class="mt-1 mb-2" :placeholder="__('Password')" viewable />
+                    class="mb-2" :placeholder="__('Password')" viewable />
 
                 <!-- Confirm Password -->
                 <flux:input name="password_confirmation" :label="__('Confirm password')" type="password" required
-                    class="mt-1" autocomplete="new-password" :placeholder="__('Confirm password')" viewable />
+                    autocomplete="new-password" :placeholder="__('Confirm password')" viewable />
             </div>
 
             <div class="flex items-center justify-end">
