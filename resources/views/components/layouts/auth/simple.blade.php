@@ -3,8 +3,12 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="h-full bg-gradient-to-br from-brand-50 via-white to-brand-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 antialiased">
-        <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <body class="h-full bg-zinc-50 dark:bg-zinc-900 antialiased overflow-hidden">
+        <!-- Animated Background Layers -->
+        <div class="bg-animated-aurora"></div>
+        <div class="bg-animated-grid"></div>
+
+        <div class="relative flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8 z-10">
             <div class="sm:mx-auto sm:w-full sm:max-w-md">
                 <!-- Logo -->
                 <a href="{{ route('welcome') }}" class="flex flex-col items-center gap-3 mb-8" wire:navigate>
@@ -17,7 +21,7 @@
                 </a>
 
                 <!-- Auth Card -->
-                <div class="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-zinc-900/10 dark:shadow-zinc-950/50 border border-zinc-100 dark:border-zinc-800 px-8 py-10 sm:px-10">
+                <div class="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl rounded-3xl shadow-2xl shadow-zinc-900/10 dark:shadow-zinc-950/50 border border-zinc-200/50 dark:border-zinc-800/50 px-8 py-10 sm:px-10">
                     {{ $slot }}
                 </div>
             </div>
