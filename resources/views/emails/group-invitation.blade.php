@@ -1,7 +1,7 @@
-@component('emails.layout', ['title' => 'Join ' . $group->name])
+@component('emails.layout', ['title' => 'Join ' . $groupName])
     <h1>Welcome to TogetherPay! 🎉</h1>
 
-    <p>{{ $invitedBy->name }} has added you to the group <strong>{{ $group->name }}</strong>.</p>
+    <p>{{ $invitedByName }} has added you to the group <strong>{{ $groupName }}</strong>.</p>
 
     <p>TogetherPay makes splitting recurring bills effortless. Here's what you can do:</p>
 

@@ -18,8 +18,8 @@ class MemberInvitationMail extends Mailable implements ShouldQueue
     public $tries = 3;
     public $timeout = 120;
 
-    public $group;
-    public $invitedBy;
+    public $groupName;
+    public $invitedByName;
     public $token;
     public $invitationUrl;
 
@@ -28,8 +28,9 @@ class MemberInvitationMail extends Mailable implements ShouldQueue
      */
     public function __construct(Group $group, User $invitedBy, string $token)
     {
-        $this->group = $group;
-        $this->invitedBy = $invitedBy;
+        // Extract only the data we need to prevent serialization issues
+        $this->groupName = $group->name;
+        $this->invitedByName = $invitedBy->name;
         $this->token = $token;
 
         // Build universal link for mobile app
@@ -43,7 +44,7 @@ class MemberInvitationMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "You've been invited to join {$this->group->name} on TogetherPay",
+            subject: "You've been invited to join {$this->groupName} on TogetherPay",
         );
     }
 
@@ -55,8 +56,8 @@ class MemberInvitationMail extends Mailable implements ShouldQueue
         return new Content(
             view: 'emails.member-invitation',
             with: [
-                'group' => $this->group,
-                'invitedBy' => $this->invitedBy,
+                'groupName' => $this->groupName,
+                'invitedByName' => $this->invitedByName,
                 'token' => $this->token,
                 'invitationUrl' => $this->invitationUrl,
             ],

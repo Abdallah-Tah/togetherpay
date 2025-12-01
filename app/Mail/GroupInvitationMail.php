@@ -17,8 +17,8 @@ class GroupInvitationMail extends Mailable implements ShouldQueue
     public $tries = 3;
     public $timeout = 120;
 
-    public $group;
-    public $invitedBy;
+    public $groupName;
+    public $invitedByName;
     public $token;
     public $invitationUrl;
     public $expiresAt;
@@ -29,12 +29,12 @@ class GroupInvitationMail extends Mailable implements ShouldQueue
      */
     public function __construct(GroupInvitation $invitation)
     {
-        // Load relationships but extract only the data we need
+        // Load relationships and extract only the data we need
         // This prevents serialization issues with Eloquent models in queues
         $invitation->loadMissing(['group', 'invitedBy']);
 
-        $this->group = $invitation->group;
-        $this->invitedBy = $invitation->invitedBy;
+        $this->groupName = $invitation->group?->name ?? 'the group';
+        $this->invitedByName = $invitation->invitedBy?->name ?? 'Someone';
         $this->token = $invitation->token;
         $this->expiresAt = $invitation->expires_at;
         $this->recipientEmail = $invitation->email;
@@ -51,7 +51,7 @@ class GroupInvitationMail extends Mailable implements ShouldQueue
     {
         return new Envelope(
             to: $this->recipientEmail,
-            subject: "You've been invited to join {$this->group->name} on TogetherPay",
+            subject: "You've been invited to join {$this->groupName} on TogetherPay",
         );
     }
 
@@ -63,8 +63,8 @@ class GroupInvitationMail extends Mailable implements ShouldQueue
         return new Content(
             view: 'emails.group-invitation',
             with: [
-                'group' => $this->group,
-                'invitedBy' => $this->invitedBy,
+                'groupName' => $this->groupName,
+                'invitedByName' => $this->invitedByName,
                 'token' => $this->token,
                 'invitationUrl' => $this->invitationUrl,
                 'expiresAt' => $this->expiresAt,
