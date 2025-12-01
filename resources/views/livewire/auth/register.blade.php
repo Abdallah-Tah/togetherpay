@@ -23,6 +23,7 @@
                 autocomplete="name"
                 :placeholder="__('Full name')"
                 value="{{ old('name', request('name')) }}"
+                @if(request('invitation')) readonly @endif
             />
 
             <!-- Email Address -->

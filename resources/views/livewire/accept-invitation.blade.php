@@ -214,15 +214,14 @@ $decline = function () {
                 @else
                     <div class="space-y-3">
                         <flux:banner variant="info">
-                            Please log in or create an account to accept this invitation.
+                            Create your account to accept this invitation.
                         </flux:banner>
-                        <div class="flex gap-3">
-                            <flux:button href="{{ route('login') }}" variant="primary" class="flex-1">
-                                Log In
-                            </flux:button>
-                            <flux:button href="{{ route('register', ['invitation' => $invitation->token, 'email' => $invitation->email, 'name' => $invitation->member_data['name'] ?? '']) }}" variant="outline" class="flex-1">
-                                Sign Up
-                            </flux:button>
+                        <flux:button href="{{ route('register', ['invitation' => $invitation->token, 'email' => $invitation->email, 'name' => $invitation->member_data['name'] ?? '']) }}" variant="primary" class="w-full">
+                            Create Account
+                        </flux:button>
+                        <div class="text-center text-sm text-zinc-600 dark:text-zinc-400">
+                            <span>Already have an account?</span>
+                            <flux:link href="{{ route('login') }}">Log in instead</flux:link>
                         </div>
                     </div>
                 @endauth
