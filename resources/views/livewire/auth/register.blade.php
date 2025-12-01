@@ -32,7 +32,7 @@
 
                 <!-- Password -->
                 <flux:input name="password" :label="__('Password')" type="password" required autocomplete="new-password"
-                    class="mt-2" :placeholder="__('Password')" viewable />
+                    class="mt-2 mb-2" :placeholder="__('Password')" viewable />
 
                 <!-- Confirm Password -->
                 <flux:input name="password_confirmation" :label="__('Confirm password')" type="password" required
