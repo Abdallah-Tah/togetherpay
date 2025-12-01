@@ -5,7 +5,7 @@
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
-        @if(request('invitation'))
+        @if (request('invitation'))
             <flux:banner variant="info" class="text-sm">
                 Creating account for invitation to join a group
             </flux:banner>
@@ -15,56 +15,27 @@
             @csrf
 
             <!-- Hidden invitation token -->
-            @if(request('invitation'))
+            @if (request('invitation'))
                 <input type="hidden" name="invitation_token" value="{{ request('invitation') }}">
             @endif
 
             <!-- Name -->
-            <flux:input
-                name="name"
-                :label="__('Name')"
-                type="text"
-                required
-                autofocus
-                autocomplete="name"
-                :placeholder="__('Full name')"
-                value="{{ old('name', request('name')) }}"
-                @if(request('invitation')) readonly class="bg-zinc-100 dark:bg-zinc-800" @endif
-            />
+            <flux:input name="name" :label="__('Name')" type="text" required autofocus autocomplete="name"
+                :placeholder="__('Full name')" value="{{ old('name', request('name')) }}"
+                @if (request('invitation')) readonly class="bg-zinc-100 dark:bg-zinc-800 mb-2" @endif />
 
             <!-- Email Address -->
-            <flux:input
-                name="email"
-                :label="__('Email address')"
-                type="email"
-                required
-                autocomplete="email"
-                placeholder="email@example.com"
-                value="{{ old('email', request('email')) }}"
-                @if(request('invitation')) readonly class="bg-zinc-100 dark:bg-zinc-800" @endif
-            />
+            <flux:input name="email" :label="__('Email address')" type="email" required autocomplete="email"
+                placeholder="email@example.com" value="{{ old('email', request('email')) }}"
+                @if (request('invitation')) readonly class="bg-zinc-100 dark:bg-zinc-800" @endif />
 
             <!-- Password -->
-            <flux:input
-                name="password"
-                :label="__('Password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                :placeholder="__('Password')"
-                viewable
-            />
+            <flux:input name="password" :label="__('Password')" type="password" required autocomplete="new-password"
+                :placeholder="__('Password')" viewable />
 
             <!-- Confirm Password -->
-            <flux:input
-                name="password_confirmation"
-                :label="__('Confirm password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                :placeholder="__('Confirm password')"
-                viewable
-            />
+            <flux:input name="password_confirmation" :label="__('Confirm password')" type="password" required
+                autocomplete="new-password" :placeholder="__('Confirm password')" viewable />
 
             <div class="flex items-center justify-end">
                 <flux:button type="submit" variant="primary" class="w-full" data-test="register-user-button">

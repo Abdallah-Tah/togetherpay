@@ -3,8 +3,14 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-zinc-50 dark:bg-zinc-900 font-sans antialiased">
-        {{ $slot }}
+    <body class="min-h-screen bg-zinc-50 dark:bg-zinc-900 font-sans antialiased overflow-x-hidden">
+        <!-- Animated Background Layers -->
+        <div class="bg-animated-aurora"></div>
+        <div class="bg-animated-grid"></div>
+
+        <div class="relative z-10">
+            {{ $slot }}
+        </div>
         
         <!-- Toast Container -->
         <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
