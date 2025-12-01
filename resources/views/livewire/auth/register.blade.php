@@ -22,20 +22,20 @@
             <!-- Name -->
             <flux:input name="name" :label="__('Name')" type="text" required autofocus autocomplete="name"
                 :placeholder="__('Full name')" value="{{ old('name', request('name')) }}"
-                @if (request('invitation')) readonly class="bg-zinc-100 dark:bg-zinc-800 mb-2" @endif />
+                @if (request('invitation')) readonly @endif />
 
             <!-- Email Address -->
             <flux:input name="email" :label="__('Email address')" type="email" required autocomplete="email"
                 placeholder="email@example.com" value="{{ old('email', request('email')) }}"
-                @if (request('invitation')) readonly class="bg-zinc-100 dark:bg-zinc-800 mb-2" @endif />
+                @if (request('invitation')) readonly @endif />
 
             <!-- Password -->
             <flux:input name="password" :label="__('Password')" type="password" required autocomplete="new-password"
-                :placeholder="__('Password')" viewable class="mb-2" />
+                :placeholder="__('Password')" viewable />
 
             <!-- Confirm Password -->
             <flux:input name="password_confirmation" :label="__('Confirm password')" type="password" required
-                autocomplete="new-password" :placeholder="__('Confirm password')" viewable class="mb-2" />
+                autocomplete="new-password" :placeholder="__('Confirm password')" viewable />
 
             <div class="flex items-center justify-end">
                 <flux:button type="submit" variant="primary" class="w-full" data-test="register-user-button">
@@ -44,7 +44,7 @@
             </div>
         </form>
 
-        <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-600 dark:text-zinc-400 mt-2">
+        <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-600 dark:text-zinc-400">
             <span>{{ __('Already have an account?') }}</span>
             <flux:link :href="route('login')" wire:navigate>{{ __('Log in') }}</flux:link>
         </div>
