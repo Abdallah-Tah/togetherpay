@@ -129,7 +129,6 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
             'notification' => [
                 'title' => '💰 Payment Due'.($group ? ": {$group->name}" : ''),
                 'body' => "Your share of \${$amount} is due on {$dueDate}",
-                'sound' => 'default', // Enable notification sound
             ],
             'data' => [
                 'pr_code' => $this->paymentRequest->code,
