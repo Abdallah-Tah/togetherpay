@@ -373,18 +373,21 @@ class PaymentRequestController extends Controller
     {
         $pr = PaymentRequest::where('pr_code', $prCode)->firstOrFail();
 
-        // Update status to member_marked
-        $pr->update([
-            'status' => 'member_marked',
-            'marked_at' => now(),
-            'evidence_url' => $request->input('evidence_url'),
-            'evidence_type' => $request->input('evidence_type'),
-        ]);
+        // Use the model method which sets auto_confirm_at based on trust score
+        $pr->markAsPaid();
 
-        // Notify owner that member marked as sent
+        // Update evidence if provided
+        if ($request->filled('evidence_url') || $request->filled('evidence_type')) {
+            $pr->update([
+                'evidence_url' => $request->input('evidence_url'),
+                'evidence_type' => $request->input('evidence_type'),
+            ]);
+        }
+
+        // Notify owner with auto-confirm countdown
         $owner = $pr->cycle?->group?->owner ?? $pr->group?->owner;
         if ($owner) {
-            $owner->notify(new PaymentRequestEventNotification($pr->fresh(['member.user', 'cycle.group']), 'member_marked'));
+            $owner->notify(new \App\Notifications\OwnerPaymentMarkedNotification($pr->fresh(['member.user', 'cycle.group'])));
         }
 
         return response()->json([
@@ -395,6 +398,7 @@ class PaymentRequestController extends Controller
                 'pr_code' => $pr->pr_code,
                 'status' => $pr->status,
                 'marked_at' => $pr->marked_at->toIso8601String(),
+                'auto_confirm_at' => $pr->auto_confirm_at?->toIso8601String(),
             ],
         ]);
     }
@@ -532,6 +536,160 @@ class PaymentRequestController extends Controller
                 'id' => $pr->id,
                 'pr_code' => $pr->pr_code,
                 'status' => 'cancelled',
+            ],
+        ]);
+    }
+
+    /**
+     * Owner reports an issue with a payment ("Something doesn't look right")
+     *
+     * POST /api/v1/requests/by-code/{prCode}/report-issue
+     */
+    public function reportIssue(Request $request, string $prCode): JsonResponse
+    {
+        $pr = PaymentRequest::where('pr_code', $prCode)->firstOrFail();
+
+        $this->authorize('manage', $pr);
+
+        // Can only report issue if payment is member_marked
+        if ($pr->status !== 'member_marked') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Can only report issue for payments marked as sent',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|in:not_received,wrong_amount,wrong_method,other',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $reasonMessages = [
+            'not_received' => 'I didn\'t receive this payment',
+            'wrong_amount' => 'Amount is incorrect',
+            'wrong_method' => 'Wrong payment method',
+            'other' => $validated['notes'] ?? 'Other issue',
+        ];
+
+        $pr->reportIssue($reasonMessages[$validated['reason']]);
+
+        // Notify member about the issue
+        $memberUser = $pr->member?->user;
+        if ($memberUser) {
+            $memberUser->notify(new PaymentRequestEventNotification(
+                $pr->fresh(['member.user', 'cycle.group']),
+                'payment_disputed'
+            ));
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Issue reported. Member has been notified.',
+            'pr' => [
+                'id' => $pr->id,
+                'pr_code' => $pr->pr_code,
+                'status' => $pr->status,
+                'dispute_reason' => $pr->dispute_reason,
+                'disputed_at' => $pr->disputed_at->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * Owner or member resolves a disputed payment
+     *
+     * POST /api/v1/requests/by-code/{prCode}/resolve-issue
+     */
+    public function resolveIssue(string $prCode): JsonResponse
+    {
+        $pr = PaymentRequest::where('pr_code', $prCode)->firstOrFail();
+
+        // Either owner or the member can resolve
+        $this->authorize('view', $pr);
+
+        if ($pr->status !== 'disputed') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Payment is not in disputed status',
+            ], 422);
+        }
+
+        $pr->resolveDispute();
+
+        // Notify both parties
+        $owner = $pr->cycle?->group?->owner ?? $pr->group?->owner;
+        $memberUser = $pr->member?->user;
+
+        if ($owner && auth()->id() !== $owner->id) {
+            $owner->notify(new PaymentRequestEventNotification(
+                $pr->fresh(['member.user', 'cycle.group']),
+                'dispute_resolved'
+            ));
+        }
+
+        if ($memberUser && auth()->id() !== $memberUser->id) {
+            $memberUser->notify(new PaymentRequestEventNotification(
+                $pr->fresh(['member.user', 'cycle.group']),
+                'dispute_resolved'
+            ));
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Issue resolved. Payment restarted with 24h grace period.',
+            'pr' => [
+                'id' => $pr->id,
+                'pr_code' => $pr->pr_code,
+                'status' => $pr->status,
+                'auto_confirm_at' => $pr->auto_confirm_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * Owner undoes a confirmed payment (within 10-minute window)
+     *
+     * POST /api/v1/requests/by-code/{prCode}/undo
+     */
+    public function undoConfirmation(string $prCode): JsonResponse
+    {
+        $pr = PaymentRequest::where('pr_code', $prCode)->firstOrFail();
+
+        $this->authorize('manage', $pr);
+
+        if ($pr->status !== 'owner_confirmed') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Payment is not in confirmed status',
+            ], 422);
+        }
+
+        $success = $pr->undoConfirmation();
+
+        if (! $success) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Undo window has expired (10 minutes)',
+            ], 422);
+        }
+
+        // Notify member
+        $memberUser = $pr->member?->user;
+        if ($memberUser) {
+            $memberUser->notify(new PaymentRequestEventNotification(
+                $pr->fresh(['member.user', 'cycle.group']),
+                'confirmation_undone'
+            ));
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Confirmation undone. Payment reset to pending confirmation.',
+            'pr' => [
+                'id' => $pr->id,
+                'pr_code' => $pr->pr_code,
+                'status' => $pr->status,
+                'auto_confirm_at' => $pr->auto_confirm_at?->toIso8601String(),
             ],
         ]);
     }

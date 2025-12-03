@@ -4,7 +4,9 @@ use App\Jobs\CloseCyclesJob;
 use App\Jobs\CreateUpcomingCyclesJob;
 use App\Jobs\GeneratePaymentRequestsJob;
 use App\Jobs\GenerateSquareInvoicesJob;
+use App\Jobs\ProcessAutoConfirmations;
 use App\Jobs\ProcessDunningJob;
+use App\Jobs\SendWeeklyMemberSummaries;
 use App\Models\BillingCycle;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -33,3 +35,9 @@ Schedule::call(function () {
 Schedule::job(new ProcessDunningJob)->dailyAt('10:00')->name('process-dunning-morning');
 Schedule::job(new ProcessDunningJob)->dailyAt('15:00')->name('process-dunning-afternoon');
 Schedule::job(new CloseCyclesJob)->dailyAt('23:30')->name('close-cycles');
+
+// Auto-confirm payments that have passed their grace period (hourly)
+Schedule::job(new ProcessAutoConfirmations)->hourly()->name('auto-confirm-payments');
+
+// Send weekly member summaries (Fridays at 9 AM)
+Schedule::job(new SendWeeklyMemberSummaries)->weeklyOn(5, '09:00')->name('weekly-member-summaries');

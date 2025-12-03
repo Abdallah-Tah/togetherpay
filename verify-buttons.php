@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\User;
-use App\Models\Group;
 use App\Mail\MemberInvitationMail;
+use App\Models\Group;
+use App\Models\User;
 use Illuminate\Container\Container;
 use Illuminate\Mail\Markdown;
 

@@ -15,13 +15,19 @@ class GroupInvitationMail extends Mailable implements ShouldQueue
     use Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 120;
 
     public $groupName;
+
     public $invitedByName;
+
     public $token;
+
     public $invitationUrl;
+
     public $expiresAt;
+
     public $recipientEmail;
 
     /**

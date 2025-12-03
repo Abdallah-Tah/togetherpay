@@ -24,7 +24,7 @@ class CreateNewUser implements CreatesNewUsers
     {
         // Check if registering from invitation
         $invitation = null;
-        if (!empty($input['invitation_token'])) {
+        if (! empty($input['invitation_token'])) {
             $invitation = GroupInvitation::where('token', $input['invitation_token'])
                 ->where('status', 'pending')
                 ->where('expires_at', '>', now())

@@ -90,6 +90,9 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
     Route::post('/requests/by-code/{prCode}/confirm', [PaymentRequestController::class, 'confirmPayment']);
     Route::post('/requests/by-code/{prCode}/nudge', [PaymentRequestController::class, 'nudge']);
     Route::post('/requests/by-code/{prCode}/cancel', [PaymentRequestController::class, 'cancel']);
+    Route::post('/requests/by-code/{prCode}/report-issue', [PaymentRequestController::class, 'reportIssue']);
+    Route::post('/requests/by-code/{prCode}/resolve-issue', [PaymentRequestController::class, 'resolveIssue']);
+    Route::post('/requests/by-code/{prCode}/undo', [PaymentRequestController::class, 'undoConfirmation']);
     Route::post('/cycles/{cycleId}/bulk-confirm', [PaymentRequestController::class, 'bulkConfirm']);
 
     // Square OAuth for mobile clients

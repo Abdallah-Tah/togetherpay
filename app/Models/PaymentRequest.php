@@ -30,7 +30,11 @@ class PaymentRequest extends Model
         'marked_at',
         'confirmed_at',
         'paid_at',
+        'auto_confirm_at',
+        'undo_available_until',
         'fail_reason',
+        'dispute_reason',
+        'disputed_at',
         'metadata',
         'square_invoice_id',
         'square_subscription_id',
@@ -45,6 +49,9 @@ class PaymentRequest extends Model
         'marked_at' => 'datetime',
         'confirmed_at' => 'datetime',
         'paid_at' => 'datetime',
+        'auto_confirm_at' => 'datetime',
+        'undo_available_until' => 'datetime',
+        'disputed_at' => 'datetime',
         'square_confirmed_at' => 'datetime',
         'metadata' => 'array',
     ];
@@ -101,9 +108,14 @@ class PaymentRequest extends Model
 
     public function markAsPaid(): void
     {
+        // Calculate auto-confirm time based on member's trust score
+        $trustScore = $this->member->trust_score ?? 100.0;
+        $hoursUntilAutoConfirm = $trustScore >= 95.0 ? 1 : 24; // High trust = 1 hour, normal = 24 hours
+
         $this->update([
             'status' => 'member_marked',
             'marked_at' => now(),
+            'auto_confirm_at' => now()->addHours($hoursUntilAutoConfirm),
         ]);
     }
 
@@ -112,10 +124,90 @@ class PaymentRequest extends Model
         $this->update([
             'status' => 'owner_confirmed',
             'confirmed_at' => now(),
+            'undo_available_until' => now()->addMinutes(10), // 10-minute undo window
         ]);
 
         // Update cycle collected amount
         $this->cycle->increment('collected_amount_cents', $this->amount_cents);
+
+        // Update member's trust score (reward on-time payment)
+        $this->updateMemberTrustScore(true);
+    }
+
+    public function autoConfirmPayment(): void
+    {
+        $this->update([
+            'status' => 'owner_confirmed',
+            'confirmed_at' => now(),
+        ]);
+
+        // Update cycle collected amount
+        $this->cycle->increment('collected_amount_cents', $this->amount_cents);
+
+        // Update member's trust score (reward on-time payment)
+        $this->updateMemberTrustScore(true);
+    }
+
+    public function undoConfirmation(): bool
+    {
+        // Can only undo within the undo window
+        if (! $this->undo_available_until || now()->isAfter($this->undo_available_until)) {
+            return false;
+        }
+
+        // Reverse the cycle collected amount
+        $this->cycle->decrement('collected_amount_cents', $this->amount_cents);
+
+        $this->update([
+            'status' => 'member_marked',
+            'confirmed_at' => null,
+            'undo_available_until' => null,
+            'auto_confirm_at' => now()->addHours(24), // Reset grace period
+        ]);
+
+        return true;
+    }
+
+    public function reportIssue(string $reason): void
+    {
+        $this->update([
+            'status' => 'disputed',
+            'dispute_reason' => $reason,
+            'disputed_at' => now(),
+            'auto_confirm_at' => null, // Cancel auto-confirmation
+        ]);
+    }
+
+    public function resolveDispute(): void
+    {
+        $this->update([
+            'status' => 'member_marked',
+            'dispute_reason' => null,
+            'disputed_at' => null,
+            'auto_confirm_at' => now()->addHours(24), // Restart grace period
+        ]);
+    }
+
+    protected function updateMemberTrustScore(bool $onTime): void
+    {
+        if (! $this->member) {
+            return;
+        }
+
+        $member = $this->member;
+
+        if ($onTime) {
+            $member->increment('on_time_payments');
+        } else {
+            $member->increment('late_payments');
+        }
+
+        // Calculate new trust score (simple algorithm)
+        $totalPayments = $member->on_time_payments + $member->late_payments;
+        if ($totalPayments > 0) {
+            $newScore = $member->on_time_payments / $totalPayments * 100;
+            $member->update(['trust_score' => $newScore]);
+        }
     }
 
     public function markAsFailed(string $reason): void

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class BillingCycle extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'group_id',
         'period_start',
