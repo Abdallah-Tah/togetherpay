@@ -65,7 +65,8 @@
       "Bash(sudo netstat:*)",
       "Bash(sudo supervisorctl status:*)",
       "Bash(sudo supervisorctl restart:*)",
-      "Bash(timeout 10 php artisan tinker:*)"
+      "Bash(timeout 10 php artisan tinker:*)",
+      "Bash(flutter clean:*)"
     ],
     "deny": [],
     "ask": []
