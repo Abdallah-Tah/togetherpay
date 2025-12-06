@@ -261,6 +261,6 @@ class PaymentRequest extends Model
         ]);
 
         // Update cycle collected amount
-        $this->cycle->increment('total_collected_cents', $this->amount_cents);
+        $this->cycle->increment('collected_amount_cents', $this->amount_cents);
     }
 }
