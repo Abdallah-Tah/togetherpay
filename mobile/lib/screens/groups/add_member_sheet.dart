@@ -7,12 +7,16 @@ import '../../services/api_service.dart';
 class AddMemberSheet extends StatefulWidget {
   final int groupId;
   final List<int> existingMemberUserIds;
+  final Map<String, dynamic>? member;
 
   const AddMemberSheet({
     super.key,
     required this.groupId,
     this.existingMemberUserIds = const [],
+    this.member,
   });
+
+  bool get isEditing => member != null;
 
   @override
   State<AddMemberSheet> createState() => _AddMemberSheetState();
@@ -20,6 +24,8 @@ class AddMemberSheet extends StatefulWidget {
 
 class _AddMemberSheetState extends State<AddMemberSheet>
     with SingleTickerProviderStateMixin {
+  bool get _isEditing => widget.isEditing;
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -29,7 +35,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
   final _cashTagController = TextEditingController();
   final _searchController = TextEditingController();
 
-  late final TabController _tabController;
+  TabController? _tabController;
   String _preferredChannel = 'VENMO';
   String _shareType = 'AMOUNT';
   bool _submittingNew = false;
@@ -44,14 +50,17 @@ class _AddMemberSheetState extends State<AddMemberSheet>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _searchController.addListener(_filterExistingMembers);
-    _loadExistingMembers();
+    if (!_isEditing) {
+      _tabController = TabController(length: 2, vsync: this);
+      _searchController.addListener(_filterExistingMembers);
+      _loadExistingMembers();
+    }
+    _initializeEditingFields();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     _searchController.dispose();
     _nameController.dispose();
     _emailController.dispose();
@@ -60,6 +69,34 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     _venmoUsernameController.dispose();
     _cashTagController.dispose();
     super.dispose();
+  }
+
+  void _initializeEditingFields() {
+    if (!_isEditing) return;
+
+    final member = widget.member!;
+    final user = member['user'] as Map<String, dynamic>?;
+
+    _preferredChannel =
+        (member['preferred_channel'] as String? ?? 'VENMO').toUpperCase();
+    _shareType = (member['share_type'] as String? ?? 'AMOUNT').toUpperCase();
+
+    _nameController.text =
+        (user?['name'] ?? member['name'] ?? '').toString();
+    _emailController.text =
+        (user?['email'] ?? member['email'] ?? '').toString();
+    _phoneController.text =
+        (user?['phone'] ?? member['phone'] ?? '').toString();
+    _shareValueController.text = _formatNumber(member['share_value']);
+    _venmoUsernameController.text =
+        member['venmo_username']?.toString() ?? '';
+    _cashTagController.text = member['cash_tag']?.toString() ?? '';
+  }
+
+  String _formatNumber(dynamic value) {
+    if (value is num) return value.toString();
+    if (value is String && value.isNotEmpty) return value;
+    return '0';
   }
 
   Future<void> _loadExistingMembers() async {
@@ -225,7 +262,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     }
   }
 
-  Future<void> _submitNewMember() async {
+  Future<void> _submitMember() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -233,10 +270,18 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
     final name = _nameController.text.trim();
+    final memberId = widget.member?['id'] as int?;
 
     if (email.isEmpty && phone.isEmpty) {
       setState(() {
         _errorNew = 'Enter an email or phone number';
+      });
+      return;
+    }
+
+    if (_isEditing && memberId == null) {
+      setState(() {
+        _errorNew = 'Member information is missing';
       });
       return;
     }
@@ -264,27 +309,36 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     }
 
     try {
-      await ApiService().dio.post(
-            '/groups/${widget.groupId}/members',
-            data: payload,
-          );
+      if (_isEditing) {
+        await ApiService().dio.put(
+              '/groups/${widget.groupId}/members/$memberId',
+              data: payload,
+            );
+      } else {
+        await ApiService().dio.post(
+              '/groups/${widget.groupId}/members',
+              data: payload,
+            );
+      }
 
       if (mounted) {
         Navigator.of(context).pop(true);
       }
     } on DioException catch (e) {
       if (Env.debug) {
-        debugPrint('Add member error: ${e.response?.data}');
+        debugPrint(
+          '${_isEditing ? 'Update' : 'Add'} member error: ${e.response?.data}',
+        );
       }
       if (!mounted) return;
       setState(() {
         _errorNew = e.response?.data?['message'] as String? ??
-            'Failed to add member';
+            (_isEditing ? 'Failed to update member' : 'Failed to add member');
         _submittingNew = false;
       });
     } catch (e) {
       if (Env.debug) {
-        debugPrint('Unexpected add member error: $e');
+        debugPrint('Unexpected ${_isEditing ? 'update' : 'add'} member error: $e');
       }
       if (!mounted) return;
       setState(() {
@@ -297,6 +351,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isEditing = _isEditing;
 
     return SafeArea(
       child: Padding(
@@ -313,7 +368,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
               children: [
                 Expanded(
                   child: Text(
-                    'Add Group Member',
+                    isEditing ? 'Edit Group Member' : 'Add Group Member',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -326,33 +381,46 @@ class _AddMemberSheetState extends State<AddMemberSheet>
               ],
             ),
             const SizedBox(height: 12),
-            TabBar(
-              controller: _tabController,
-              labelColor: theme.colorScheme.primary,
-              indicatorColor: theme.colorScheme.primary,
-              tabs: const [
-                Tab(text: 'New member'),
-                Tab(text: 'Existing member'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 420,
-              child: TabBarView(
+            if (!isEditing) ...[
+              TabBar(
                 controller: _tabController,
-                children: [
-                  _buildNewMemberForm(),
-                  _buildExistingMembersView(),
+                labelColor: theme.colorScheme.primary,
+                indicatorColor: theme.colorScheme.primary,
+                tabs: const [
+                  Tab(text: 'New member'),
+                  Tab(text: 'Existing member'),
                 ],
               ),
-            ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 420,
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildNewMemberForm(),
+                    _buildExistingMembersView(),
+                  ],
+                ),
+              ),
+            ] else
+              SizedBox(
+                height: 420,
+                child: SingleChildScrollView(
+                  child: _buildNewMemberForm(isEditing: true),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNewMemberForm() {
+  Widget _buildNewMemberForm({bool isEditing = false}) {
+    final actionLabel = isEditing
+        ? (_submittingNew ? 'Saving...' : 'Save changes')
+        : (_submittingNew ? 'Adding...' : 'Add member');
+    final actionIcon = isEditing ? Icons.save_outlined : Icons.person_add_alt_rounded;
+
     return SingleChildScrollView(
       child: Form(
         key: _formKey,
@@ -546,7 +614,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: _submittingNew ? null : _submitNewMember,
+                onPressed: _submittingNew ? null : _submitMember,
                 icon: _submittingNew
                     ? const SizedBox(
                         width: 18,
@@ -556,8 +624,8 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                           color: Colors.white,
                         ),
                       )
-                    : const Icon(Icons.person_add_alt_rounded),
-                label: Text(_submittingNew ? 'Adding...' : 'Add member'),
+                    : Icon(actionIcon),
+                label: Text(actionLabel),
               ),
             ),
           ],

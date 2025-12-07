@@ -1,8 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
-
-import 'package:flutter/scheduler.dart';
 import 'dart:ui' as ui;
 
 import '../../env.dart';
@@ -1373,9 +1370,10 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
     final memberId = member['id'] as int?;
     if (memberId == null) return;
 
-    final result = await showDialog<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      builder: (_) => _EditMemberDialog(
+      isScrollControlled: true,
+      builder: (_) => AddMemberSheet(
         groupId: widget.groupId,
         member: member,
       ),
@@ -1383,6 +1381,14 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
 
     if (result == true) {
       await _loadGroupDetails();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Member updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     }
   }
 
@@ -1609,322 +1615,6 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
     return normalized == 'pending' ||
         normalized == 'sent' ||
         normalized == 'member_marked';
-  }
-}
-
-class _EditMemberDialog extends StatefulWidget {
-  final int groupId;
-  final Map<String, dynamic> member;
-
-  const _EditMemberDialog({
-    required this.groupId,
-    required this.member,
-  });
-
-  @override
-  State<_EditMemberDialog> createState() => _EditMemberDialogState();
-}
-
-class _EditMemberDialogState extends State<_EditMemberDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late TextEditingController _shareValueController;
-  late TextEditingController _venmoUsernameController;
-  late TextEditingController _cashTagController;
-  late TextEditingController _cashPhoneController;
-  late TextEditingController _cashEmailController;
-
-  late String _preferredChannel;
-  late String _shareType;
-  bool _saving = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    final member = widget.member;
-    _preferredChannel =
-        (member['preferred_channel'] as String? ?? 'VENMO').toUpperCase();
-    _shareType = (member['share_type'] as String? ?? 'AMOUNT').toUpperCase();
-
-    _shareValueController = TextEditingController(
-      text: _formatNumber(member['share_value']),
-    );
-    _venmoUsernameController = TextEditingController(
-      text: member['venmo_username']?.toString() ?? '',
-    );
-    _cashTagController = TextEditingController(
-      text: member['cash_tag']?.toString() ?? '',
-    );
-    _cashPhoneController = TextEditingController(
-      text: member['cash_phone']?.toString() ?? '',
-    );
-    _cashEmailController = TextEditingController(
-      text: member['cash_email']?.toString() ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _shareValueController.dispose();
-    _venmoUsernameController.dispose();
-    _cashTagController.dispose();
-    _cashPhoneController.dispose();
-    _cashEmailController.dispose();
-    super.dispose();
-  }
-
-  String _formatNumber(dynamic value) {
-    if (value is num) {
-      return value.toString();
-    }
-    if (value is String && value.isNotEmpty) {
-      return value;
-    }
-    return '0';
-  }
-
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final memberId = widget.member['id'] as int?;
-    if (memberId == null) {
-      setState(() {
-        _error = 'Member ID is missing';
-      });
-      return;
-    }
-
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-
-    final payload = <String, dynamic>{
-      'preferred_channel': _preferredChannel,
-      'share_type': _shareType,
-      'share_value': double.tryParse(_shareValueController.text) ?? 0,
-    };
-
-    if (_preferredChannel == 'VENMO') {
-      payload['venmo_username'] = _venmoUsernameController.text.trim();
-      payload['cash_tag'] = null;
-      payload['cash_phone'] = null;
-      payload['cash_email'] = null;
-    } else if (_preferredChannel == 'CASH_APP') {
-      final cashTag = _cashTagController.text.trim();
-      final cashPhone = _cashPhoneController.text.trim();
-      final cashEmail = _cashEmailController.text.trim();
-      payload['cash_tag'] = cashTag.isNotEmpty ? cashTag : null;
-      payload['cash_phone'] = cashPhone.isNotEmpty ? cashPhone : null;
-      payload['cash_email'] = cashEmail.isNotEmpty ? cashEmail : null;
-      payload['venmo_username'] = null;
-    }
-
-    try {
-      await ApiService().dio.put(
-            '/groups/${widget.groupId}/members/$memberId',
-            data: payload,
-          );
-
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    } on DioException catch (e) {
-      if (Env.debug) {
-        debugPrint('Update member error: ${e.response?.data}');
-      }
-      if (!mounted) return;
-      setState(() {
-        _error = e.response?.data?['message'] as String? ??
-            'Failed to update member';
-        _saving = false;
-      });
-    } catch (e) {
-      if (Env.debug) {
-        debugPrint('Unexpected update member error: $e');
-      }
-      if (!mounted) return;
-      setState(() {
-        _error = 'An unexpected error occurred';
-        _saving = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = widget.member['user'] as Map<String, dynamic>?;
-    final name = user?['name'] as String? ?? widget.member['name'] as String? ?? 'Member';
-
-    return AlertDialog(
-      title: Text('Edit $name'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DropdownButtonFormField<String>(
-                key: ValueKey('edit_channel_$_preferredChannel'),
-                initialValue: _preferredChannel,
-                decoration: const InputDecoration(
-                  labelText: 'Payment channel',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'VENMO',
-                    child: Text('Venmo'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'CASH_APP',
-                    child: Text('Cash App'),
-                  ),
-                ],
-                onChanged: _saving
-                    ? null
-                    : (value) {
-                        if (value != null) {
-                          setState(() {
-                            _preferredChannel = value;
-                          });
-                        }
-                      },
-              ),
-              const SizedBox(height: 16),
-              if (_preferredChannel == 'VENMO')
-                TextFormField(
-                  controller: _venmoUsernameController,
-                  enabled: !_saving,
-                  decoration: const InputDecoration(
-                    labelText: 'Venmo username',
-                    hintText: '@username',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (_preferredChannel == 'VENMO') {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Venmo username is required';
-                      }
-                    }
-                    return null;
-                  },
-                ),
-              if (_preferredChannel == 'VENMO') const SizedBox(height: 16),
-              if (_preferredChannel == 'CASH_APP') ...[
-                TextFormField(
-                  controller: _cashTagController,
-                  enabled: !_saving,
-                  decoration: const InputDecoration(
-                    labelText: 'Cash tag (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _cashPhoneController,
-                  enabled: !_saving,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Cash App phone (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _cashEmailController,
-                  enabled: !_saving,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Cash App email (optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              DropdownButtonFormField<String>(
-                key: ValueKey('edit_share_$_shareType'),
-                initialValue: _shareType,
-                decoration: const InputDecoration(
-                  labelText: 'Contribution type',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'AMOUNT',
-                    child: Text('Fixed amount'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'PERCENT',
-                    child: Text('Percentage'),
-                  ),
-                ],
-                onChanged: _saving
-                    ? null
-                    : (value) {
-                        if (value != null) {
-                          setState(() {
-                            _shareType = value;
-                          });
-                        }
-                      },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _shareValueController,
-                enabled: !_saving,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: _shareType == 'PERCENT' ? 'Percent' : 'Amount',
-                  border: const OutlineInputBorder(),
-                  prefixText: _shareType == 'AMOUNT' ? '\$' : null,
-                  suffixText: _shareType == 'PERCENT' ? '%' : null,
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Required';
-                  }
-                  final parsed = double.tryParse(value);
-                  if (parsed == null || parsed <= 0) {
-                    return 'Enter a valid value';
-                  }
-                  if (_shareType == 'PERCENT' && parsed > 100) {
-                    return 'Maximum 100%';
-                  }
-                  return null;
-                },
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _error!,
-                  style: TextStyle(color: Colors.red.shade700),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Save'),
-        ),
-      ],
-    );
   }
 }
 

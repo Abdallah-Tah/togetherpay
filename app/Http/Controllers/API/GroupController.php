@@ -311,6 +311,9 @@ class GroupController extends Controller
         $this->authorize('update', $group);
 
         $validated = $request->validate([
+            'name' => ['nullable', 'string'],
+            'email' => ['nullable', 'email'],
+            'phone' => ['nullable', 'string'],
             'preferred_channel' => ['sometimes', 'in:VENMO,CASH_APP,CARD'],
             'venmo_username' => ['nullable', 'string'],
             'cash_tag' => ['nullable', 'string'],
