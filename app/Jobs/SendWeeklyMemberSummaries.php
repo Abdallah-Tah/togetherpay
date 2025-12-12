@@ -86,13 +86,14 @@ class SendWeeklyMemberSummaries implements ShouldQueue
             }
 
             // Calculate statistics
-            $confirmed = $paymentRequests->whereIn('status', ['owner_confirmed', 'auto_verified']);
-            $pending = $paymentRequests->where('status', 'member_marked');
+            $confirmed = $paymentRequests->whereIn('status', ['paid', 'owner_confirmed', 'auto_verified']);
+            $awaitingOwnerConfirmation = $paymentRequests->where('status', 'member_marked');
             $disputed = $paymentRequests->where('status', 'disputed');
-            $needsPayment = $paymentRequests->where('status', 'pending');
+            $unpaid = $paymentRequests->whereIn('status', ['pending', 'sent']);
 
             $confirmedAmount = $confirmed->sum('amount_cents') / 100;
-            $pendingAmount = $pending->sum('amount_cents') / 100;
+            $awaitingOwnerConfirmationAmount = $awaitingOwnerConfirmation->sum('amount_cents') / 100;
+            $unpaidAmount = $unpaid->sum('amount_cents') / 100;
 
             // Count payments that will auto-confirm soon (within 24 hours)
             $autoConfirmSoon = $paymentRequests
@@ -110,10 +111,10 @@ class SendWeeklyMemberSummaries implements ShouldQueue
             if ($disputed->count() > 0) {
                 $needsAttention = true;
                 $attentionMessage = "Owner reported an issue with {$disputed->count()} payment(s). Please check your messages.";
-            } elseif ($needsPayment->count() > 0) {
+            } elseif ($unpaid->count() > 0) {
                 $needsAttention = true;
                 $overdueCount = $paymentRequests
-                    ->where('status', 'pending')
+                    ->whereIn('status', ['pending', 'sent'])
                     ->filter(function ($pr) {
                         return $pr->created_at && now()->diffInDays($pr->created_at) > 3;
                     })
@@ -122,16 +123,19 @@ class SendWeeklyMemberSummaries implements ShouldQueue
                 if ($overdueCount > 0) {
                     $attentionMessage = "{$overdueCount} payment(s) overdue. Please send your payment soon.";
                 } else {
-                    $attentionMessage = "{$needsPayment->count()} payment(s) due. Don't forget to pay!";
+                    $attentionMessage = "{$unpaid->count()} payment(s) due. Don't forget to pay!";
                 }
             }
 
             $summaries[] = [
                 'group_name' => $group->name,
+                'requests_created_count' => $paymentRequests->count(),
                 'confirmed_count' => $confirmed->count(),
                 'confirmed_amount' => number_format($confirmedAmount, 2),
-                'pending_count' => $pending->count(),
-                'pending_amount' => number_format($pendingAmount, 2),
+                'awaiting_owner_confirmation_count' => $awaitingOwnerConfirmation->count(),
+                'awaiting_owner_confirmation_amount' => number_format($awaitingOwnerConfirmationAmount, 2),
+                'unpaid_count' => $unpaid->count(),
+                'unpaid_amount' => number_format($unpaidAmount, 2),
                 'auto_confirm_soon' => $autoConfirmSoon,
                 'needs_attention' => $needsAttention,
                 'attention_message' => $attentionMessage,

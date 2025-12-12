@@ -70,6 +70,8 @@ void main() async {
   if (!kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.iOS ||
           defaultTargetPlatform == TargetPlatform.android)) {
+    // Ensure Firebase is initialized before any FirebaseMessaging usage.
+    await Firebase.initializeApp();
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   }
 
@@ -96,6 +98,17 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     _appLinks = AppLinks();
     _setupApp();
     _initDeepLinks();
+
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.android)) {
+      FirebaseMessaging.onMessageOpenedApp.listen(_handlePushMessage);
+      FirebaseMessaging.instance.getInitialMessage().then((message) {
+        if (message != null) {
+          _handlePushMessage(message);
+        }
+      });
+    }
   }
 
   @override
@@ -170,6 +183,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
       // Set authorization header for all API requests
       dio.options.headers['Authorization'] = 'Bearer $_authToken';
       await PushNotificationsService.instance.syncDeviceRegistration(dio);
+      PushNotificationsService.instance.registerTapHandler(_routeFromPushData);
 
       // Check if user needs onboarding
       await _checkOnboardingStatus();
@@ -198,6 +212,45 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
       setState(() {
         _needsOnboarding = false;
       });
+    }
+  }
+
+  void _handlePushMessage(RemoteMessage message) {
+    final data = <String, dynamic>{
+      ...message.data,
+      if (message.notification?.title != null)
+        'title': message.notification!.title!,
+      if (message.notification?.body != null)
+        'body': message.notification!.body!,
+    };
+    _routeFromPushData(data);
+  }
+
+  void _routeFromPushData(Map<String, dynamic> data) {
+    if (_authToken == null || globalNavigatorKey.currentContext == null) {
+      return;
+    }
+
+    final deepLinkRaw = data['deep_link']?.toString();
+    if (deepLinkRaw != null && deepLinkRaw.isNotEmpty) {
+      final uri = Uri.tryParse(deepLinkRaw);
+      if (uri != null) {
+        _handleDeepLink(uri);
+      }
+    }
+
+    final prCode = data['pr_code']?.toString();
+    final prId = data['payment_request_id']?.toString();
+    if ((prCode != null && prCode.isNotEmpty) ||
+        (prId != null && prId.isNotEmpty)) {
+      Navigator.of(globalNavigatorKey.currentContext!).push(
+        MaterialPageRoute(
+          builder: (_) => PaymentRequestsScreen(
+            initialPrCode: prCode,
+            initialPaymentRequestId: prId,
+          ),
+        ),
+      );
     }
   }
 
@@ -380,23 +433,20 @@ class _SplashScreenState extends State<SplashScreen>
                                 .headlineLarge
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: isDark
-                                      ? Colors.white
-                                      : AppTheme.gray900,
+                                  color:
+                                      isDark ? Colors.white : AppTheme.gray900,
                                   letterSpacing: -0.5,
                                 ),
                           ),
                           const SizedBox(height: AppTheme.spaceS),
                           Text(
                             'Split bills together, pay separately.',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge
-                                ?.copyWith(
-                                  color: isDark
-                                      ? AppTheme.gray400
-                                      : AppTheme.gray600,
-                                ),
+                            style:
+                                Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: isDark
+                                          ? AppTheme.gray400
+                                          : AppTheme.gray600,
+                                    ),
                           ),
                         ],
                       ),

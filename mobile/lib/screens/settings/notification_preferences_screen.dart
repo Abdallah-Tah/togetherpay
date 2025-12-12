@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../../env.dart';
 import '../../main.dart';
@@ -23,6 +25,7 @@ class _NotificationPreferencesScreenState
   bool _loading = true;
   String? _error;
   bool _saving = false;
+  bool? _systemPushAuthorized;
 
   // Notification preferences
   bool _emailNotifications = true;
@@ -40,6 +43,26 @@ class _NotificationPreferencesScreenState
   void initState() {
     super.initState();
     _loadPreferences();
+    _loadSystemPushStatus();
+  }
+
+  Future<void> _loadSystemPushStatus() async {
+    if (kIsWeb) return;
+    try {
+      final settings =
+          await FirebaseMessaging.instance.getNotificationSettings();
+      final status = settings.authorizationStatus;
+      if (!mounted) return;
+      setState(() {
+        _systemPushAuthorized = status == AuthorizationStatus.authorized ||
+            status == AuthorizationStatus.provisional;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _systemPushAuthorized = null;
+      });
+    }
   }
 
   Future<void> _loadPreferences() async {
@@ -195,6 +218,37 @@ class _NotificationPreferencesScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppTheme.spaceLarge),
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusXL),
+                      boxShadow: AppTheme.softShadow,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Stay in the loop',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(color: Colors.white),
+                        ),
+                        const SizedBox(height: AppTheme.spaceS),
+                        Text(
+                          'Control how and when TogetherPay alerts you about new requests and reminders.',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white.withOpacity(0.9),
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppTheme.spaceLarge),
+
                   if (_error != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -220,6 +274,11 @@ class _NotificationPreferencesScreenState
                     const SizedBox(height: AppTheme.spaceMedium),
                   ],
 
+                  if (_systemPushAuthorized == false) ...[
+                    _buildSystemPushWarning(),
+                    const SizedBox(height: AppTheme.spaceLarge),
+                  ],
+
                   // Notification Channels
                   _buildSectionHeader(
                     'Notification Channels',
@@ -227,11 +286,23 @@ class _NotificationPreferencesScreenState
                   ),
                   const SizedBox(height: AppTheme.spaceSmall),
                   Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusL),
+                      side: BorderSide(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.12),
+                      ),
+                    ),
                     child: Column(
                       children: [
                         SwitchListTile(
+                          secondary: const Icon(Icons.email_outlined),
                           title: const Text('Email Notifications'),
-                          subtitle: const Text('Receive notifications via email'),
+                          subtitle:
+                              const Text('Receive notifications via email'),
                           value: _emailNotifications,
                           onChanged: (value) {
                             setState(() {
@@ -241,6 +312,8 @@ class _NotificationPreferencesScreenState
                         ),
                         const Divider(height: 1),
                         SwitchListTile(
+                          secondary:
+                              const Icon(Icons.notifications_active_outlined),
                           title: const Text('Push Notifications'),
                           subtitle: const Text('Receive push notifications'),
                           value: _pushNotifications,
@@ -252,6 +325,7 @@ class _NotificationPreferencesScreenState
                         ),
                         const Divider(height: 1),
                         SwitchListTile(
+                          secondary: const Icon(Icons.sms_outlined),
                           title: const Text('SMS Notifications'),
                           subtitle: const Text('Receive text messages'),
                           value: _smsNotifications,
@@ -274,9 +348,20 @@ class _NotificationPreferencesScreenState
                   ),
                   const SizedBox(height: AppTheme.spaceSmall),
                   Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusL),
+                      side: BorderSide(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.12),
+                      ),
+                    ),
                     child: Column(
                       children: [
                         SwitchListTile(
+                          secondary: const Icon(Icons.request_page_outlined),
                           title: const Text('Payment Requests'),
                           subtitle:
                               const Text('New payment requests sent to you'),
@@ -289,6 +374,8 @@ class _NotificationPreferencesScreenState
                         ),
                         const Divider(height: 1),
                         SwitchListTile(
+                          secondary:
+                              const Icon(Icons.notifications_none_outlined),
                           title: const Text('Payment Reminders'),
                           subtitle:
                               const Text('Reminders for pending payments'),
@@ -301,9 +388,10 @@ class _NotificationPreferencesScreenState
                         ),
                         const Divider(height: 1),
                         SwitchListTile(
+                          secondary: const Icon(Icons.check_circle_outline),
                           title: const Text('Payment Confirmations'),
-                          subtitle:
-                              const Text('Confirmations when payments complete'),
+                          subtitle: const Text(
+                              'Confirmations when payments complete'),
                           value: _paymentConfirmations,
                           onChanged: (value) {
                             setState(() {
@@ -313,6 +401,7 @@ class _NotificationPreferencesScreenState
                         ),
                         const Divider(height: 1),
                         SwitchListTile(
+                          secondary: const Icon(Icons.group_add_outlined),
                           title: const Text('Group Invitations'),
                           subtitle:
                               const Text('Invitations to join new groups'),
@@ -325,6 +414,7 @@ class _NotificationPreferencesScreenState
                         ),
                         const Divider(height: 1),
                         SwitchListTile(
+                          secondary: const Icon(Icons.event_available_outlined),
                           title: const Text('Cycle Completions'),
                           subtitle: const Text('When billing cycles complete'),
                           value: _cycleCompletions,
@@ -344,21 +434,22 @@ class _NotificationPreferencesScreenState
                   Container(
                     padding: const EdgeInsets.all(AppTheme.spaceMedium),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.radiusMedium),
-                      border: Border.all(color: Colors.blue.shade200),
+                      color: AppTheme.primaryLight,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusL),
+                      border: Border.all(
+                        color: AppTheme.primary.withOpacity(0.25),
+                      ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.info_outline, color: Colors.blue.shade700),
+                        Icon(Icons.info_outline, color: AppTheme.primaryDark),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'We recommend keeping push notifications enabled so you never miss a payment request.',
                             style: TextStyle(
-                              color: Colors.blue.shade900,
+                              color: AppTheme.gray900,
                               fontSize: 14,
                             ),
                           ),
@@ -372,6 +463,15 @@ class _NotificationPreferencesScreenState
                   // Save Button
                   FilledButton.icon(
                     onPressed: _saving ? null : _savePreferences,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppTheme.spaceM,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusL),
+                      ),
+                    ),
                     icon: _saving
                         ? const SizedBox(
                             width: 16,
@@ -404,6 +504,47 @@ class _NotificationPreferencesScreenState
               ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSystemPushWarning() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spaceMedium),
+      decoration: BoxDecoration(
+        color: AppTheme.warning.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(AppTheme.radiusL),
+        border: Border.all(
+          color: AppTheme.warning.withOpacity(0.35),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded, color: AppTheme.warning),
+          const SizedBox(width: AppTheme.spaceS),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Push notifications are off',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: AppTheme.spaceXS),
+                Text(
+                  'Enable notifications for TogetherPay in Settings to receive timely payment alerts.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AppTheme.gray700),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

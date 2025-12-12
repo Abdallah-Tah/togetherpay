@@ -13,7 +13,14 @@ import 'payment_request_details_sheet.dart';
 
 /// Payment Requests Screen - Shows all payment requests for the authenticated user
 class PaymentRequestsScreen extends StatefulWidget {
-  const PaymentRequestsScreen({super.key});
+  const PaymentRequestsScreen({
+    super.key,
+    this.initialPrCode,
+    this.initialPaymentRequestId,
+  });
+
+  final String? initialPrCode;
+  final String? initialPaymentRequestId;
 
   @override
   State<PaymentRequestsScreen> createState() => _PaymentRequestsScreenState();
@@ -27,6 +34,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
   Map<String, int>? _stats;
   String _filterStatus = 'all'; // all, pending, paid, overdue
   late TabController _tabController;
+  bool _openedInitial = false;
 
   @override
   void initState() {
@@ -70,12 +78,14 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
     try {
       final response = await dio.get('/payment-requests');
       final requestsResponse = response.data;
-      
+
       setState(() {
         _paymentRequests = _parsePaymentRequests(requestsResponse);
         _stats = _buildStats(_paymentRequests);
         _loading = false;
       });
+
+      _maybeOpenInitial();
     } on DioException catch (e) {
       if (Env.debug) {
         debugPrint('Payment requests load error: ${e.response?.data}');
@@ -97,6 +107,43 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
         _loading = false;
       });
     }
+  }
+
+  void _maybeOpenInitial() {
+    if (_openedInitial) return;
+    final prCode = widget.initialPrCode;
+    final prId = widget.initialPaymentRequestId;
+    if ((prCode == null || prCode.isEmpty) && (prId == null || prId.isEmpty)) {
+      return;
+    }
+
+    Map<String, dynamic>? match;
+    if (prCode != null && prCode.isNotEmpty) {
+      final found = _paymentRequests.firstWhere(
+        (pr) => (pr['pr_code']?.toString() ?? '') == prCode,
+        orElse: () => {},
+      );
+      if (found.isNotEmpty) match = found;
+    }
+
+    if (match == null && prId != null && prId.isNotEmpty) {
+      final found = _paymentRequests.firstWhere(
+        (pr) =>
+            (pr['id']?.toString() ??
+                pr['payment_request_id']?.toString() ??
+                '') ==
+            prId,
+        orElse: () => {},
+      );
+      if (found.isNotEmpty) match = found;
+    }
+
+    if (match == null) return;
+    _openedInitial = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _showPaymentRequestDetails(match!);
+    });
   }
 
   List<Map<String, dynamic>> get _filteredPaymentRequests {
@@ -149,7 +196,8 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200,
+              color:
+                  isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200,
               borderRadius: BorderRadius.circular(25),
             ),
             child: TabBar(
@@ -167,7 +215,8 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
                 ],
               ),
               labelColor: Colors.white,
-              unselectedLabelColor: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              unselectedLabelColor:
+                  isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
               tabs: [
@@ -372,9 +421,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
     if (dueDateStr != null) {
       try {
         dueDate = DateTime.parse(dueDateStr);
-        if (!isPaid &&
-            !isAwaitingConfirm &&
-            dueDate.isBefore(DateTime.now())) {
+        if (!isPaid && !isAwaitingConfirm && dueDate.isBefore(DateTime.now())) {
           isOverdue = true;
         }
       } catch (e) {
@@ -446,164 +493,165 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
             onTap: () => _showPaymentRequestDetails(pr),
             child: Padding(
               padding: const EdgeInsets.all(AppTheme.spaceMedium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Main content row
-              Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Member avatar with accent
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          statusColor.withValues(alpha: 0.3),
-                          statusColor.withValues(alpha: 0.1),
-                        ],
+                  // Main content row
+                  Row(
+                    children: [
+                      // Member avatar with accent
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              statusColor.withValues(alpha: 0.3),
+                              statusColor.withValues(alpha: 0.1),
+                            ],
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          backgroundColor: statusColor.withValues(alpha: 0.15),
+                          radius: 24,
+                          child: Text(
+                            memberName.isNotEmpty
+                                ? memberName[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: CircleAvatar(
-                      backgroundColor: statusColor.withValues(alpha: 0.15),
-                      radius: 24,
-                      child: Text(
-                        memberName.isNotEmpty
-                            ? memberName[0].toUpperCase()
-                            : '?',
+                      const SizedBox(width: AppTheme.spaceMedium),
+                      // Member and group info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              memberName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                height: 1.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              groupName,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                                height: 1.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.spaceSmall),
+                      // Amount with accent
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.08),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusSmall),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '\$${amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: statusColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTheme.spaceMedium),
+                  // Status and date row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Status badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              statusIcon,
+                              size: 14,
+                              color: statusColor,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              statusText,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Date info
+                      Text(
+                        isPaid && paidAt != null
+                            ? 'Paid ${_formatDate(paidAt)}'
+                            : dueDate != null
+                                ? 'Due ${_formatDate(dueDate)}'
+                                : 'No due date',
                         style: TextStyle(
-                          color: statusColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          color: Colors.grey.shade500,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: AppTheme.spaceMedium),
-                  // Member and group info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          memberName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            height: 1.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          groupName,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
-                            height: 1.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  // PR Code (for debugging in dev mode)
+                  if (Env.debug && prCode != null) ...[
+                    const SizedBox(height: AppTheme.spaceSmall),
+                    Text(
+                      'Code: $prCode',
+                      style: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 10,
+                        fontFamily: 'monospace',
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppTheme.spaceSmall),
-                  // Amount with accent
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '\$${amount.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: statusColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ],
               ),
-              const SizedBox(height: AppTheme.spaceMedium),
-              // Status and date row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Status badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          statusIcon,
-                          size: 14,
-                          color: statusColor,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          statusText,
-                          style: TextStyle(
-                            color: statusColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Date info
-                  Text(
-                    isPaid && paidAt != null
-                        ? 'Paid ${_formatDate(paidAt)}'
-                        : dueDate != null
-                            ? 'Due ${_formatDate(dueDate)}'
-                            : 'No due date',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              // PR Code (for debugging in dev mode)
-              if (Env.debug && prCode != null) ...[
-                const SizedBox(height: AppTheme.spaceSmall),
-                Text(
-                  'Code: $prCode',
-                  style: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 10,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
-    ),
-    ),
     );
   }
 
@@ -648,13 +696,12 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
       return DateFormat('MMM d, yyyy').format(date);
     }
   }
-  
+
   List<Map<String, dynamic>> _parsePaymentRequests(dynamic payload) {
     final list = _extractRequestList(payload);
 
     return list
-        .map((item) =>
-            item is Map ? Map<String, dynamic>.from(item) : null)
+        .map((item) => item is Map ? Map<String, dynamic>.from(item) : null)
         .whereType<Map<String, dynamic>>()
         .toList();
   }
@@ -720,9 +767,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
 
   bool _isPendingStatus(dynamic statusValue) {
     final status = (statusValue as String?)?.toLowerCase() ?? '';
-    return status == 'pending' ||
-        status == 'sent' ||
-        status == 'member_marked';
+    return status == 'pending' || status == 'sent' || status == 'member_marked';
   }
 
   bool _isAwaitingConfirmationStatus(dynamic statusValue) {

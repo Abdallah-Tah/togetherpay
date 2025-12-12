@@ -38,12 +38,12 @@ class WeeklyMemberPaymentSummary extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $totalPending = 0;
+        $totalUnpaid = 0;
         $totalConfirmed = 0;
         $needsAttention = [];
 
         foreach ($this->groupSummaries as $summary) {
-            $totalPending += $summary['pending_count'];
+            $totalUnpaid += $summary['unpaid_count'] ?? 0;
             $totalConfirmed += $summary['confirmed_count'];
 
             if ($summary['needs_attention']) {
@@ -60,12 +60,23 @@ class WeeklyMemberPaymentSummary extends Notification implements ShouldQueue
         foreach ($this->groupSummaries as $summary) {
             $message->line("**{$summary['group_name']}**");
 
+            $createdCount = (int) ($summary['requests_created_count'] ?? 0);
+            if ($createdCount > 0) {
+                $message->line("📨 Requests created: {$createdCount}");
+            }
+
             if ($summary['confirmed_count'] > 0) {
                 $message->line("✅ Confirmed: \${$summary['confirmed_amount']} ({$summary['confirmed_count']} payment".($summary['confirmed_count'] === 1 ? '' : 's').')');
             }
 
-            if ($summary['pending_count'] > 0) {
-                $message->line("⏳ Pending confirmation: \${$summary['pending_amount']} ({$summary['pending_count']} payment".($summary['pending_count'] === 1 ? '' : 's').')');
+            $awaitingCount = (int) ($summary['awaiting_owner_confirmation_count'] ?? 0);
+            if ($awaitingCount > 0) {
+                $message->line("⏳ Awaiting owner confirmation: \${$summary['awaiting_owner_confirmation_amount']} ({$awaitingCount} payment".($awaitingCount === 1 ? '' : 's').')');
+            }
+
+            $unpaidCount = (int) ($summary['unpaid_count'] ?? 0);
+            if ($unpaidCount > 0) {
+                $message->line("🧾 Unpaid: \${$summary['unpaid_amount']} ({$unpaidCount} payment".($unpaidCount === 1 ? '' : 's').')');
             }
 
             if ($summary['auto_confirm_soon']) {
@@ -80,7 +91,7 @@ class WeeklyMemberPaymentSummary extends Notification implements ShouldQueue
         }
 
         // Add action button if there are pending items
-        if ($totalPending > 0 || count($needsAttention) > 0) {
+        if ($totalUnpaid > 0 || count($needsAttention) > 0) {
             $message->action('Review Payments', url('/dashboard'));
         }
 

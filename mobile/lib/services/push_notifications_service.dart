@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -22,6 +23,13 @@ class PushNotificationsService {
   Dio? _dio;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+  void Function(Map<String, dynamic> data)? _onTap;
+
+  /// Register a handler for notification taps.
+  /// The handler receives the decoded payload/data map.
+  void registerTapHandler(void Function(Map<String, dynamic> data) handler) {
+    _onTap = handler;
+  }
 
   Future<void> _ensureInitialized() async {
     if (_initialized || _initializing) {
@@ -180,7 +188,8 @@ class PushNotificationsService {
       debugPrint('=== FCM Token Registration Debug ===');
       debugPrint('Token: ${token ?? "NULL"}');
       debugPrint('Dio: ${dio != null ? "SET" : "NULL"}');
-      debugPrint('Auth Header: ${dio?.options.headers['Authorization'] != null ? "SET" : "NULL"}');
+      debugPrint(
+          'Auth Header: ${dio?.options.headers['Authorization'] != null ? "SET" : "NULL"}');
       debugPrint('Last Token: $_lastRegisteredToken');
       debugPrint('Is Mobile: $_isMobilePlatform');
     }
@@ -228,7 +237,8 @@ class PushNotificationsService {
 
   /// Initialize local notifications plugin
   Future<void> _initializeLocalNotifications() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -256,15 +266,16 @@ class PushNotificationsService {
       debugPrint('Notification tapped with payload: ${response.payload}');
     }
 
-    // The payload contains the payment_request_id
-    // You can use this to navigate to the payment details screen
-    // For now, we'll just log it - navigation will be handled by the app
-    if (response.payload != null) {
-      // TODO: Navigate to payment request details screen
-      // This would typically use a navigation service or stream
-      if (Env.debug) {
-        debugPrint('Should navigate to payment request: ${response.payload}');
+    if (response.payload == null) return;
+    try {
+      final decoded = json.decode(response.payload!);
+      if (decoded is Map) {
+        _onTap?.call(Map<String, dynamic>.from(decoded));
+        return;
       }
+    } catch (_) {
+      // Fallback: treat payload as a simple id/code.
+      _onTap?.call({'payment_request_id': response.payload});
     }
   }
 
@@ -302,7 +313,11 @@ class PushNotificationsService {
       notification.title,
       notification.body,
       details,
-      payload: message.data['payment_request_id']?.toString(),
+      payload: json.encode({
+        ...message.data,
+        'title': notification.title,
+        'body': notification.body,
+      }),
     );
 
     if (Env.debug) {
