@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../env.dart';
+import 'notification_center_service.dart';
 
 /// Handles push notification registration and device sync with the API.
 class PushNotificationsService {
@@ -38,6 +39,7 @@ class PushNotificationsService {
 
       // Initialize local notifications
       await _initializeLocalNotifications();
+      await NotificationCenterService.instance.refreshBadgeFromStore();
 
       await FirebaseMessaging.instance
           .setForegroundNotificationPresentationOptions(
@@ -76,6 +78,7 @@ class PushNotificationsService {
           );
         }
         _showLocalNotification(message);
+        _storeIncomingNotification(message);
       });
 
       _initialized = true;
@@ -117,9 +120,10 @@ class PushNotificationsService {
     await _registerTokenWithApi();
   }
 
-  void clearCachedAuthState() {
+  Future<void> clearCachedAuthState() async {
     _lastRegisteredToken = null;
     _dio = null;
+    await NotificationCenterService.instance.clearAll();
   }
 
   /// Retry device registration with exponential backoff
@@ -304,6 +308,18 @@ class PushNotificationsService {
     if (Env.debug) {
       debugPrint('Local notification displayed: ${notification.title}');
     }
+  }
+
+  /// Persist inbound messages for the in-app inbox and badge.
+  Future<void> _storeIncomingNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    if (notification == null) return;
+    final category = message.data['type']?.toString() ?? 'general';
+    await NotificationCenterService.instance.addFromPush(
+      title: notification.title ?? Env.appName,
+      body: notification.body ?? '',
+      category: category,
+    );
   }
 }
 

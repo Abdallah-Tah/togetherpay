@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import '../../services/api_service.dart';
 import '../../utils/theme.dart';
+import '../settings/notification_center_screen.dart';
 import '../../main.dart'; // For MainScaffold logout callback if needed, though usually handled by parent
 
 class ProfileScreen extends StatefulWidget {
@@ -158,10 +158,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           context,
                           icon: Icons.notifications_outlined,
                           title: 'Notifications',
-                          subtitle: 'Manage your alerts',
+                          subtitle: 'Inbox and preferences',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Coming soon')),
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationCenterScreen(),
+                              ),
                             );
                           },
                         ),

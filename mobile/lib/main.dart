@@ -14,13 +14,14 @@ import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/payments/payment_requests_screen.dart';
 import 'screens/reports/reports_screen.dart';
-import 'screens/settings/notification_preferences_screen.dart';
+import 'screens/settings/notification_center_screen.dart';
 import 'screens/settings/payment_methods_screen.dart';
 import 'screens/settings/security_screen.dart';
 import 'screens/legal/privacy_policy_screen.dart';
 import 'screens/legal/terms_of_service_screen.dart';
 import 'screens/invitations/accept_invitation_screen.dart';
 import 'services/push_notifications_service.dart';
+import 'services/notification_center_service.dart';
 import 'utils/theme.dart';
 
 /// Global Dio instance for API calls
@@ -157,6 +158,9 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
   }
 
   Future<void> _setupApp() async {
+    // Warm notification center so badges/unread counts are ready.
+    await NotificationCenterService.instance.load();
+
     // Load auth token from secure storage
     if (!kIsWeb) {
       _authToken = await storage.read(key: 'auth_token');
@@ -213,7 +217,7 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
 
     // Clear auth header
     dio.options.headers.remove('Authorization');
-    PushNotificationsService.instance.clearCachedAuthState();
+    await PushNotificationsService.instance.clearCachedAuthState();
 
     setState(() {
       _authToken = null;
@@ -702,13 +706,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ListTile(
               leading: const Icon(Icons.notifications_outlined),
               title: const Text('Notifications'),
-              subtitle: const Text('Manage notification preferences'),
-              trailing: const Icon(Icons.chevron_right),
+              subtitle: const Text('Inbox and preferences'),
+              trailing: StreamBuilder<int>(
+                stream: NotificationCenterService.instance.unreadCountStream,
+                initialData: NotificationCenterService.instance.unreadCount,
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+                  if (count <= 0) {
+                    return const Icon(Icons.chevron_right);
+                  }
+                  final label = count > 99 ? '99+' : '$count';
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  );
+                },
+              ),
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const NotificationPreferencesScreen(),
+                    builder: (_) => const NotificationCenterScreen(),
                   ),
                 );
               },

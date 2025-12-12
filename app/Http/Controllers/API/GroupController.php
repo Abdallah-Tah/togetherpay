@@ -13,6 +13,8 @@ use App\Models\User;
 use App\Notifications\GroupInvitationNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 
 class GroupController extends Controller
 {
@@ -310,10 +312,27 @@ class GroupController extends Controller
     {
         $this->authorize('update', $group);
 
+        // Ensure the member belongs to this group
+        if ((int) $member->group_id !== (int) $group->id) {
+            return response()->json([
+                'message' => 'Member not found in this group',
+            ], 404);
+        }
+
         $validated = $request->validate([
             'name' => ['nullable', 'string'],
-            'email' => ['nullable', 'email'],
-            'phone' => ['nullable', 'string'],
+            'email' => [
+                'sometimes',
+                'nullable',
+                'email',
+                Rule::unique('users', 'email')->ignore($member->user_id),
+            ],
+            'phone' => [
+                'sometimes',
+                'nullable',
+                'string',
+                Rule::unique('users', 'phone')->ignore($member->user_id),
+            ],
             'preferred_channel' => ['sometimes', 'in:VENMO,CASH_APP,CARD'],
             'venmo_username' => ['nullable', 'string'],
             'cash_tag' => ['nullable', 'string'],
@@ -324,7 +343,46 @@ class GroupController extends Controller
             'status' => ['sometimes', 'in:active,paused,left'],
         ]);
 
-        $member->update($validated);
+        // Normalize payment handles when channel changes to avoid stale data.
+        $updateData = $validated;
+        if (Arr::exists($validated, 'preferred_channel')) {
+            $channel = strtoupper((string) $validated['preferred_channel']);
+            if ($channel === 'VENMO') {
+                $updateData['cash_tag'] = null;
+                $updateData['cash_phone'] = null;
+                $updateData['cash_email'] = null;
+            } elseif ($channel === 'CASH_APP') {
+                $updateData['venmo_username'] = null;
+            } else { // CARD or other
+                $updateData['venmo_username'] = null;
+                $updateData['cash_tag'] = null;
+                $updateData['cash_phone'] = null;
+                $updateData['cash_email'] = null;
+            }
+        }
+
+        $member->update($updateData);
+
+        // Sync core contact fields to the related user as well, so UI reflects edits.
+        $user = $member->user;
+        if ($user) {
+            $userUpdates = Arr::only($validated, ['name', 'email', 'phone']);
+            if (! empty($userUpdates)) {
+                try {
+                    $user->update($userUpdates);
+                } catch (\Throwable $e) {
+                    \Log::warning('Failed to sync placeholder user fields on member update', [
+                        'user_id' => $user->id,
+                        'member_id' => $member->id,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    return response()->json([
+                        'message' => 'Failed to update member contact details',
+                    ], 422);
+                }
+            }
+        }
 
         return response()->json([
             'member' => $member->load('user'),

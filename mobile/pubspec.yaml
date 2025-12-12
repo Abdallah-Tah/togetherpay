@@ -19,6 +19,8 @@ dependencies:
   # Push notifications
   firebase_core: ^2.25.4
   firebase_messaging: ^14.7.10
+  shared_preferences: ^2.3.2
+  flutter_app_badger: ^1.5.0
 
   # Secure storage for auth tokens
   flutter_secure_storage: ^9.0.0
