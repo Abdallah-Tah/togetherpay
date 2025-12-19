@@ -54,7 +54,7 @@ class _AcceptInvitationScreenState extends State<AcceptInvitationScreen> {
 
       setState(() {
         _error = e.response?.data?['message'] as String? ??
-                 'Failed to load invitation. The link may be invalid or expired.';
+            'Failed to load invitation. The link may be invalid or expired.';
         _loading = false;
       });
     } catch (e) {
@@ -87,7 +87,8 @@ class _AcceptInvitationScreenState extends State<AcceptInvitationScreen> {
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(response.data['message'] ?? 'Successfully joined the group!'),
+          content: Text(
+              response.data['message'] ?? 'Successfully joined the group!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -109,7 +110,7 @@ class _AcceptInvitationScreenState extends State<AcceptInvitationScreen> {
 
       setState(() {
         _error = e.response?.data?['message'] as String? ??
-                 'Failed to accept invitation';
+            'Failed to accept invitation';
         _processing = false;
       });
 
@@ -183,7 +184,8 @@ class _AcceptInvitationScreenState extends State<AcceptInvitationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.response?.data?['message'] as String? ?? 'Failed to decline invitation',
+            e.response?.data?['message'] as String? ??
+                'Failed to decline invitation',
           ),
           backgroundColor: Colors.red,
         ),
@@ -470,7 +472,8 @@ class _AcceptInvitationScreenState extends State<AcceptInvitationScreen> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
                     : const Icon(Icons.check_circle_outline),
@@ -582,6 +585,7 @@ class InvitationSignupScreen extends StatefulWidget {
 class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _otpController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordConfirmController = TextEditingController();
   final _venmoController = TextEditingController();
@@ -590,27 +594,62 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _loading = false;
+  bool _sendingCode = false;
+  String? _sendError;
 
   @override
   void initState() {
     super.initState();
     // Pre-fill name from invitation if available
-    final memberData = widget.invitation['member_data'] as Map<String, dynamic>?;
+    final memberData =
+        widget.invitation['member_data'] as Map<String, dynamic>?;
     if (memberData != null) {
       _nameController.text = memberData['name'] as String? ?? '';
       _venmoController.text = memberData['venmo_username'] as String? ?? '';
       _cashAppController.text = memberData['cashapp_cashtag'] as String? ?? '';
     }
+    _requestOtp();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _otpController.dispose();
     _passwordController.dispose();
     _passwordConfirmController.dispose();
     _venmoController.dispose();
     _cashAppController.dispose();
     super.dispose();
+  }
+
+  Future<void> _requestOtp() async {
+    if (_sendingCode) return;
+    setState(() {
+      _sendingCode = true;
+      _sendError = null;
+    });
+
+    try {
+      await dio.post('/invitations/${widget.token}/otp/request');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Verification code sent to your email'),
+        ),
+      );
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _sendError = e.response?.data?['message'] as String? ??
+            'Failed to send verification code';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _sendingCode = false;
+        });
+      }
+    }
   }
 
   Future<void> _handleSignup() async {
@@ -622,8 +661,9 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
 
     try {
       final response = await dio.post(
-        '/invitations/${widget.token}/accept-magic',
+        '/invitations/${widget.token}/otp/verify',
         data: {
+          'code': _otpController.text.trim(),
           'name': _nameController.text.trim(),
           'password': _passwordController.text,
           'password_confirmation': _passwordConfirmController.text,
@@ -715,7 +755,7 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Create your TogetherPay account to accept this invitation',
+                  'Verify your email and create a password to accept this invitation.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey.shade600,
                       ),
@@ -730,6 +770,50 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email_outlined),
                   ),
+                ),
+                const SizedBox(height: 12),
+
+                if (_sendError != null) ...[
+                  Text(
+                    _sendError!,
+                    style: TextStyle(color: Colors.red.shade600),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'We sent a 6‑digit code to your email.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _sendingCode ? null : _requestOtp,
+                      child: Text(_sendingCode ? 'Sending…' : 'Resend'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Verification Code',
+                    prefixIcon: Icon(Icons.verified_outlined),
+                    hintText: '123456',
+                  ),
+                  validator: (value) {
+                    final v = (value ?? '').trim();
+                    if (v.isEmpty) return 'Enter the verification code';
+                    if (v.length < 4) return 'Code looks too short';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
 
@@ -758,7 +842,9 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -788,7 +874,9 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirm ? Icons.visibility : Icons.visibility_off,
+                        _obscureConfirm
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -858,10 +946,11 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text('Create Account & Join Group'),
+                      : const Text('Verify & Join'),
                 ),
               ],
             ),

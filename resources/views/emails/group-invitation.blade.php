@@ -24,7 +24,7 @@
 
     <p style="margin-bottom: 10px;"><strong>Step 1:</strong> Download the TogetherPay app from your app store</p>
     <p style="margin-bottom: 10px;"><strong>Step 2:</strong> Tap the button below to accept your invitation</p>
-    <p style="margin-bottom: 20px;"><strong>Step 3:</strong> Set up your account and payment preferences</p>
+    <p style="margin-bottom: 20px;"><strong>Step 3:</strong> Verify your email with a one-time code and create your password</p>
 
     <div class="button-container">
         <a href="{{ $invitationUrl }}" class="button">Accept Invitation</a>

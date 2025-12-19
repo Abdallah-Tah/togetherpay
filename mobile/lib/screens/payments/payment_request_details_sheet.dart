@@ -261,7 +261,7 @@ class _PaymentRequestDetailsSheetState
 
       // Force opening in browser by using webOnlyWindowName
       // This prevents Android from intercepting the app link directly
-      // Browser → Cash App web page → Redirects to app with amount prefilled
+      // Browser → Cash App web page → Redirects to app; amount may still require manual entry
       final launched = await launchUrl(
         cashAppUrl,
         mode: LaunchMode.externalApplication,

@@ -49,7 +49,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     OnboardingPage(
       title: 'Get Paid via Venmo or Cash App',
       description:
-          'Members pay you directly through their preferred payment app with pre-filled amounts.',
+          'Members pay you directly through their preferred payment app using payment links (some apps may not pre-fill the amount).',
       icon: Icons.payment_rounded,
       color: Color(0xFFA855F7), // Purple
     ),

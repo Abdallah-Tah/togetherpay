@@ -182,6 +182,60 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
     });
 
     try {
+      Future<bool> launchPreferExternal(Uri uri) async {
+        final isCashApp =
+            uri.host == 'cash.app' || uri.toString().startsWith('https://cash.app/');
+
+        // Match the previously-working behavior:
+        // open a browser view "under" the app (custom tab / safari view) first,
+        // then let cash.app redirect into the Cash App app with the `/amount` path.
+        if (isCashApp) {
+          try {
+            final launched = await launchUrl(
+              uri,
+              mode: LaunchMode.inAppBrowserView,
+              webOnlyWindowName: '_blank',
+            );
+            if (launched) return true;
+          } catch (_) {
+            // fall through
+          }
+
+          try {
+            final launched = await launchUrl(
+              uri,
+              mode: LaunchMode.externalApplication,
+              webOnlyWindowName: '_blank',
+            );
+            if (launched) return true;
+          } catch (_) {
+            // fall through
+          }
+        }
+
+        try {
+          final launched =
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+          if (launched) return true;
+        } catch (_) {
+          // fall through
+        }
+
+        try {
+          final launched =
+              await launchUrl(uri, mode: LaunchMode.platformDefault);
+          if (launched) return true;
+        } catch (_) {
+          // fall through
+        }
+
+        try {
+          return await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+        } catch (_) {
+          return false;
+        }
+      }
+
       Uri? targetUri;
 
       // Try deep_link first (from API response)
@@ -199,65 +253,14 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
         targetUri = Uri.tryParse(widget.deepLink!);
       }
 
-      // CRITICAL: Use redirect page for Cash App to force browser opening
-      // This prevents Android from intercepting the app link
-      if (targetUri != null &&
-          targetUri.toString().startsWith('https://cash.app/')) {
-        // Parse Cash App URL to extract cashtag and amount
-        // Format: https://cash.app/$cashtag/amount
-        final cashAppUrl = targetUri.toString();
-        final match = RegExp(r'https://cash\.app/\$([^/]+)/([0-9.]+)')
-            .firstMatch(cashAppUrl);
-        if (match != null) {
-          final cashtag = match.group(1);
-          final amount = match.group(2);
-
-          // Get note from payment data (group name + note)
-          final groupName =
-              _paymentData?['group']?['name'] as String? ?? 'Payment';
-          final paymentNote = _paymentData?['note'] as String?;
-          final note = paymentNote != null && paymentNote.isNotEmpty
-              ? '$groupName - $paymentNote'
-              : groupName;
-
-          if (Env.debug) {
-            debugPrint('=== NOTE DEBUG ===');
-            debugPrint('Group name: $groupName');
-            debugPrint('Payment note: $paymentNote');
-            debugPrint('Combined note: $note');
-            debugPrint('Payment data keys: ${_paymentData?.keys}');
-            debugPrint('Full payment data: $_paymentData');
-          }
-
-          // Use redirect page instead of direct Cash App URL
-          final baseUrl = Env.apiBase.replaceAll('/api/v1', '');
-          final encodedNote = Uri.encodeComponent(note);
-
-          if (Env.debug) {
-            debugPrint('Encoded note: $encodedNote');
-            debugPrint('Base URL: $baseUrl');
-          }
-
-          targetUri = Uri.parse(
-              '$baseUrl/redirect/cashapp?cashtag=$cashtag&amount=$amount&note=$encodedNote');
-
-          if (Env.debug) {
-            debugPrint('Final redirect URL: $targetUri');
-          }
-        }
-      }
-
       if (targetUri != null) {
         if (Env.debug) {
-          debugPrint('Launching wallet with inAppBrowserView: $targetUri');
+          debugPrint('Launching wallet: $targetUri');
         }
 
-        // Use inAppBrowserView - this is the working approach from the DEBUG button
-        // Opens in-app browser which then properly redirects to the wallet app
-        final launched = await launchUrl(
-          targetUri,
-          mode: LaunchMode.inAppBrowserView,
-        );
+        // Prefer handing off to the OS/browser for Cash App links so universal-link
+        // redirection works as reliably as possible across Android/iOS versions.
+        final launched = await launchPreferExternal(targetUri);
 
         if (Env.debug) {
           debugPrint('Wallet launched: $launched');
@@ -546,23 +549,7 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
                     ),
                   ] else ...[
                     OutlinedButton.icon(
-                      onPressed: () async {
-                        final url = _deepLinkUri ?? _webFallback;
-                        if (url != null) {
-                          final uri = Uri.tryParse(url);
-                          if (uri != null) {
-                            final launched = await launchUrl(
-                              uri,
-                              mode: LaunchMode.inAppBrowserView,
-                            );
-                            if (launched && mounted) {
-                              setState(() {
-                                _hasLaunchedWallet = true;
-                              });
-                            }
-                          }
-                        }
-                      },
+                      onPressed: _launchWallet,
                       icon: const Icon(Icons.open_in_new),
                       label: const Text('Open Wallet'),
                     ),
@@ -575,25 +562,9 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
                     if (Env.debug) ...[
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
-                        onPressed: () async {
-                          final url = _deepLinkUri ?? _webFallback;
-                          if (url != null) {
-                            final uri = Uri.tryParse(url);
-                            if (uri != null) {
-                              final launched = await launchUrl(
-                                uri,
-                                mode: LaunchMode.inAppBrowserView,
-                              );
-                              if (launched && mounted) {
-                                setState(() {
-                                  _hasLaunchedWallet = true;
-                                });
-                              }
-                            }
-                          }
-                        },
+                        onPressed: _launchWallet,
                         icon: const Icon(Icons.bug_report),
-                        label: const Text('DEBUG: Open in Browser'),
+                        label: const Text('DEBUG: Launch Wallet'),
                       ),
                     ],
                     const SizedBox(height: 32),
@@ -606,7 +577,8 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
                     ),
                     const SizedBox(height: 12),
                     _buildStep(1, 'Tap "Open Wallet"'),
-                    _buildStep(2, 'Review the pre-filled amount'),
+                    _buildStep(2,
+                        'Enter the amount shown (Cash App may not pre-fill)'),
                     _buildStep(3, 'Send the payment'),
                     _buildStep(4, 'Confirm here once sent'),
                   ],

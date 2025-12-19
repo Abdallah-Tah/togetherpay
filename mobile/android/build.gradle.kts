@@ -5,6 +5,9 @@ buildscript {
     }
 }
 
+import org.gradle.api.JavaVersion
+import org.gradle.api.tasks.compile.JavaCompile
+
 allprojects {
     repositories {
         google()
@@ -57,6 +60,15 @@ subprojects {
 
     pluginManager.withPlugin("com.android.library") { applyForce() }
     pluginManager.withPlugin("com.android.application") { applyForce() }
+
+    // Some transitive Android dependencies still set `-source/-target 1.8`,
+    // which triggers warnings on newer JDKs. Standardize on Java 17 for all
+    // subprojects and suppress the obsolete-options lint noise.
+    tasks.withType<JavaCompile>().configureEach {
+        sourceCompatibility = JavaVersion.VERSION_17.toString()
+        targetCompatibility = JavaVersion.VERSION_17.toString()
+        options.compilerArgs.add("-Xlint:-options")
+    }
 }
 
 tasks.register<Delete>("clean") {

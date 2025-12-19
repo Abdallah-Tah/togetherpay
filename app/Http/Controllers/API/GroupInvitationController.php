@@ -8,14 +8,20 @@ use App\Models\GroupInvitation;
 use App\Models\GroupMember;
 use App\Models\User;
 use App\Notifications\GroupInvitationNotification;
+use App\Notifications\InvitationOtpNotification;
 use App\Notifications\WelcomeNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 class GroupInvitationController extends Controller
 {
+    private const INVITE_OTP_EXPIRES_MINUTES = 10;
+    private const INVITE_OTP_MAX_ATTEMPTS_PER_HOUR = 5;
+
     /**
      * Send invitation to join group
      */
@@ -193,6 +199,129 @@ class GroupInvitationController extends Controller
             'token' => $token,
             'group' => $invitation->group,
         ], 200);
+    }
+
+    /**
+     * Request a one-time passcode for invitation onboarding.
+     * The user opens the invite in the app, requests a code, then verifies + sets password.
+     */
+    public function requestOtp(Request $request, string $token)
+    {
+        $invitation = GroupInvitation::where('token', $token)
+            ->with('group')
+            ->firstOrFail();
+
+        if (! $invitation->isValid()) {
+            return response()->json([
+                'message' => 'This invitation is no longer valid or has expired.',
+            ], 422);
+        }
+
+        // Basic rate limit per invitation token (stored in cache).
+        $rateKey = "invite:otp:rate:{$token}";
+        $rate = Cache::get($rateKey, ['count' => 0, 'reset_at' => now()->addHour()->toIso8601String()]);
+        $count = (int) ($rate['count'] ?? 0);
+        $resetAt = $rate['reset_at'] ?? now()->addHour()->toIso8601String();
+        $resetAtDt = \Carbon\Carbon::parse($resetAt);
+        if ($resetAtDt->isPast()) {
+            $count = 0;
+            $resetAtDt = now()->addHour();
+        }
+
+        if ($count >= self::INVITE_OTP_MAX_ATTEMPTS_PER_HOUR) {
+            return response()->json([
+                'message' => 'Too many code requests. Please try again later.',
+            ], 429);
+        }
+
+        $code = (string) random_int(100000, 999999);
+        $otpKey = "invite:otp:{$token}";
+        Cache::put($otpKey, Hash::make($code), now()->addMinutes(self::INVITE_OTP_EXPIRES_MINUTES));
+        Cache::put($rateKey, [
+            'count' => $count + 1,
+            'reset_at' => $resetAtDt->toIso8601String(),
+        ], $resetAtDt);
+
+        Notification::route('mail', $invitation->email)
+            ->notify(new InvitationOtpNotification($invitation, $code, self::INVITE_OTP_EXPIRES_MINUTES));
+
+        return response()->json([
+            'message' => 'Verification code sent',
+            'expires_in_minutes' => self::INVITE_OTP_EXPIRES_MINUTES,
+        ]);
+    }
+
+    /**
+     * Verify one-time passcode and activate account + set password.
+     */
+    public function verifyOtp(Request $request, string $token)
+    {
+        $validated = $request->validate([
+            'code' => ['required', 'string'],
+            'name' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'cash_tag' => ['nullable', 'string'],
+            'venmo_username' => ['nullable', 'string'],
+        ]);
+
+        $invitation = GroupInvitation::where('token', $token)
+            ->with('group')
+            ->firstOrFail();
+
+        if (! $invitation->isValid()) {
+            return response()->json([
+                'message' => 'This invitation is no longer valid or has expired.',
+            ], 422);
+        }
+
+        $otpKey = "invite:otp:{$token}";
+        $hash = Cache::get($otpKey);
+        if (! $hash || ! Hash::check((string) $validated['code'], $hash)) {
+            return response()->json([
+                'message' => 'Invalid or expired verification code.',
+            ], 422);
+        }
+
+        Cache::forget($otpKey);
+
+        $user = User::where('email', $invitation->email)->first();
+        if (! $user) {
+            return response()->json([
+                'message' => 'No pending invitation found for this email.',
+            ], 404);
+        }
+
+        DB::transaction(function () use ($user, $validated, $invitation) {
+            $user->update([
+                'name' => $validated['name'],
+                'password' => Hash::make($validated['password']),
+                'cash_tag' => $validated['cash_tag'] ?? null,
+                'venmo_username' => $validated['venmo_username'] ?? null,
+                'is_placeholder' => false,
+                'email_verified_at' => $user->email_verified_at ?? now(),
+                'invitation_accepted_at' => now(),
+                'invitation_token' => null,
+            ]);
+
+            $invitation->markAsAccepted($user);
+        });
+
+        $user->notify(new WelcomeNotification(isInvitation: true));
+        $authToken = $user->createToken('mobile-app')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Account activated successfully! Welcome to TogetherPay.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'onboarding_completed' => $user->hasCompletedOnboarding(),
+            ],
+            'token' => $authToken,
+            'group' => $invitation->group,
+        ]);
     }
 
     /**

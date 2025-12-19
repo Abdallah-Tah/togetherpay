@@ -24,7 +24,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             '2. Description of Service',
             'TogetherPay provides tooling for group owners to organize shared expenses, send payment requests, and track payment status. We offer two collection modes:',
             bulletPoints: [
-              'Manual mode – generates pre-filled links for peer‑to‑peer apps such as Cash App or Venmo.',
+              'Manual mode – generates payment links for peer‑to‑peer apps such as Cash App or Venmo (some apps may not pre-fill the amount).',
               'Auto Cash App Pay – publishes Cash App Pay invoices through the owner\'s connected Square merchant account.',
             ],
             additionalContent:

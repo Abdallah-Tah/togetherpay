@@ -8,7 +8,8 @@ use Illuminate\View\View;
 class RedirectController extends Controller
 {
     /**
-     * Redirect to Cash App with amount prefilled
+     * Redirect to Cash App, showing the amount in the URL/path.
+     * Note: Cash App may still require the user to type the amount manually.
      */
     public function cashApp(Request $request): View
     {

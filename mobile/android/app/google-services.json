@@ -7,47 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:496629881813:android:5fd31aa68d12f2e0edbb5c",
-        "android_client_info": {
-          "package_name": "com.togetherpay.app"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyC2j5xSN1PHw9jRvaMzIgYCtC1cFrmx84A"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:496629881813:android:0184994e9d1f5838edbb5c",
         "android_client_info": {
           "package_name": "com.togetherpay.mobile"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyC2j5xSN1PHw9jRvaMzIgYCtC1cFrmx84A"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:496629881813:android:88c13ab30386ea11edbb5c",
-        "android_client_info": {
-          "package_name": "com.togetherpay.togetherpay"
         }
       },
       "oauth_client": [],

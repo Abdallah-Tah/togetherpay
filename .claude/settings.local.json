@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(unzip:*)"
+      "Bash(unzip:*)",
+      "Bash(flutter clean:*)",
+      "Bash(flutter build:*)",
+      "Bash(flutter install:*)"
     ],
     "deny": [],
     "ask": []
