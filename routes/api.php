@@ -5,6 +5,7 @@ use App\Http\Controllers\API\CashAppOAuthController;
 use App\Http\Controllers\API\DeviceController;
 use App\Http\Controllers\API\GroupController;
 use App\Http\Controllers\API\GroupInvitationController;
+use App\Http\Controllers\API\PasswordResetController;
 use App\Http\Controllers\API\PaymentRequestController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\CashAppWebhookController;
@@ -32,6 +33,8 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     Route::middleware('throttle:5,1')->group(function () {
         Route::post('/auth/register', [AuthController::class, 'register']);
         Route::post('/auth/login', [AuthController::class, 'login']);
+        Route::post('/auth/password/forgot', [PasswordResetController::class, 'sendResetLink']);
+        Route::post('/auth/password/reset', [PasswordResetController::class, 'resetPassword']);
     });
 
     // Device registration (allows both authenticated and guest users)

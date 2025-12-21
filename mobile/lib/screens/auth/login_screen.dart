@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../env.dart';
 import '../../main.dart';
+import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 
 /// Login screen with email/password authentication
@@ -85,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       setState(() {
         _error = e.response?.data['message'] as String? ??
-                 'Invalid email or password';
+            'Invalid email or password';
         _loading = false;
       });
     } catch (e) {
@@ -128,15 +129,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     // App logo/icon with enhanced design
                     Center(
                       child: Container(
-                        width: 128, // Combined size of previous inner(80) + padding(24*2)
+                        width:
+                            128, // Combined size of previous inner(80) + padding(24*2)
                         height: 128,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           // Optional: Background color if your logo has transparency
-                          // color: Theme.of(context).colorScheme.surface, 
+                          // color: Theme.of(context).colorScheme.surface,
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.2),
                               blurRadius: 30,
                               offset: const Offset(0, 15),
                             ),
@@ -145,7 +150,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: ClipOval(
                           child: Image.asset(
                             'assets/images/app_icon.png',
-                            fit: BoxFit.cover, // This ensures the image fills the circle completely
+                            fit: BoxFit
+                                .cover, // This ensures the image fills the circle completely
                           ),
                         ),
                       ),
@@ -155,19 +161,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     // App name with better typography
                     Text(
                       'TogetherPay',
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 32,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            letterSpacing: -0.5,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 32,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                letterSpacing: -0.5,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Split bills together',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
                             fontSize: 16,
                           ),
                       textAlign: TextAlign.center,
@@ -177,7 +187,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Login form card
                     Card(
                       elevation: 8,
-                      shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      shadowColor: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -193,11 +206,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.red.shade50,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.red.shade200),
+                                  border:
+                                      Border.all(color: Colors.red.shade200),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.error_outline, color: Colors.red.shade700),
+                                    Icon(Icons.error_outline,
+                                        color: Colors.red.shade700),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -215,115 +230,113 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
 
                             // Email field
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    enabled: !_loading,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      hintText: 'your@email.com',
-                      prefixIcon: Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Password field
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    textInputAction: TextInputAction.done,
-                    enabled: !_loading,
-                    onFieldSubmitted: (_) => _handleLogin(),
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      hintText: 'Enter your password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Remember me & Forgot password
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _rememberMe,
-                        onChanged: _loading
-                            ? null
-                            : (value) {
-                                setState(() {
-                                  _rememberMe = value ?? false;
-                                });
+                            TextFormField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              enabled: !_loading,
+                              decoration: const InputDecoration(
+                                labelText: 'Email',
+                                hintText: 'your@email.com',
+                                prefixIcon: Icon(Icons.email_outlined),
+                                border: OutlineInputBorder(),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter your email';
+                                }
+                                if (!value.contains('@')) {
+                                  return 'Please enter a valid email';
+                                }
+                                return null;
                               },
-                      ),
-                      const Text('Remember me'),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: _loading
-                            ? null
-                            : () {
-                                // TODO: Implement forgot password
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Password reset - Coming soon',
-                                    ),
-                                  ),
-                                );
-                              },
-                        child: const Text('Forgot password?'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Login button
-                  FilledButton(
-                    onPressed: _loading ? null : _handleLogin,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
                             ),
-                          )
-                        : const Text('Login'),
-                  ),
-                  const SizedBox(height: 16),
+                            const SizedBox(height: 16),
+
+                            // Password field
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              enabled: !_loading,
+                              onFieldSubmitted: (_) => _handleLogin(),
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                hintText: 'Enter your password',
+                                prefixIcon: const Icon(Icons.lock_outline),
+                                border: const OutlineInputBorder(),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your password';
+                                }
+                                if (value.length < 6) {
+                                  return 'Password must be at least 6 characters';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Remember me & Forgot password
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: _rememberMe,
+                                  onChanged: _loading
+                                      ? null
+                                      : (value) {
+                                          setState(() {
+                                            _rememberMe = value ?? false;
+                                          });
+                                        },
+                                ),
+                                const Text('Remember me'),
+                                const Spacer(),
+                                TextButton(
+                                  onPressed: _loading
+                                      ? null
+                                      : () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const ForgotPasswordScreen(),
+                                            ),
+                                          );
+                                        },
+                                  child: const Text('Forgot password?'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Login button
+                            FilledButton(
+                              onPressed: _loading ? null : _handleLogin,
+                              child: _loading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text('Login'),
+                            ),
+                            const SizedBox(height: 16),
 
                             // Register link
                             Row(
@@ -344,14 +357,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                             context,
                                             MaterialPageRoute(
                                               builder: (_) => RegisterScreen(
-                                                onAuthSuccess: widget.onAuthSuccess,
+                                                onAuthSuccess:
+                                                    widget.onAuthSuccess,
                                               ),
                                             ),
                                           );
                                         },
                                   child: const Text(
                                     'Register',
-                                    style: TextStyle(fontWeight: FontWeight.w600),
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               ],
