@@ -2,40 +2,60 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  /// Brand palette
-  static const Color primary = Color(0xFF00CDBE); // Brand Teal
-  static const Color primaryDark = Color(0xFF00A095);
+  /// Brand palette - Ethereal Glassmorphism
+  static const Color primary = Color(0xFF006D77); // Deep Green/Teal
+  static const Color primaryDark = Color(0xFF004E56);
   static const Color primaryLight = Color(0xFFCCFBF7);
 
-  static const Color navy = Color(0xFF0F172A); // Slate 900
-  static const Color navyLight = Color(0xFF1E293B); // Slate 800
+  // Iridescent Accents
+  static const Color lavender = Color(0xFFE0C3FC);
+  static const Color mint = Color(0xFFB9FBC0);
+  static const Color paleGold = Color(0xFFFDE68A);
+  static const Color coral = Color(0xFFFF7F50);
 
-  static const Color background = Color(0xFFFAFAFA); // Zinc 50
+  static const Color deepGreen = Color(0xFF004D40);
+  static const Color deepGreenDark = Color(0xFF002420);
+
+  static const Color cream = Color(0xFFFDFBF7);
+  static const Color background = Color(0xFFFDFBF7); // Alias to cream
   static const Color surface = Colors.white;
 
-  static const Color gray900 = Color(0xFF18181B); // Zinc 900
-  static const Color gray700 = Color(0xFF3F3F46); // Zinc 700
-  static const Color gray600 = Color(0xFF52525B); // Zinc 600
-  static const Color gray400 = Color(0xFFA1A1AA); // Zinc 400
-  static const Color gray200 = Color(0xFFE4E4E7); // Zinc 200
-  static const Color gray100 = Color(0xFFF4F4F5); // Zinc 100
+  static const Color navy = Color(0xFF0F172A); // restored for compatibility
+  static const Color navyLight = Color(0xFF1E293B);
 
-  static const Color success = Color(0xFF10B981); // Emerald 500
-  static const Color warning = Color(0xFFF59E0B); // Amber 500
-  static const Color error = Color(0xFFEF4444); // Red 500
+  static const Color gray900 = Color(0xFF18181B);
+  static const Color gray700 = Color(0xFF3F3F46);
+  static const Color gray600 = Color(0xFF52525B);
+  static const Color gray400 = Color(0xFFA1A1AA);
+  static const Color gray200 = Color(0xFFE4E4E7);
+  static const Color gray100 = Color(0xFFF4F4F5);
+
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color error = Color(0xFFEF4444);
 
   /// Gradients used throughout the app
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [primary, primaryDark],
+    colors: [deepGreen, deepGreenDark],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient meshGradient = LinearGradient(
     colors: [
-      Color(0xFFF0FDFA), // Teal 50
-      Color(0xFFF8FAFC), // Slate 50
-      Color(0xFFEFF6FF), // Blue 50
+      Color(0xFF004D40), // Deep Green
+      Color(0xFF00695C), // Teal 800
+      Color(0xFF004D40), // Deep Green
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient auroraGradient = LinearGradient(
+    colors: [
+      lavender,
+      mint,
+      paleGold,
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -43,8 +63,8 @@ class AppTheme {
 
   static const LinearGradient glassGradient = LinearGradient(
     colors: [
-      Colors.white,
-      Color(0xFFF8FAFC),
+      Colors.white24,
+      Colors.white10,
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -239,19 +259,19 @@ class AppTheme {
       inverseSurface: gray900,
       onInverseSurface: Colors.white,
       inversePrimary: primaryDark,
-      surfaceContainerHighest: background,
+      surfaceContainerHighest: cream,
     );
 
     final textTheme = _textTheme(base.textTheme, gray900);
 
     return base.copyWith(
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: background,
+      scaffoldBackgroundColor: cream,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: background,
+        backgroundColor: cream,
         surfaceTintColor: Colors.transparent,
         foregroundColor: gray900,
         titleTextStyle: textTheme.titleLarge,

@@ -232,19 +232,22 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: isDark,
       appBar: AppBar(
         title: const Text('My Groups'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: (isDark ? Colors.black : Colors.white).withOpacity(0.5),
-            ),
-          ),
-        ),
+        backgroundColor:
+            isDark ? Colors.transparent : Theme.of(context).colorScheme.surface,
+        elevation: isDark ? 0 : null,
+        flexibleSpace: isDark
+            ? ClipRect(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.25),
+                  ),
+                ),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -260,17 +263,16 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
       ),
       body: Container(
         decoration: BoxDecoration(
+          color: isDark ? null : Theme.of(context).scaffoldBackgroundColor,
           gradient: isDark
               ? const LinearGradient(
                   colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 )
-              : AppTheme.meshGradient,
+              : null,
         ),
-        child: SafeArea(
-          child: _buildBody(),
-        ),
+        child: SafeArea(child: _buildBody()),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _loading ? null : _showCreateGroupSheet,
@@ -332,7 +334,10 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.6),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -353,7 +358,10 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
               Text(
                 'Create a group to start splitting bills with friends.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -387,7 +395,8 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
             itemCount: _groups.length,
             slideDirection: SlideDirection.fromBottom,
             animationController: AnimationController(
-              vsync: ScrollableState(), // This is a hack, better to use flutter_staggered_animations or similar
+              vsync:
+                  ScrollableState(), // This is a hack, better to use flutter_staggered_animations or similar
               duration: const Duration(milliseconds: 375),
             )..forward(),
             child: GroupCard(

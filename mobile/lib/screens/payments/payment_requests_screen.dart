@@ -171,19 +171,22 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: isDark,
       appBar: AppBar(
         title: const Text('Payment Requests'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: (isDark ? Colors.black : Colors.white).withOpacity(0.5),
-            ),
-          ),
-        ),
+        backgroundColor:
+            isDark ? Colors.transparent : Theme.of(context).colorScheme.surface,
+        elevation: isDark ? 0 : null,
+        flexibleSpace: isDark
+            ? ClipRect(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.25),
+                  ),
+                ),
+              )
+            : null,
         actions: [
           IconButton(
             tooltip: 'Refresh',
@@ -231,13 +234,14 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
       ),
       body: Container(
         decoration: BoxDecoration(
+          color: isDark ? null : Theme.of(context).scaffoldBackgroundColor,
           gradient: isDark
               ? const LinearGradient(
                   colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 )
-              : AppTheme.meshGradient,
+              : null,
         ),
         child: SafeArea(
           child: RefreshIndicator(
@@ -274,25 +278,6 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildBadge(int count, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        count.toString(),
-        style: TextStyle(
-          color: color,
-          fontSize: 9,
-          fontWeight: FontWeight.bold,
-          height: 1.0,
-        ),
       ),
     );
   }
@@ -398,6 +383,10 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
   }
 
   Widget _buildPaymentRequestCard(Map<String, dynamic> pr) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final surface = Theme.of(context).cardTheme.color ?? colorScheme.surface;
+
     final prCode = pr['pr_code'] as String?;
     final memberName = pr['member']?['name'] as String? ??
         pr['member']?['user']?['name'] as String? ??
@@ -470,7 +459,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
         boxShadow: AppTheme.cardShadow,
       ),
       child: Material(
-        color: Colors.white,
+        color: surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         clipBehavior: Clip.antiAlias,
         child: Container(
@@ -484,8 +473,8 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                statusColor.withValues(alpha: 0.02),
-                Colors.white,
+                statusColor.withValues(alpha: isDark ? 0.08 : 0.03),
+                surface,
               ],
             ),
           ),

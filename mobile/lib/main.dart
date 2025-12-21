@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'env.dart';
+import 'screens/dashboard_screen.dart';
 import 'screens/groups/groups_list_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
@@ -23,6 +24,8 @@ import 'screens/invitations/accept_invitation_screen.dart';
 import 'services/push_notifications_service.dart';
 import 'services/notification_center_service.dart';
 import 'utils/theme.dart';
+import 'widgets/glass_widgets.dart';
+import 'dart:ui';
 
 /// Global Dio instance for API calls
 final dio = Dio(BaseOptions(
@@ -373,100 +376,110 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: isDark
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF0F172A), // Slate 900
-                    const Color(0xFF020617), // Slate 950
-                  ],
-                )
-              : AppTheme.meshGradient,
+          gradient: AppTheme.meshGradient,
         ),
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: Container(
-                        width: 128,
-                        height: 128,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.primary.withOpacity(0.2),
-                              blurRadius: 30,
-                              offset: const Offset(0, 15),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/app_icon.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppTheme.spaceXL),
-                    Transform.translate(
-                      offset: Offset(0, _slideAnimation.value),
-                      child: Column(
-                        children: [
-                          Text(
-                            'TogetherPay',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
+        child: Stack(
+          children: [
+            Positioned(
+              top: -50,
+              right: -50,
+              child: GlowingCircle(
+                size: 200,
+                color: AppTheme.lavender,
+              ),
+            ),
+            Positioned(
+              bottom: -50,
+              left: -50,
+              child: GlowingCircle(
+                size: 200,
+                color: AppTheme.mint,
+              ),
+            ),
+            Center(
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ScaleTransition(
+                          scale: _scaleAnimation,
+                          child: Container(
+                            width: 128,
+                            height: 128,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
                                   color:
-                                      isDark ? Colors.white : AppTheme.gray900,
-                                  letterSpacing: -0.5,
+                                      AppTheme.primary.withValues(alpha: 0.2),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 15),
                                 ),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/app_icon.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                           ),
-                          const SizedBox(height: AppTheme.spaceS),
-                          Text(
-                            'Split bills together, pay separately.',
-                            style:
-                                Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: isDark
-                                          ? AppTheme.gray400
-                                          : AppTheme.gray600,
-                                    ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppTheme.spaceXL * 2),
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          isDark ? AppTheme.primary : AppTheme.primaryDark,
                         ),
-                      ),
+                        const SizedBox(height: AppTheme.spaceXL),
+                        Transform.translate(
+                          offset: Offset(0, _slideAnimation.value),
+                          child: Column(
+                            children: [
+                              Text(
+                                'TogetherPay',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: -0.5,
+                                    ),
+                              ),
+                              const SizedBox(height: AppTheme.spaceS),
+                              Text(
+                                'Split bills together, pay separately.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.7),
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppTheme.spaceXL * 2),
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppTheme.mint,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -504,14 +517,29 @@ class MainScaffold extends StatefulWidget {
 class MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    GroupsListScreen(),
-    PaymentRequestsScreen(),
-    ProfileScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      DashboardScreen(onNavigateToTab: _handleNavigateToTab),
+      const GroupsListScreen(),
+      const PaymentRequestsScreen(),
+      const ProfileScreen(),
+    ];
+  }
+
+  void _handleNavigateToTab(int index) {
+    if (index < 0 || index >= _screens.length) return;
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -521,40 +549,66 @@ class MainScaffoldState extends State<MainScaffold> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
+              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.10),
+              blurRadius: 24,
+              offset: const Offset(0, -8),
             ),
           ],
         ),
-        child: NavigationBar(
-          selectedIndex: _currentIndex,
-          onDestinationSelected: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          elevation: 0,
-          height: 65,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.groups_outlined),
-              selectedIcon: Icon(Icons.groups),
-              label: 'Groups',
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .surface
+                    .withValues(alpha: isDark ? 0.92 : 0.88),
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outlineVariant
+                        .withValues(alpha: isDark ? 0.25 : 0.55),
+                  ),
+                ),
+              ),
+              child: NavigationBar(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                height: 65,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.home_outlined),
+                    selectedIcon: Icon(Icons.home),
+                    label: 'Home',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.groups_outlined),
+                    selectedIcon: Icon(Icons.groups),
+                    label: 'Groups',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.payment_outlined),
+                    selectedIcon: Icon(Icons.payment),
+                    label: 'Requests',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.person_outline),
+                    selectedIcon: Icon(Icons.person),
+                    label: 'Profile',
+                  ),
+                ],
+              ),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.payment_outlined),
-              selectedIcon: Icon(Icons.payment),
-              label: 'Payments',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
+          ),
         ),
       ),
     );

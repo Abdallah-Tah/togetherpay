@@ -132,6 +132,32 @@
         </flux:header>
 
         {{ $slot }}
+
+        <!-- Mobile Bottom Navigation -->
+        <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-t border-zinc-200/60 dark:border-zinc-700/50 px-6 py-3 z-50">
+            <div class="flex items-center justify-between">
+                <a href="{{ route('dashboard') }}" wire:navigate class="flex flex-col items-center space-y-1 {{ request()->routeIs('dashboard') ? 'text-teal-deep dark:text-brand-400' : 'text-zinc-500 dark:text-zinc-400' }}">
+                    <flux:icon.home variant="{{ request()->routeIs('dashboard') ? 'solid' : 'outline' }}" class="h-6 w-6" />
+                    <span class="text-[10px] font-medium">Home</span>
+                </a>
+                <a href="{{ route('app.groups.index') }}" wire:navigate class="flex flex-col items-center space-y-1 {{ request()->routeIs('app.groups.*') ? 'text-teal-deep dark:text-brand-400' : 'text-zinc-500 dark:text-zinc-400' }}">
+                    <flux:icon.users variant="{{ request()->routeIs('app.groups.*') ? 'solid' : 'outline' }}" class="h-6 w-6" />
+                    <span class="text-[10px] font-medium">Groups</span>
+                </a>
+                <a href="{{ route('app.payment-requests.index') }}" wire:navigate class="flex flex-col items-center space-y-1 {{ request()->routeIs('app.payment-requests.*') ? 'text-teal-deep dark:text-brand-400' : 'text-zinc-500 dark:text-zinc-400' }}">
+                    <flux:icon.wallet variant="{{ request()->routeIs('app.payment-requests.*') ? 'solid' : 'outline' }}" class="h-6 w-6" />
+                    <span class="text-[10px] font-medium">Requests</span>
+                </a>
+                <a href="{{ route('app.reports.index') }}" wire:navigate class="flex flex-col items-center space-y-1 {{ request()->routeIs('app.reports.*') ? 'text-teal-deep dark:text-brand-400' : 'text-zinc-500 dark:text-zinc-400' }}">
+                    <flux:icon.chart-bar variant="{{ request()->routeIs('app.reports.*') ? 'solid' : 'outline' }}" class="h-6 w-6" />
+                    <span class="text-[10px] font-medium">Wallet</span>
+                </a>
+                <a href="{{ route('profile.edit') }}" wire:navigate class="flex flex-col items-center space-y-1 {{ request()->routeIs('profile.edit') ? 'text-teal-deep dark:text-brand-400' : 'text-zinc-500 dark:text-zinc-400' }}">
+                    <flux:icon.user-circle variant="{{ request()->routeIs('profile.edit') ? 'solid' : 'outline' }}" class="h-6 w-6" />
+                    <span class="text-[10px] font-medium">Profile</span>
+                </a>
+            </div>
+        </div>
         @livewireScripts
         @include('partials.flux-scripts')
     </body>
