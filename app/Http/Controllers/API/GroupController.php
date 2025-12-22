@@ -19,28 +19,56 @@ use Illuminate\Validation\Rule;
 class GroupController extends Controller
 {
     /**
-     * Display a listing of groups (owned by user only)
-     * Members should NOT see groups they're part of - they only see their payment requests
+     * Display a listing of groups the user owns or belongs to.
      */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        // Only return groups owned by user
-        // Members can view their payment requests but not browse groups
         $ownedGroups = $user->ownedGroups()
-            ->with(['members.user', 'cycles' => function ($query) {
-                $query->latest()->limit(1);
-            }])
+            ->with([
+                'members.user',
+                'cycles' => function ($query) {
+                    $query->latest()->with('paymentRequests')->limit(1);
+                },
+            ])
             ->get()
             ->map(function ($group) {
-                return $group->toArray();
+                $groupArray = $group->toArray();
+                $groupArray['is_owner'] = true;
+                return $groupArray;
             });
+
+        $memberGroups = $user->groupMemberships()
+            ->where('status', 'active')
+            ->whereHas('group', function ($query) use ($user) {
+                $query->where('owner_id', '!=', $user->id);
+            })
+            ->with(['group' => function ($query) {
+                $query->with([
+                    'members.user',
+                    'cycles' => function ($cycleQuery) {
+                        $cycleQuery->latest()->with('paymentRequests')->limit(1);
+                    },
+                ]);
+            }])
+            ->get()
+            ->map(function ($membership) {
+                $group = $membership->group;
+                if (! $group) {
+                    return null;
+                }
+                $groupArray = $group->toArray();
+                $groupArray['is_owner'] = false;
+                $groupArray['member_id'] = $membership->id;
+                return $groupArray;
+            })
+            ->filter()
+            ->values();
 
         return response()->json([
             'owned_groups' => $ownedGroups,
-            // Intentionally empty - members don't see groups list
-            'member_groups' => [],
+            'member_groups' => $memberGroups,
         ]);
     }
 

@@ -356,7 +356,7 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Create a group to start splitting bills with friends.',
+                'Create a group or accept an invite to start splitting bills.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Theme.of(context)
                           .colorScheme

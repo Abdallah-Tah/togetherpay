@@ -164,6 +164,35 @@ class _GroupCardState extends State<GroupCard>
                                       ),
                                 ),
                               ),
+                            ] else ...[
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(
+                                    AppTheme.radiusSmall,
+                                  ),
+                                  border: Border.all(
+                                    color: colorScheme.outlineVariant
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                child: Text(
+                                  'MEMBER',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: onSurface.withValues(alpha: 0.7),
+                                        letterSpacing: 0.5,
+                                      ),
+                                ),
+                              ),
                             ],
                           ],
                         ),

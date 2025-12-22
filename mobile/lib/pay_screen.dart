@@ -183,24 +183,11 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
 
     try {
       Future<bool> launchPreferExternal(Uri uri) async {
-        final isCashApp =
-            uri.host == 'cash.app' || uri.toString().startsWith('https://cash.app/');
+        final isCashApp = uri.host == 'cash.app' ||
+            uri.toString().startsWith('https://cash.app/');
 
-        // Match the previously-working behavior:
-        // open a browser view "under" the app (custom tab / safari view) first,
-        // then let cash.app redirect into the Cash App app with the `/amount` path.
+        // Prefer browser for Cash App links to use the web redirect flow.
         if (isCashApp) {
-          try {
-            final launched = await launchUrl(
-              uri,
-              mode: LaunchMode.inAppBrowserView,
-              webOnlyWindowName: '_blank',
-            );
-            if (launched) return true;
-          } catch (_) {
-            // fall through
-          }
-
           try {
             final launched = await launchUrl(
               uri,
@@ -238,8 +225,13 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
 
       Uri? targetUri;
 
+      final cashAppUrl = _buildCashAppUrl(_paymentData);
+      if (cashAppUrl != null) {
+        targetUri = Uri.tryParse(cashAppUrl);
+      }
+
       // Try deep_link first (from API response)
-      if (_deepLinkUri != null) {
+      if (targetUri == null && _deepLinkUri != null) {
         targetUri = Uri.tryParse(_deepLinkUri!);
       }
 
@@ -298,6 +290,26 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
         });
       }
     }
+  }
+
+  String? _buildCashAppUrl(Map<String, dynamic>? payload) {
+    if (payload == null) return null;
+    final member = payload['member'];
+    if (member is! Map) return null;
+
+    final handle = member['cashapp_cashtag'] as String? ??
+        member['cash_tag'] as String? ??
+        member['cashapp_tag'] as String?;
+    if (handle == null || handle.trim().isEmpty) return null;
+
+    final cents = payload['amount_cents'] as int? ?? 0;
+    if (cents <= 0) return null;
+
+    var cashtag = handle.trim();
+    cashtag = cashtag.startsWith('\$') ? cashtag.substring(1) : cashtag;
+    final amount = (cents / 100.0).toStringAsFixed(2);
+
+    return 'https://cash.app/\$$cashtag/$amount';
   }
 
   Future<void> _openLink(String url,

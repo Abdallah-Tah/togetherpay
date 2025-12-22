@@ -90,15 +90,28 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
     });
 
     try {
+      final cashAppUrl = _buildCashAppUrl(widget.paymentRequest);
+
       // Get deep_link from payment request data (same as pay_screen.dart button)
       final deepLinkUri = widget.paymentRequest['deep_link'] as String?;
       final webFallback = widget.paymentRequest['web_fallback_link'] as String?;
-      final url = deepLinkUri ?? webFallback;
+      final url = cashAppUrl ?? deepLinkUri ?? webFallback;
 
       if (url != null) {
         final uri = Uri.tryParse(url);
         if (uri != null) {
-          // Use inAppBrowserView - exact same approach as "Open Wallet" button
+          // Prefer browser for Cash App links so the web flow redirects correctly.
+          if (uri.host == 'cash.app' ||
+              uri.toString().startsWith('https://cash.app/')) {
+            await launchUrl(
+              uri,
+              mode: LaunchMode.externalApplication,
+              webOnlyWindowName: '_blank',
+            );
+            return;
+          }
+
+          // Use inAppBrowserView for other wallet links.
           await launchUrl(
             uri,
             mode: LaunchMode.inAppBrowserView,
@@ -128,6 +141,22 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
         });
       }
     }
+  }
+
+  String? _buildCashAppUrl(Map<String, dynamic> pr) {
+    final handle = pr['member']?['cashapp_cashtag'] as String? ??
+        pr['member']?['cash_tag'] as String? ??
+        pr['member']?['cashapp_tag'] as String?;
+    if (handle == null || handle.trim().isEmpty) return null;
+
+    final cents = pr['amount_cents'] as int? ?? 0;
+    if (cents <= 0) return null;
+
+    var cashtag = handle.trim();
+    cashtag = cashtag.startsWith('\$') ? cashtag.substring(1) : cashtag;
+    final amount = (cents / 100.0).toStringAsFixed(2);
+
+    return 'https://cash.app/\$$cashtag/$amount';
   }
 
   @override
