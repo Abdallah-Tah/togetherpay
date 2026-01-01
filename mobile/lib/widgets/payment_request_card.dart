@@ -100,22 +100,23 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
       if (url != null) {
         final uri = Uri.tryParse(url);
         if (uri != null) {
-          // Prefer browser for Cash App links so the web flow redirects correctly.
-          if (uri.host == 'cash.app' ||
-              uri.toString().startsWith('https://cash.app/')) {
-            await launchUrl(
+          // Use in-app browser so the Cash App redirect stays inside the app.
+          var launched = false;
+          try {
+            launched = await launchUrl(
               uri,
-              mode: LaunchMode.externalApplication,
-              webOnlyWindowName: '_blank',
+              mode: LaunchMode.inAppBrowserView,
             );
-            return;
+          } catch (_) {
+            launched = false;
           }
 
-          // Use inAppBrowserView for other wallet links.
-          await launchUrl(
-            uri,
-            mode: LaunchMode.inAppBrowserView,
-          );
+          if (!launched) {
+            await launchUrl(
+              uri,
+              mode: LaunchMode.platformDefault,
+            );
+          }
         }
       } else {
         if (mounted) {
@@ -144,7 +145,10 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
   }
 
   String? _buildCashAppUrl(Map<String, dynamic> pr) {
-    final handle = pr['member']?['cashapp_cashtag'] as String? ??
+    final owner = pr['cycle']?['group']?['owner'] ?? pr['group']?['owner'];
+    final handle = owner?['cash_tag'] as String? ??
+        owner?['cashapp_cashtag'] as String? ??
+        pr['member']?['cashapp_cashtag'] as String? ??
         pr['member']?['cash_tag'] as String? ??
         pr['member']?['cashapp_tag'] as String?;
     if (handle == null || handle.trim().isEmpty) return null;
@@ -448,7 +452,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
                     width: double.infinity,
                     height: 48,
                     child: FilledButton.icon(
-                      onPressed: _isLaunching ? null : _launchWallet,
+                      onPressed: widget.onPay ?? _launchWallet,
                       icon: _isLaunching
                           ? const SizedBox(
                               width: 16,

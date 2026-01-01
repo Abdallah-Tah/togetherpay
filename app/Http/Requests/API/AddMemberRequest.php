@@ -3,6 +3,7 @@
 namespace App\Http\Requests\API;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AddMemberRequest extends FormRequest
 {
@@ -13,11 +14,17 @@ class AddMemberRequest extends FormRequest
 
     public function rules(): array
     {
+        $allowExisting = $this->boolean('allow_existing');
+        $emailRules = ['required', 'email'];
+        if (! $allowExisting) {
+            $emailRules[] = Rule::unique('users', 'email');
+        }
+
         return [
-            // Allow email/phone for both existing users AND new invitations
-            'email' => ['required_without:phone', 'email'],
-            'phone' => ['required_without:email', 'string'],
-            'name' => ['required', 'string', 'max:255'],
+            // Require email for identity and invites
+            'email' => $emailRules,
+            'phone' => ['nullable', 'string'],
+            'name' => [$allowExisting ? 'nullable' : 'required', 'string', 'max:255'],
             'preferred_channel' => ['sometimes', 'in:VENMO,CASH_APP,CARD'],
             'venmo_username' => ['required_if:preferred_channel,VENMO', 'nullable', 'string'],
             'cash_tag' => ['nullable', 'string'],
@@ -25,14 +32,15 @@ class AddMemberRequest extends FormRequest
             'cash_email' => ['nullable', 'email'],
             'share_type' => ['sometimes', 'in:AMOUNT,PERCENT'],
             'share_value' => ['required', 'numeric', 'min:0'],
+            'allow_existing' => ['sometimes', 'boolean'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'email.required_without' => 'Either email or phone is required',
-            'phone.required_without' => 'Either email or phone is required',
+            'email.required' => 'Email is required',
+            'email.unique' => 'Email already exists. Use the existing member option.',
             'venmo_username.required_if' => 'Venmo username is required when preferred channel is Venmo',
         ];
     }

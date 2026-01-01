@@ -41,9 +41,16 @@ class PaymentRequestController extends Controller
                     })
                     ->orWhereIn('group_id', $ownedGroupIds);
             })
-            ->with(['cycle.group', 'member.user'])
+            ->with(['cycle.group.owner', 'group.owner', 'member.user'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
+
+        $requests->getCollection()->transform(function (PaymentRequest $pr) use ($user) {
+            $ownerId = $pr->cycle?->group?->owner_id ?? $pr->group?->owner_id;
+            $pr->is_owner = $ownerId === $user->id;
+            $pr->is_member = $pr->member?->user_id === $user->id;
+            return $pr;
+        });
 
         return response()->json($requests);
     }

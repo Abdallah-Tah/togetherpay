@@ -82,11 +82,11 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     _shareType = (member['share_type'] as String? ?? 'AMOUNT').toUpperCase();
 
     _nameController.text =
-        (user?['name'] ?? member['name'] ?? '').toString();
+        (member['name'] ?? user?['name'] ?? '').toString();
     _emailController.text =
-        (user?['email'] ?? member['email'] ?? '').toString();
+        (member['email'] ?? user?['email'] ?? '').toString();
     _phoneController.text =
-        (user?['phone'] ?? member['phone'] ?? '').toString();
+        (member['phone'] ?? user?['phone'] ?? '').toString();
     _shareValueController.text = _formatNumber(member['share_value']);
     _venmoUsernameController.text =
         member['venmo_username']?.toString() ?? '';
@@ -229,6 +229,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     final payload = <String, dynamic>{
       'share_type': 'AMOUNT',
       'share_value': 0,
+      'allow_existing': true,
     };
     if (email != null) payload['email'] = email;
     if (phone != null) payload['phone'] = phone;
@@ -272,9 +273,9 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     final name = _nameController.text.trim();
     final memberId = widget.member?['id'] as int?;
 
-    if (email.isEmpty && phone.isEmpty) {
+    if (email.isEmpty) {
       setState(() {
-        _errorNew = 'Enter an email or phone number';
+        _errorNew = 'Enter an email address';
       });
       return;
     }
@@ -453,6 +454,12 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                 hintText: 'member@example.com',
                 border: OutlineInputBorder(),
               ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Email is required';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16),
             TextFormField(

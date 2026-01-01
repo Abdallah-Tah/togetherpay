@@ -36,6 +36,10 @@ class GroupController extends Controller
             ->map(function ($group) {
                 $groupArray = $group->toArray();
                 $groupArray['is_owner'] = true;
+                $groupArray['member_count'] = $group->members
+                    ->filter(fn ($member) => ($member->status ?? 'active') === 'active')
+                    ->filter(fn ($member) => $member->user_id !== $group->owner_id)
+                    ->count();
                 return $groupArray;
             });
 
@@ -61,6 +65,10 @@ class GroupController extends Controller
                 $groupArray = $group->toArray();
                 $groupArray['is_owner'] = false;
                 $groupArray['member_id'] = $membership->id;
+                $groupArray['member_count'] = $group->members
+                    ->filter(fn ($member) => ($member->status ?? 'active') === 'active')
+                    ->filter(fn ($member) => $member->user_id !== $group->owner_id)
+                    ->count();
                 return $groupArray;
             })
             ->filter()
@@ -172,11 +180,13 @@ class GroupController extends Controller
             'email' => $request->email,
         ]);
 
-        // Find user by email or phone (only check phone if provided)
+        // Find user by email only to avoid mismatching by phone.
         $user = User::where('email', $request->email)->first();
 
-        if (! $user && $request->phone) {
-            $user = User::where('phone', $request->phone)->first();
+        if ($user && ! $request->boolean('allow_existing')) {
+            return response()->json([
+                'message' => 'Email already exists. Use the existing member option.',
+            ], 422);
         }
 
         // If user doesn't exist, create a placeholder/invited user
@@ -424,7 +434,7 @@ class GroupController extends Controller
     {
         $this->authorize('update', $group);
 
-        $member->update(['status' => 'left']);
+        $member->delete();
 
         return response()->json([
             'message' => 'Member removed successfully',

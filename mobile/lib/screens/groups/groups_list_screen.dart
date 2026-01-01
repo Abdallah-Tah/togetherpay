@@ -126,7 +126,16 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
     if (map['member_count'] == null) {
       final members = map['members'];
       if (members is List) {
-        map['member_count'] = members.length;
+        final ownerId = (map['owner'] as Map?)?['id'] as int?;
+        final activeMembers = members.where((member) {
+          if (member is! Map) return false;
+          final status = (member['status'] as String?)?.toLowerCase() ?? 'active';
+          if (status != 'active') return false;
+          final userId = (member['user'] as Map?)?['id'] as int?;
+          if (ownerId != null && userId == ownerId) return false;
+          return true;
+        }).toList();
+        map['member_count'] = activeMembers.length;
       }
     }
 

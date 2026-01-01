@@ -183,26 +183,9 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
 
     try {
       Future<bool> launchPreferExternal(Uri uri) async {
-        final isCashApp = uri.host == 'cash.app' ||
-            uri.toString().startsWith('https://cash.app/');
-
-        // Prefer browser for Cash App links to use the web redirect flow.
-        if (isCashApp) {
-          try {
-            final launched = await launchUrl(
-              uri,
-              mode: LaunchMode.externalApplication,
-              webOnlyWindowName: '_blank',
-            );
-            if (launched) return true;
-          } catch (_) {
-            // fall through
-          }
-        }
-
         try {
           final launched =
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
+              await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
           if (launched) return true;
         } catch (_) {
           // fall through
@@ -216,11 +199,7 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
           // fall through
         }
 
-        try {
-          return await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-        } catch (_) {
-          return false;
-        }
+        return false;
       }
 
       Uri? targetUri;
@@ -294,12 +273,15 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
 
   String? _buildCashAppUrl(Map<String, dynamic>? payload) {
     if (payload == null) return null;
-    final member = payload['member'];
-    if (member is! Map) return null;
+    final group = payload['group'];
+    final owner = group is Map ? group['owner'] as Map? : null;
+    final member = payload['member'] as Map?;
 
-    final handle = member['cashapp_cashtag'] as String? ??
-        member['cash_tag'] as String? ??
-        member['cashapp_tag'] as String?;
+    final handle = owner?['cash_tag'] as String? ??
+        owner?['cashapp_cashtag'] as String? ??
+        member?['cashapp_cashtag'] as String? ??
+        member?['cash_tag'] as String? ??
+        member?['cashapp_tag'] as String?;
     if (handle == null || handle.trim().isEmpty) return null;
 
     final cents = payload['amount_cents'] as int? ?? 0;

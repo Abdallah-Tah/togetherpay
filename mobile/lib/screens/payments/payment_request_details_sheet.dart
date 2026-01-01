@@ -8,7 +8,7 @@ import '../../main.dart';
 import '../../env.dart';
 import '../../utils/theme.dart';
 
-enum _PaymentAction { markPaid, reminder, cancel }
+enum _PaymentAction { markSent, confirm, reminder, cancel }
 
 /// Payment Request Details Bottom Sheet
 class PaymentRequestDetailsSheet extends StatefulWidget {
@@ -30,13 +30,26 @@ class _PaymentRequestDetailsSheetState
 
   bool get _isProcessing => _processingAction != null;
 
-  Future<void> _markAsPaid() async {
+  Future<void> _markAsSent() async {
+    final prCode = widget.paymentRequest['pr_code'] as String?;
+    if (prCode == null || prCode.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Missing payment code; unable to mark as paid'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Mark as Paid'),
+        title: const Text('Confirm Payment Sent'),
         content: const Text(
-          'Are you sure you want to mark this payment request as paid?',
+          'Only confirm after you have sent the payment in your wallet app.',
         ),
         actions: [
           TextButton(
@@ -45,7 +58,7 @@ class _PaymentRequestDetailsSheetState
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Mark Paid'),
+            child: const Text('I Have Paid'),
           ),
         ],
       ),
@@ -54,17 +67,16 @@ class _PaymentRequestDetailsSheetState
     if (confirmed != true || !mounted) return;
 
     setState(() {
-      _processingAction = _PaymentAction.markPaid;
+      _processingAction = _PaymentAction.markSent;
     });
 
     try {
-      final prId = widget.paymentRequest['id'];
-      await dio.post('/payment-requests/$prId/mark-paid');
+      await dio.post('/requests/by-code/$prCode/mark');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Payment marked as paid successfully'),
+            content: Text('Payment marked as sent'),
             backgroundColor: Colors.green,
           ),
         );
@@ -72,7 +84,7 @@ class _PaymentRequestDetailsSheetState
       }
     } on DioException catch (e) {
       if (Env.debug) {
-        debugPrint('Mark paid error: ${e.response?.data}');
+        debugPrint('Mark sent error: ${e.response?.data}');
       }
 
       if (mounted) {
@@ -80,7 +92,84 @@ class _PaymentRequestDetailsSheetState
           SnackBar(
             content: Text(
               e.response?.data?['message'] as String? ??
-                  'Failed to mark payment as paid',
+                  'Failed to mark payment as sent',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _processingAction = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _confirmReceived() async {
+    final prCode = widget.paymentRequest['pr_code'] as String?;
+    if (prCode == null || prCode.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Missing payment code; unable to confirm'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Payment Received'),
+        content: const Text(
+          'Confirm only if you have received the payment from the member.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _processingAction = _PaymentAction.confirm;
+    });
+
+    try {
+      await dio.post('/requests/by-code/$prCode/confirm');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment confirmed'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } on DioException catch (e) {
+      if (Env.debug) {
+        debugPrint('Confirm payment error: ${e.response?.data}');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.response?.data?['message'] as String? ??
+                  'Failed to confirm payment',
             ),
             backgroundColor: Colors.red,
           ),
@@ -234,7 +323,7 @@ class _PaymentRequestDetailsSheetState
     if (handle == null || handle.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No $app handle found for this member'),
+          content: Text('No $app handle found for the recipient'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -259,14 +348,27 @@ class _PaymentRequestDetailsSheetState
         debugPrint('===========================================');
       }
 
-      // Force opening in browser by using webOnlyWindowName
-      // This prevents Android from intercepting the app link directly
-      // Browser → Cash App web page → Redirects to app; amount may still require manual entry
-      final launched = await launchUrl(
-        cashAppUrl,
-        mode: LaunchMode.externalApplication,
-        webOnlyWindowName: '_blank', // Force browser on Android
-      );
+      // Open inside the app browser so the redirect happens without leaving the app.
+      bool launched = false;
+      try {
+        launched = await launchUrl(
+          cashAppUrl,
+          mode: LaunchMode.inAppBrowserView,
+        );
+      } catch (_) {
+        launched = false;
+      }
+
+      if (!launched) {
+        try {
+          launched = await launchUrl(
+            cashAppUrl,
+            mode: LaunchMode.platformDefault,
+          );
+        } catch (_) {
+          launched = false;
+        }
+      }
 
       if (Env.debug) {
         debugPrint('Cash App launch result: $launched');
@@ -366,8 +468,12 @@ class _PaymentRequestDetailsSheetState
         pr['member']?['user']?['email'] as String?;
     final memberPhone = pr['member']?['phone'] as String? ??
         pr['member']?['user']?['phone'] as String?;
-    final cashAppHandle = pr['member']?['cashapp_cashtag'] as String?;
-    final venmoHandle = pr['member']?['venmo_username'] as String?;
+    final owner = pr['cycle']?['group']?['owner'] ?? pr['group']?['owner'];
+    final cashAppHandle = owner?['cash_tag'] as String? ??
+        owner?['cashapp_cashtag'] as String? ??
+        pr['member']?['cashapp_cashtag'] as String?;
+    final venmoHandle = owner?['venmo_username'] as String? ??
+        pr['member']?['venmo_username'] as String?;
     final groupName = pr['cycle']?['group']?['name'] as String? ??
         pr['group']?['name'] as String? ??
         'Unknown Group';
@@ -375,6 +481,8 @@ class _PaymentRequestDetailsSheetState
     final amount = amountCents / 100.0;
     final status = pr['status'] as String? ?? 'pending';
     final normalizedStatus = status.toLowerCase();
+    final isOwner = pr['is_owner'] == true;
+    final isMember = pr['is_member'] == true;
     final isPaid = normalizedStatus == 'paid' ||
         normalizedStatus == 'owner_confirmed' ||
         normalizedStatus == 'auto_verified';
@@ -385,7 +493,11 @@ class _PaymentRequestDetailsSheetState
     final sentAtStr = pr['sent_at'] as String?;
     final isProcessing = _isProcessing;
     final canCancelRequest = prCode != null && _canCancelStatus(status);
-    final showStandardActions = !isPaid && !isAwaitingConfirm;
+    final canMemberMark =
+        isMember && !isPaid && !isAwaitingConfirm && _canMarkStatus(status);
+    final canOwnerConfirm = isOwner && isAwaitingConfirm;
+    final canOwnerNudge =
+        isOwner && !isPaid && _canNudgeStatus(normalizedStatus);
 
     DateTime? dueDate;
     DateTime? paidAt;
@@ -602,10 +714,10 @@ class _PaymentRequestDetailsSheetState
                         onTap: () => _openPaymentApp('Venmo', venmoHandle),
                       ),
                     const SizedBox(height: AppTheme.spaceLarge),
-                    if (showStandardActions) ...[
+                    if (canMemberMark) ...[
                       FilledButton.icon(
-                        onPressed: isProcessing ? null : _markAsPaid,
-                        icon: _processingAction == _PaymentAction.markPaid
+                        onPressed: isProcessing ? null : _markAsSent,
+                        icon: _processingAction == _PaymentAction.markSent
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
@@ -616,9 +728,29 @@ class _PaymentRequestDetailsSheetState
                                 ),
                               )
                             : const Icon(Icons.check_circle),
-                        label: const Text('Mark as Paid'),
+                        label: const Text('I Have Paid'),
                       ),
                       const SizedBox(height: AppTheme.spaceSmall),
+                    ],
+                    if (canOwnerConfirm) ...[
+                      FilledButton.icon(
+                        onPressed: isProcessing ? null : _confirmReceived,
+                        icon: _processingAction == _PaymentAction.confirm
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.verified),
+                        label: const Text('Confirm Received'),
+                      ),
+                      const SizedBox(height: AppTheme.spaceSmall),
+                    ],
+                    if (canOwnerNudge) ...[
                       OutlinedButton.icon(
                         onPressed: isProcessing ? null : _sendReminder,
                         icon: _processingAction == _PaymentAction.reminder
@@ -632,9 +764,9 @@ class _PaymentRequestDetailsSheetState
                             : const Icon(Icons.notifications),
                         label: const Text('Send Reminder'),
                       ),
-                    ],
-                    if (canCancelRequest) ...[
                       const SizedBox(height: AppTheme.spaceSmall),
+                    ],
+                    if (isOwner && canCancelRequest) ...[
                       OutlinedButton.icon(
                         onPressed: isProcessing ? null : _cancelRequest,
                         icon: _processingAction == _PaymentAction.cancel
@@ -654,10 +786,10 @@ class _PaymentRequestDetailsSheetState
                           side: const BorderSide(color: Colors.red),
                         ),
                       ),
+                      const SizedBox(height: AppTheme.spaceSmall),
                     ],
-                    if (showStandardActions &&
+                    if (canMemberMark &&
                         (cashAppHandle != null || venmoHandle != null)) ...[
-                      const SizedBox(height: AppTheme.spaceMedium),
                       Text(
                         'Quick Pay',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -792,5 +924,22 @@ class _PaymentRequestDetailsSheetState
     if (status == null) return false;
     final normalized = status.toLowerCase();
     return normalized == 'pending' || normalized == 'sent';
+  }
+
+  bool _canMarkStatus(String? status) {
+    if (status == null) return false;
+    final normalized = status.toLowerCase();
+    return normalized == 'pending' ||
+        normalized == 'sent' ||
+        normalized == 'overdue' ||
+        normalized == 'late';
+  }
+
+  bool _canNudgeStatus(String status) {
+    return status == 'pending' ||
+        status == 'sent' ||
+        status == 'member_marked' ||
+        status == 'overdue' ||
+        status == 'late';
   }
 }

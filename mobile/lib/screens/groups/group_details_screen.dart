@@ -694,13 +694,16 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
       ),
       body: Container(
         decoration: BoxDecoration(
+          color: isDark
+              ? null
+              : Theme.of(context).scaffoldBackgroundColor,
           gradient: isDark
               ? const LinearGradient(
                   colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 )
-              : AppTheme.meshGradient,
+              : null,
         ),
         child: SafeArea(
           child: _buildBody(),
@@ -970,12 +973,17 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
   Widget _buildMembersSection() {
     final members = _groupData!['members'];
     final List<Map<String, dynamic>> activeMembers = [];
+    final ownerId = (_groupData?['owner'] as Map?)?['id'] as int?;
 
     if (members is List) {
       for (final member in members) {
         if (member is Map<String, dynamic>) {
           final status = (member['status'] as String?)?.toLowerCase();
           if (status == null || status == 'active') {
+            final userId = (member['user'] as Map?)?['id'] as int?;
+            if (ownerId != null && userId == ownerId) {
+              continue;
+            }
             activeMembers.add(Map<String, dynamic>.from(member));
           }
         }
@@ -1114,7 +1122,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
   Widget _buildMemberTile(Map<String, dynamic> member) {
     final user = member['user'] as Map<String, dynamic>?;
     final name =
-        user?['name'] as String? ?? member['name'] as String? ?? 'Unknown';
+        member['name'] as String? ?? user?['name'] as String? ?? 'Unknown';
     final share = _formatMemberShare(member);
 
     final isGroupOwnerMember = _isGroupOwner(member);
@@ -1560,7 +1568,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
             final status = (request['status'] as String?) ?? 'pending';
             final prCode = _codeOf(request);
 
-            final canPay = _isPayableStatus(status);
+            final canPay = !_isOwner && _isPayableStatus(status);
             final canNudge = _isOwner && _isNudgeableStatus(status);
             final canConfirm = _isOwner && _isConfirmableStatus(status);
             final canCancel = _isOwner && _isCancellableStatus(status);
