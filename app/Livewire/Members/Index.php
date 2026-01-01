@@ -35,16 +35,6 @@ class Index extends Component
 
     public string $formPhone = '';
 
-    public string $formPreferredChannel = 'VENMO';
-
-    public string $formVenmoUsername = '';
-
-    public string $formCashTag = '';
-
-    public string $formCashPhone = '';
-
-    public string $formCashEmail = '';
-
     public string $formShareType = 'AMOUNT';
 
     public string $formShareValue = '';
@@ -99,44 +89,6 @@ class Index extends Component
     protected function rules(): array
     {
         $base = [
-            'formPreferredChannel' => ['required', Rule::in(['VENMO', 'CASH_APP'])],
-            'formVenmoUsername' => [
-                'nullable',
-                'string',
-                Rule::requiredIf($this->formPreferredChannel === 'VENMO'),
-                function ($attribute, $value, $fail) {
-                    if ($this->formPreferredChannel !== 'VENMO' && ! empty($value)) {
-                        $fail('Venmo username must be empty unless Venmo is selected.');
-                    }
-                },
-            ],
-            'formCashTag' => [
-                'nullable',
-                'string',
-                function ($attribute, $value, $fail) {
-                    if ($this->formPreferredChannel !== 'CASH_APP' && ! empty($value)) {
-                        $fail('Cash App tag must be empty unless Cash App is selected.');
-                    }
-                },
-            ],
-            'formCashPhone' => [
-                'nullable',
-                'string',
-                function ($attribute, $value, $fail) {
-                    if ($this->formPreferredChannel !== 'CASH_APP' && ! empty($value)) {
-                        $fail('Cash App phone must be empty unless Cash App is selected.');
-                    }
-                },
-            ],
-            'formCashEmail' => [
-                'nullable',
-                'email',
-                function ($attribute, $value, $fail) {
-                    if ($this->formPreferredChannel !== 'CASH_APP' && ! empty($value)) {
-                        $fail('Cash App email must be empty unless Cash App is selected.');
-                    }
-                },
-            ],
             'formShareType' => ['required', Rule::in(['AMOUNT', 'PERCENT'])],
         ];
 
@@ -167,11 +119,6 @@ class Index extends Component
             'formGroupId' => 'group',
             'formEmail' => 'email',
             'formPhone' => 'phone',
-            'formPreferredChannel' => 'preferred channel',
-            'formVenmoUsername' => 'Venmo username',
-            'formCashTag' => 'Cash App tag',
-            'formCashPhone' => 'Cash App phone',
-            'formCashEmail' => 'Cash App email',
             'formShareType' => 'share type',
             'formShareValue' => 'share value',
             'formStatus' => 'status',
@@ -181,19 +128,6 @@ class Index extends Component
     public function updatingSearch(): void
     {
         $this->resetPage();
-    }
-
-    public function updatedFormPreferredChannel(): void
-    {
-        // Clear unrelated payment handle fields when channel changes
-        if ($this->formPreferredChannel === 'VENMO') {
-            $this->formCashTag = '';
-            $this->formCashPhone = '';
-            $this->formCashEmail = '';
-        } elseif ($this->formPreferredChannel === 'CASH_APP') {
-            $this->formVenmoUsername = '';
-        }
-        $this->resetValidation();
     }
 
     public function openCreateModal(): void
@@ -279,17 +213,9 @@ class Index extends Component
             return;
         }
 
-        // Ensure only relevant payment handle fields are saved based on channel
-        $paymentHandles = $this->getNormalizedPaymentHandles();
-
         GroupMember::create([
             'group_id' => $group->id,
             'user_id' => $user->id,
-            'preferred_channel' => $this->formPreferredChannel,
-            'venmo_username' => $paymentHandles['venmo_username'],
-            'cash_tag' => $paymentHandles['cash_tag'],
-            'cash_phone' => $paymentHandles['cash_phone'],
-            'cash_email' => $paymentHandles['cash_email'],
             'share_type' => $this->formShareType,
             'share_value' => (float) $this->formShareValue,
             'status' => 'active',
@@ -306,11 +232,6 @@ class Index extends Component
                 'status' => 'pending',
                 'expires_at' => now()->addDays(7),
                 'member_data' => [
-                    'preferred_channel' => $this->formPreferredChannel,
-                    'venmo_username' => $paymentHandles['venmo_username'],
-                    'cash_tag' => $paymentHandles['cash_tag'],
-                    'cash_phone' => $paymentHandles['cash_phone'],
-                    'cash_email' => $paymentHandles['cash_email'],
                     'share_type' => $this->formShareType,
                     'share_value' => (float) $this->formShareValue,
                 ],
@@ -353,11 +274,6 @@ class Index extends Component
 
         $this->editingMemberId = $member->id;
         $this->formGroupId = $member->group_id;
-        $this->formPreferredChannel = $member->preferred_channel ?? 'VENMO';
-        $this->formVenmoUsername = $member->venmo_username ?? '';
-        $this->formCashTag = $member->cash_tag ?? '';
-        $this->formCashPhone = $member->cash_phone ?? '';
-        $this->formCashEmail = $member->cash_email ?? '';
         $this->formShareType = $member->share_type ?? 'AMOUNT';
         $this->formShareValue = (string) $member->share_value;
         $this->formStatus = $member->status ?? 'active';
@@ -379,15 +295,7 @@ class Index extends Component
             ->whereHas('group', fn ($q) => $q->where('owner_id', auth()->id()))
             ->firstOrFail();
 
-        // Ensure only relevant payment handle fields are saved based on channel
-        $paymentHandles = $this->getNormalizedPaymentHandles();
-
         $member->update([
-            'preferred_channel' => $this->formPreferredChannel,
-            'venmo_username' => $paymentHandles['venmo_username'],
-            'cash_tag' => $paymentHandles['cash_tag'],
-            'cash_phone' => $paymentHandles['cash_phone'],
-            'cash_email' => $paymentHandles['cash_email'],
             'share_type' => $this->formShareType,
             'share_value' => (float) $this->formShareValue,
             'status' => $this->formStatus,
@@ -429,48 +337,17 @@ class Index extends Component
         $this->resetPage();
     }
 
-    protected function getNormalizedPaymentHandles(): array
-    {
-        // Return only relevant payment handles based on selected channel
-        return match ($this->formPreferredChannel) {
-            'VENMO' => [
-                'venmo_username' => $this->formVenmoUsername ?: null,
-                'cash_tag' => null,
-                'cash_phone' => null,
-                'cash_email' => null,
-            ],
-            'CASH_APP' => [
-                'venmo_username' => null,
-                'cash_tag' => $this->formCashTag ?: null,
-                'cash_phone' => $this->formCashPhone ?: null,
-                'cash_email' => $this->formCashEmail ?: null,
-            ],
-            default => [ // CARD or other
-                'venmo_username' => null,
-                'cash_tag' => null,
-                'cash_phone' => null,
-                'cash_email' => null,
-            ],
-        };
-    }
-
     protected function resetForm(): void
     {
         $this->reset([
             'formGroupId',
             'formEmail',
             'formPhone',
-            'formPreferredChannel',
-            'formVenmoUsername',
-            'formCashTag',
-            'formCashPhone',
-            'formCashEmail',
             'formShareType',
             'formShareValue',
             'formStatus',
         ]);
 
-        $this->formPreferredChannel = 'VENMO';
         $this->formShareType = 'AMOUNT';
         $this->formStatus = 'active';
         $this->formShareValue = '';

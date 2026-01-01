@@ -88,7 +88,7 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
         $dueDate = $cycle?->due_at?->timezone($group->timezone ?? config('app.timezone'))
             ?->format('M d, Y') ?? now()->format('M d, Y');
 
-        $deepLink = $this->paymentRequest->deep_link ?? url("/pay/{$this->paymentRequest->id}");
+        $deepLink = url("/pay/{$this->paymentRequest->id}");
 
         $lines = [
             '💰 '.($group?->name ?? 'Payment due'),
@@ -122,8 +122,7 @@ class PaymentRequestNotification extends Notification implements ShouldQueue
         $dueDate = $cycle?->due_at?->timezone($group->timezone ?? config('app.timezone'))
             ?->format('M d, Y') ?? now()->format('M d, Y');
 
-        $deepLink = $this->paymentRequest->deep_link
-            ?? $this->paymentRequest->metadata['link'] ?? '';
+        $deepLink = url("/pay/{$this->paymentRequest->id}");
 
         return [
             'notification' => [

@@ -180,9 +180,13 @@ class PaymentRequestController extends Controller
             ]);
         }
 
-        if (! $member->preferred_channel || ! $member->getPaymentHandle()) {
+        $owner = $group->owner;
+        $hasOwnerMethod = filled($owner?->cashapp_tag ?? $owner?->cash_tag)
+            || filled($owner?->venmo_username);
+
+        if (! $hasOwnerMethod) {
             throw ValidationException::withMessages([
-                'member' => ['Member is missing payment handle information.'],
+                'member' => ['Group owner is missing payment method information.'],
             ]);
         }
 

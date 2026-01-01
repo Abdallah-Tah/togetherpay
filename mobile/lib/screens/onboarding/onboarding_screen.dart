@@ -47,16 +47,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       color: AppTheme.primary, // Brand Teal
     ),
     OnboardingPage(
-      title: 'Get Paid via Venmo or Cash App',
+      title: 'Get Paid with Multiple Options',
       description:
-          'Members pay you directly through their preferred payment app using payment links (some apps may not pre-fill the amount).',
+          'Members choose their preferred payment option when they pay (some apps may not pre-fill the amount).',
       icon: Icons.payment_rounded,
       color: Color(0xFFA855F7), // Purple
     ),
     OnboardingPage(
       title: 'Choose how you collect',
       description:
-          'Stick with manual payment links or enable automatic Cash App Pay via Square. You can change this later.',
+          'Stick with manual payment links or enable automatic Square collection. You can change this later.',
       icon: Icons.swap_horiz_rounded,
       color: Color(0xFFF59E0B), // Amber
     ),
@@ -202,160 +202,206 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       child: Scaffold(
         backgroundColor: const Color(0xFF0F172A), // Slate 900
         body: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: _onPageChanged,
-                  itemCount: _pages.length,
-                  itemBuilder: (context, index) {
-                    final page = _pages[index];
-                    // If it's the last page, show the selection UI instead of standard description
-                    final isLastPage = index == _pages.length - 1;
+              Positioned(
+                top: -120,
+                left: -80,
+                child: Container(
+                  width: 240,
+                  height: 240,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.primary.withOpacity(0.18),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -140,
+                right: -100,
+                child: Container(
+                  width: 280,
+                  height: 280,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0x3348E6D2),
+                  ),
+                ),
+              ),
+              Column(
+                children: [
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: _onPageChanged,
+                      itemCount: _pages.length,
+                      itemBuilder: (context, index) {
+                        final page = _pages[index];
+                        // If it's the last page, show the selection UI instead of standard description
+                        final isLastPage = index == _pages.length - 1;
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Animated Icon
-                          SlideAnimation(
-                            position: 0,
-                            itemCount: 3,
-                            slideDirection: SlideDirection.fromTop,
-                            animationController: _contentAnimController,
-                            child: Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: page.color.withOpacity(0.1),
-                                shape: BoxShape.circle,
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Animated Icon
+                              SlideAnimation(
+                                position: 0,
+                                itemCount: 3,
+                                slideDirection: SlideDirection.fromTop,
+                                animationController: _contentAnimController,
+                                child: Container(
+                                  width: 120,
+                                  height: 120,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        page.color.withOpacity(0.35),
+                                        Colors.transparent,
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    border: Border.all(
+                                      color: page.color.withOpacity(0.4),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: page.color.withOpacity(0.25),
+                                        blurRadius: 24,
+                                        offset: const Offset(0, 12),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    page.icon,
+                                    size: 64,
+                                    color: page.color,
+                                  ),
+                                ),
                               ),
-                              child: Icon(
-                                page.icon,
-                                size: 64,
-                                color: page.color,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 48),
-                          
-                          // Title
-                          SlideAnimation(
-                            position: 1,
-                            itemCount: 3,
-                            slideDirection: SlideDirection.fromBottom,
-                            animationController: _contentAnimController,
-                            child: Text(
-                              page.title,
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Description or Mode Selector
-                          SlideAnimation(
-                            position: 2,
-                            itemCount: 3,
-                            slideDirection: SlideDirection.fromBottom,
-                            animationController: _contentAnimController,
-                            child: isLastPage 
-                              ? _buildModeSelector(theme)
-                              : Text(
-                                  page.description,
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: Colors.white70,
-                                    height: 1.5,
+                              const SizedBox(height: 48),
+                              
+                              // Title
+                              SlideAnimation(
+                                position: 1,
+                                itemCount: 3,
+                                slideDirection: SlideDirection.fromBottom,
+                                animationController: _contentAnimController,
+                                child: Text(
+                                  page.title,
+                                  style: theme.textTheme.headlineMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              // Bottom Section: Indicators & Button
-              Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Page Indicators
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _pages.length,
-                        (index) => AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: _currentPage == index ? 32 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: _currentPage == index
-                                ? AppTheme.primary
-                                : Colors.white24,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Action Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: FilledButton(
-                        onPressed: _isCompleting
-                            ? null
-                            : () {
-                                if (_currentPage < _pages.length - 1) {
-                                  _pageController.nextPage(
-                                    duration: const Duration(milliseconds: 500),
-                                    curve: Curves.easeInOutCubic,
-                                  );
-                                } else {
-                                  _completeOnboarding();
-                                }
-                              },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: AppTheme.navy,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                        ),
-                        child: _isCompleting
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  valueColor: AlwaysStoppedAnimation(AppTheme.navy),
-                                ),
-                              )
-                            : Text(
-                                _currentPage < _pages.length - 1
-                                    ? 'Next'
-                                    : 'Get Started',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
                               ),
-                      ),
+                              const SizedBox(height: 16),
+
+                              // Description or Mode Selector
+                              SlideAnimation(
+                                position: 2,
+                                itemCount: 3,
+                                slideDirection: SlideDirection.fromBottom,
+                                animationController: _contentAnimController,
+                                child: isLastPage 
+                                  ? _buildModeSelector(theme)
+                                  : Text(
+                                      page.description,
+                                      style: theme.textTheme.bodyLarge?.copyWith(
+                                        color: Colors.white70,
+                                        height: 1.5,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  ],
-                ),
+                  ),
+
+                  // Bottom Section: Indicators & Button
+                  Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Page Indicators
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            _pages.length,
+                            (index) => AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: _currentPage == index ? 32 : 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _currentPage == index
+                                    ? AppTheme.primary
+                                    : Colors.white24,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+
+                        // Action Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: FilledButton(
+                            onPressed: _isCompleting
+                                ? null
+                                : () {
+                                    if (_currentPage < _pages.length - 1) {
+                                      _pageController.nextPage(
+                                        duration: const Duration(milliseconds: 500),
+                                        curve: Curves.easeInOutCubic,
+                                      );
+                                    } else {
+                                      _completeOnboarding();
+                                    }
+                                  },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppTheme.primary,
+                              foregroundColor: AppTheme.navy,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                            ),
+                            child: _isCompleting
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation(AppTheme.navy),
+                                    ),
+                                  )
+                                : Text(
+                                    _currentPage < _pages.length - 1
+                                        ? 'Next'
+                                        : 'Get Started',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -368,7 +414,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     return Column(
       children: [
         Text(
-          'Stick with manual payment links or enable automatic Cash App Pay via Square. You can change this later.',
+          'Stick with manual payment links or enable automatic Square collection. You can change this later.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: Colors.white70,
             height: 1.5,
@@ -386,12 +432,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         ),
         const SizedBox(height: 16),
         _ModeOptionCard(
-          title: 'Auto Cash App Pay',
-          description: 'Square handles payments automatically. Requires a Square account.',
+          title: 'Auto Square Pay',
+          description: 'Square handles payments automatically. Requires a connected Square account.',
           icon: Icons.bolt_rounded,
           selected: _billingMode == 'auto_square',
           badgeLabel: 'Hands-free',
           onTap: () => _selectMode('auto_square'),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'You can switch this anytime in Settings.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: Colors.white54,
+          ),
         ),
         if (_modeError != null) ...[
           const SizedBox(height: 16),
@@ -445,14 +498,23 @@ class _ModeOptionCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: selected 
-              ? AppTheme.primary.withOpacity(0.1) 
-              : Colors.white.withOpacity(0.05),
+          color: selected
+              ? AppTheme.primary.withOpacity(0.18)
+              : Colors.white.withOpacity(0.06),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? AppTheme.primary : Colors.white12,
             width: 2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: selected
+                  ? AppTheme.primary.withOpacity(0.2)
+                  : Colors.black.withOpacity(0.2),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -520,9 +582,17 @@ class _ModeOptionCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-              color: selected ? AppTheme.primary : Colors.white24,
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? AppTheme.primary : Colors.white12,
+              ),
+              child: Icon(
+                selected ? Icons.check : Icons.circle_outlined,
+                size: 16,
+                color: selected ? AppTheme.navy : Colors.white54,
+              ),
             ),
           ],
         ),

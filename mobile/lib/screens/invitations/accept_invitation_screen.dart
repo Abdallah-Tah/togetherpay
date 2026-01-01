@@ -409,22 +409,12 @@ class _AcceptInvitationScreenState extends State<AcceptInvitationScreen> {
                         'Share',
                         '${memberData['share_count']} share(s)',
                       ),
-                      if (memberData['venmo_username'] != null) ...[
-                        const Divider(height: 24),
-                        _buildDetailRow(
-                          Icons.account_balance_wallet_outlined,
-                          'Venmo',
-                          '@${memberData['venmo_username']}',
-                        ),
-                      ],
-                      if (memberData['cashapp_cashtag'] != null) ...[
-                        const Divider(height: 24),
-                        _buildDetailRow(
-                          Icons.payments_outlined,
-                          'Cash App',
-                          '\$${memberData['cashapp_cashtag']}',
-                        ),
-                      ],
+                      const Divider(height: 24),
+                      _buildDetailRow(
+                        Icons.payments_outlined,
+                        'Payment',
+                        'Member chooses at pay time',
+                      ),
                     ],
                   ),
                 ),
@@ -588,8 +578,6 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
   final _otpController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordConfirmController = TextEditingController();
-  final _venmoController = TextEditingController();
-  final _cashAppController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -605,8 +593,6 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
         widget.invitation['member_data'] as Map<String, dynamic>?;
     if (memberData != null) {
       _nameController.text = memberData['name'] as String? ?? '';
-      _venmoController.text = memberData['venmo_username'] as String? ?? '';
-      _cashAppController.text = memberData['cashapp_cashtag'] as String? ?? '';
     }
     _requestOtp();
   }
@@ -617,8 +603,6 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
     _otpController.dispose();
     _passwordController.dispose();
     _passwordConfirmController.dispose();
-    _venmoController.dispose();
-    _cashAppController.dispose();
     super.dispose();
   }
 
@@ -667,12 +651,6 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
           'name': _nameController.text.trim(),
           'password': _passwordController.text,
           'password_confirmation': _passwordConfirmController.text,
-          'venmo_username': _venmoController.text.trim().isEmpty
-              ? null
-              : _venmoController.text.trim(),
-          'cash_tag': _cashAppController.text.trim().isEmpty
-              ? null
-              : _cashAppController.text.trim(),
         },
       );
 
@@ -897,42 +875,7 @@ class _InvitationSignupScreenState extends State<InvitationSignupScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                Text(
-                  'Payment Methods (Optional)',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Add your payment handles to receive requests',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                ),
-                const SizedBox(height: 16),
-
-                // Venmo
-                TextFormField(
-                  controller: _venmoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Venmo Username',
-                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-                    hintText: 'username',
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Cash App
-                TextFormField(
-                  controller: _cashAppController,
-                  decoration: const InputDecoration(
-                    labelText: 'Cash App Tag',
-                    prefixIcon: Icon(Icons.payments_outlined),
-                    hintText: 'cashtag',
-                  ),
-                ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
                 // Submit button
                 FilledButton(

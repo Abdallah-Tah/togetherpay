@@ -319,142 +319,54 @@ class _PaymentRequestDetailsSheetState
     }
   }
 
-  Future<void> _openPaymentApp(String app, String? handle) async {
-    if (handle == null || handle.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No $app handle found for the recipient'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
+  String _optionLabel(String method) {
+    switch (method.toLowerCase()) {
+      case 'cashapp':
+      case 'cash_app':
+        return 'Cash App';
+      case 'venmo':
+        return 'Venmo';
+      default:
+        return 'Payment';
     }
+  }
 
-    final amount = (widget.paymentRequest['amount_cents'] as int? ?? 0) / 100.0;
-    final amountStr = amount.toStringAsFixed(2);
-    final note =
-        'Payment for ${widget.paymentRequest['group']?['name'] ?? 'TogetherPay'}';
+  IconData _optionIcon(String method) {
+    switch (method.toLowerCase()) {
+      case 'cashapp':
+      case 'cash_app':
+        return Icons.attach_money;
+      case 'venmo':
+        return Icons.payments;
+      default:
+        return Icons.open_in_new;
+    }
+  }
 
-    if (app == 'Cash App') {
-      var cashtag = handle.startsWith('\$') ? handle.substring(1) : handle;
-      cashtag = cashtag.replaceAll(' ', '').trim();
+  Future<void> _openPaymentOption(Map<String, dynamic> option) async {
+    final raw =
+        (option['uri'] as String? ?? option['web_fallback'] ?? '').trim();
+    if (raw.isEmpty) return;
+    Uri? uri = Uri.tryParse(raw);
+    if (uri != null && !uri.hasScheme) {
+      uri = Uri.parse('${Env.appBaseUrl}$raw');
+    }
+    if (uri == null) return;
 
-      final cashAppUrl = Uri.parse('https://cash.app/\$$cashtag/$amountStr');
-
+    try {
+      await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    } catch (e) {
       if (Env.debug) {
-        debugPrint('===========================================');
-        debugPrint('CASH APP URL: $cashAppUrl');
-        debugPrint('Cashtag: $cashtag | Amount: $amountStr');
-        debugPrint('===========================================');
+        debugPrint('Failed to open payment option: $e');
       }
-
-      // Open inside the app browser so the redirect happens without leaving the app.
-      bool launched = false;
-      try {
-        launched = await launchUrl(
-          cashAppUrl,
-          mode: LaunchMode.inAppBrowserView,
-        );
-      } catch (_) {
-        launched = false;
-      }
-
-      if (!launched) {
-        try {
-          launched = await launchUrl(
-            cashAppUrl,
-            mode: LaunchMode.platformDefault,
-          );
-        } catch (_) {
-          launched = false;
-        }
-      }
-
-      if (Env.debug) {
-        debugPrint('Cash App launch result: $launched');
-      }
-
-      if (!launched && mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to open Cash App'),
+            content: Text('Unable to open payment link'),
             backgroundColor: Colors.red,
           ),
         );
       }
-      return;
-    } else if (app == 'Venmo') {
-      final username = handle.startsWith('@') ? handle.substring(1) : handle;
-
-      final venmoWebUri = Uri.parse(
-        'https://venmo.com/$username'
-        '?txn=pay&amount=$amountStr&note=${Uri.encodeComponent(note)}',
-      );
-
-      if (Env.debug) {
-        debugPrint('===========================================');
-        debugPrint('VENMO WEB URL: $venmoWebUri');
-        debugPrint('Username: $username | Amount: $amountStr');
-        debugPrint('===========================================');
-      }
-
-      bool launched = false;
-      try {
-        launched = await launchUrl(
-          venmoWebUri,
-          mode: LaunchMode
-              .platformDefault, // browser first, then app via redirect
-        );
-      } catch (e) {
-        if (Env.debug) {
-          debugPrint('Venmo web launch failed: $e');
-        }
-      }
-
-      if (!launched) {
-        final venmoDeepLink = Uri.parse(
-          'venmo://paycharge'
-          '?txn=pay&recipients=$username&amount=$amountStr&note=${Uri.encodeComponent(note)}',
-        );
-
-        try {
-          if (await canLaunchUrl(venmoDeepLink)) {
-            await launchUrl(
-              venmoDeepLink,
-              mode: LaunchMode.externalApplication,
-            );
-          } else if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Venmo is not installed'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          }
-        } catch (e) {
-          if (Env.debug) {
-            debugPrint('Error launching Venmo deep link: $e');
-          }
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Failed to open Venmo'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      }
-      return;
-    }
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Unsupported payment app: $app'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
@@ -468,12 +380,17 @@ class _PaymentRequestDetailsSheetState
         pr['member']?['user']?['email'] as String?;
     final memberPhone = pr['member']?['phone'] as String? ??
         pr['member']?['user']?['phone'] as String?;
-    final owner = pr['cycle']?['group']?['owner'] ?? pr['group']?['owner'];
-    final cashAppHandle = owner?['cash_tag'] as String? ??
-        owner?['cashapp_cashtag'] as String? ??
-        pr['member']?['cashapp_cashtag'] as String?;
-    final venmoHandle = owner?['venmo_username'] as String? ??
-        pr['member']?['venmo_username'] as String?;
+    final metadata = pr['metadata'] as Map<String, dynamic>?;
+    final rawOptions = metadata?['payment_options'];
+    final paymentOptions = rawOptions is List
+        ? rawOptions
+            .whereType<Map>()
+            .map((option) => Map<String, dynamic>.from(option))
+            .toList()
+        : <Map<String, dynamic>>[];
+    final squareUrl = metadata?['square_public_url'] as String?;
+    final fallbackUrl =
+        pr['deep_link'] as String? ?? pr['web_fallback_link'] as String?;
     final groupName = pr['cycle']?['group']?['name'] as String? ??
         pr['group']?['name'] as String? ??
         'Unknown Group';
@@ -701,18 +618,53 @@ class _PaymentRequestDetailsSheetState
                       _buildContactRow(Icons.email, memberEmail),
                     if (memberPhone != null)
                       _buildContactRow(Icons.phone, memberPhone),
-                    if (cashAppHandle != null)
-                      _buildContactRow(
-                        Icons.attach_money,
-                        cashAppHandle,
-                        onTap: () => _openPaymentApp('Cash App', cashAppHandle),
+                    const SizedBox(height: AppTheme.spaceMedium),
+                    if (paymentOptions.isNotEmpty ||
+                        squareUrl != null ||
+                        fallbackUrl != null) ...[
+                      Text(
+                        'Payment Options',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
-                    if (venmoHandle != null)
-                      _buildContactRow(
-                        Icons.payments,
-                        venmoHandle,
-                        onTap: () => _openPaymentApp('Venmo', venmoHandle),
+                      const SizedBox(height: AppTheme.spaceSmall),
+                      if (squareUrl != null)
+                        OutlinedButton.icon(
+                          onPressed: () => _openPaymentOption({
+                            'uri': squareUrl,
+                            'method': 'square',
+                          }),
+                          icon: const Icon(Icons.credit_card),
+                          label: const Text('Card / Apple Pay'),
+                        ),
+                      if (squareUrl != null && paymentOptions.isNotEmpty)
+                        const SizedBox(height: AppTheme.spaceSmall),
+                      Wrap(
+                        spacing: AppTheme.spaceSmall,
+                        runSpacing: AppTheme.spaceSmall,
+                        children: paymentOptions.map((option) {
+                          final method =
+                              option['method']?.toString() ?? 'payment';
+                          return OutlinedButton.icon(
+                            onPressed: () => _openPaymentOption(option),
+                            icon: Icon(_optionIcon(method)),
+                            label: Text(_optionLabel(method)),
+                          );
+                        }).toList(),
                       ),
+                      if (paymentOptions.isEmpty && squareUrl == null)
+                        OutlinedButton.icon(
+                          onPressed: fallbackUrl == null
+                              ? null
+                              : () => _openPaymentOption({
+                                    'uri': fallbackUrl,
+                                    'method': 'payment',
+                                  }),
+                          icon: const Icon(Icons.open_in_new),
+                          label: const Text('Open Payment Page'),
+                        ),
+                    ],
                     const SizedBox(height: AppTheme.spaceLarge),
                     if (canMemberMark) ...[
                       FilledButton.icon(
@@ -789,7 +741,7 @@ class _PaymentRequestDetailsSheetState
                       const SizedBox(height: AppTheme.spaceSmall),
                     ],
                     if (canMemberMark &&
-                        (cashAppHandle != null || venmoHandle != null)) ...[
+                        (paymentOptions.isNotEmpty || squareUrl != null)) ...[
                       Text(
                         'Quick Pay',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -797,28 +749,28 @@ class _PaymentRequestDetailsSheetState
                             ),
                       ),
                       const SizedBox(height: AppTheme.spaceSmall),
-                      Row(
+                      Wrap(
+                        spacing: AppTheme.spaceSmall,
+                        runSpacing: AppTheme.spaceSmall,
                         children: [
-                          if (cashAppHandle != null)
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () =>
-                                    _openPaymentApp('Cash App', cashAppHandle),
-                                icon: const Icon(Icons.attach_money),
-                                label: const Text('Cash App'),
-                              ),
+                          if (squareUrl != null)
+                            OutlinedButton.icon(
+                              onPressed: () => _openPaymentOption({
+                                'uri': squareUrl,
+                                'method': 'square',
+                              }),
+                              icon: const Icon(Icons.credit_card),
+                              label: const Text('Card / Apple Pay'),
                             ),
-                          if (cashAppHandle != null && venmoHandle != null)
-                            const SizedBox(width: AppTheme.spaceSmall),
-                          if (venmoHandle != null)
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () =>
-                                    _openPaymentApp('Venmo', venmoHandle),
-                                icon: const Icon(Icons.payments),
-                                label: const Text('Venmo'),
-                              ),
-                            ),
+                          ...paymentOptions.map((option) {
+                            final method =
+                                option['method']?.toString() ?? 'payment';
+                            return OutlinedButton.icon(
+                              onPressed: () => _openPaymentOption(option),
+                              icon: Icon(_optionIcon(method)),
+                              label: Text(_optionLabel(method)),
+                            );
+                          }),
                         ],
                       ),
                     ],

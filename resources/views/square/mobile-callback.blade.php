@@ -57,6 +57,20 @@
             <p>{{ $message ?? 'We could not finish connecting your Square account. Please try again.' }}</p>
         @endif
         <p class="subtitle">If this page stays open, just switch back to TogetherPay.</p>
+        <p class="subtitle">If the app doesn't open automatically, tap below:</p>
+        <p class="subtitle">
+            <a href="{{ !empty($success) ? 'togetherpay://square/success' : 'togetherpay://square/error' }}" style="color:#059669;text-decoration:none;font-weight:600;">
+                Open TogetherPay
+            </a>
+        </p>
     </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const url = @json(!empty($success) ? 'togetherpay://square/success' : 'togetherpay://square/error');
+            setTimeout(() => {
+                window.location.href = url;
+            }, 500);
+        });
+    </script>
 </body>
 </html>

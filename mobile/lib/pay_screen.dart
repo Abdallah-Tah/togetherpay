@@ -36,6 +36,8 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
   String? _squareInvoiceUrl;
   String? _squareInvoiceStatus;
   String? _squareInvoiceDueDate;
+  List<Map<String, dynamic>> _paymentOptions = [];
+  String? _smartPayUrl;
 
   @override
   void initState() {
@@ -74,6 +76,8 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
       _squareInvoice = null;
       _squareInvoiceStatus = null;
       _squareInvoiceDueDate = null;
+      _paymentOptions = [];
+      _smartPayUrl = null;
     });
 
     try {
@@ -90,7 +94,17 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
         final metadata = data['metadata'];
         if (metadata is Map<String, dynamic>) {
           _squareInvoiceUrl = metadata['square_public_url'] as String?;
+          final rawOptions = metadata['payment_options'];
+          if (rawOptions is List) {
+            _paymentOptions = rawOptions
+                .whereType<Map>()
+                .map((option) => Map<String, dynamic>.from(option))
+                .toList();
+          } else {
+            _paymentOptions = [];
+          }
         }
+        _smartPayUrl = _webFallback ?? _deepLinkUri;
       });
 
       if (_isSquareInvoice) {
@@ -101,9 +115,11 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
             _loading = false;
           });
         }
-        await Future.delayed(const Duration(milliseconds: 400));
-        if (mounted) {
-          _launchWallet();
+        if (_paymentOptions.length == 1) {
+          await Future.delayed(const Duration(milliseconds: 400));
+          if (mounted) {
+            _launchPaymentOption(_paymentOptions.first);
+          }
         }
       }
     } on DioException catch (e) {
@@ -203,25 +219,27 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
       }
 
       Uri? targetUri;
-
-      final cashAppUrl = _buildCashAppUrl(_paymentData);
-      if (cashAppUrl != null) {
-        targetUri = Uri.tryParse(cashAppUrl);
+      if (_paymentOptions.length == 1) {
+        final option = _paymentOptions.first;
+        targetUri = _optionUri(option);
       }
 
-      // Try deep_link first (from API response)
-      if (targetUri == null && _deepLinkUri != null) {
-        targetUri = Uri.tryParse(_deepLinkUri!);
+      if (targetUri == null && _smartPayUrl != null) {
+        final parsed = Uri.tryParse(_smartPayUrl!);
+        if (parsed != null && !parsed.hasScheme) {
+          targetUri = Uri.parse('${Env.appBaseUrl}$_smartPayUrl');
+        } else {
+          targetUri = parsed;
+        }
       }
 
-      // Fallback to web_fallback
-      if (targetUri == null && _webFallback != null) {
-        targetUri = Uri.tryParse(_webFallback!);
-      }
-
-      // Last resort: widget deep link
       if (targetUri == null && widget.deepLink != null) {
-        targetUri = Uri.tryParse(widget.deepLink!);
+        final parsed = Uri.tryParse(widget.deepLink!);
+        if (parsed != null && !parsed.hasScheme) {
+          targetUri = Uri.parse('${Env.appBaseUrl}${widget.deepLink}');
+        } else {
+          targetUri = parsed;
+        }
       }
 
       if (targetUri != null) {
@@ -243,13 +261,12 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
           });
         } else {
           setState(() {
-            _error = 'Unable to open payment app';
+            _error = 'Unable to open payment link';
           });
         }
       } else {
         setState(() {
-          _error =
-              'No compatible wallet app found. Install Cash App or Venmo and try again.';
+          _error = 'No payment link available. Please contact the group owner.';
         });
       }
     } catch (e) {
@@ -271,27 +288,55 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
     }
   }
 
-  String? _buildCashAppUrl(Map<String, dynamic>? payload) {
-    if (payload == null) return null;
-    final group = payload['group'];
-    final owner = group is Map ? group['owner'] as Map? : null;
-    final member = payload['member'] as Map?;
+  Uri? _optionUri(Map<String, dynamic> option) {
+    final uri = option['uri'] as String?;
+    final webFallback = option['web_fallback'] as String?;
+    final value = (uri ?? webFallback ?? '').trim();
+    if (value.isEmpty) return null;
+    final parsed = Uri.tryParse(value);
+    if (parsed == null) return null;
+    if (!parsed.hasScheme) {
+      return Uri.parse('${Env.appBaseUrl}$value');
+    }
+    return parsed;
+  }
 
-    final handle = owner?['cash_tag'] as String? ??
-        owner?['cashapp_cashtag'] as String? ??
-        member?['cashapp_cashtag'] as String? ??
-        member?['cash_tag'] as String? ??
-        member?['cashapp_tag'] as String?;
-    if (handle == null || handle.trim().isEmpty) return null;
+  Future<void> _launchPaymentOption(Map<String, dynamic> option) async {
+    if (_launching) return;
+    final targetUri = _optionUri(option);
+    if (targetUri == null) return;
 
-    final cents = payload['amount_cents'] as int? ?? 0;
-    if (cents <= 0) return null;
+    setState(() {
+      _launching = true;
+      _error = null;
+    });
 
-    var cashtag = handle.trim();
-    cashtag = cashtag.startsWith('\$') ? cashtag.substring(1) : cashtag;
-    final amount = (cents / 100.0).toStringAsFixed(2);
-
-    return 'https://cash.app/\$$cashtag/$amount';
+    try {
+      final launched = await launchUrl(
+        targetUri,
+        mode: LaunchMode.inAppBrowserView,
+      );
+      if (launched) {
+        setState(() {
+          _hasLaunchedWallet = true;
+        });
+      }
+    } catch (e) {
+      if (Env.debug) {
+        debugPrint('Error launching payment option: $e');
+      }
+      if (mounted) {
+        setState(() {
+          _error = 'Unable to open payment link';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _launching = false;
+        });
+      }
+    }
   }
 
   Future<void> _openLink(String url,
@@ -411,13 +456,39 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
     await _confirmPayment();
   }
 
+  String _optionLabel(String method) {
+    switch (method.toLowerCase()) {
+      case 'cashapp':
+      case 'cash_app':
+        return 'Open Cash App';
+      case 'venmo':
+        return 'Open Venmo';
+      default:
+        return 'Open Payment';
+    }
+  }
+
+  IconData _optionIcon(String method) {
+    switch (method.toLowerCase()) {
+      case 'cashapp':
+      case 'cash_app':
+        return Icons.attach_money;
+      case 'venmo':
+        return Icons.payments;
+      default:
+        return Icons.open_in_new;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasError = _error != null;
     final infoMessage = _error ??
         (_isSquareInvoice
             ? 'Cash App will notify you automatically. Use "Open Invoice" below if you need to review it manually.'
-            : 'Your wallet should open automatically. If not, tap "Open Wallet".');
+            : _paymentOptions.isNotEmpty
+                ? 'Choose a payment option below.'
+                : 'Open the payment page to choose a method.');
     final infoBackground = hasError
         ? Colors.orange.shade50
         : (_isSquareInvoice ? Colors.green.shade50 : Colors.blue.shade50);
@@ -429,157 +500,258 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
         : (_isSquareInvoice ? Colors.green.shade900 : Colors.blue.shade900);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F8FB),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: Text('Pay • ${widget.prCode}'),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_paymentData != null) ...[
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Amount Due',
-                              style: Theme.of(context).textTheme.titleMedium,
+          : Stack(
+              children: [
+                Positioned(
+                  top: -120,
+                  left: -40,
+                  child: Container(
+                    width: 260,
+                    height: 260,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.25),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -120,
+                  right: -80,
+                  child: Container(
+                    width: 280,
+                    height: 280,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0x3322D3EE),
+                    ),
+                  ),
+                ),
+                SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 96, 24, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_paymentData != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(context).colorScheme.primary,
+                                Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withOpacity(0.7),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _paymentData!['amount_display'] ?? '\$0.00',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .displayMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _paymentData!['group']?['name'] ?? 'Payment',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            if (_paymentData!['note'] != null) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                _paymentData!['note'],
-                                style: Theme.of(context).textTheme.bodySmall,
-                                textAlign: TextAlign.center,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withOpacity(0.25),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
                               ),
                             ],
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'Amount Due',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(color: Colors.white70),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _paymentData!['amount_display'] ?? '\$0.00',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .displaySmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _paymentData!['group']?['name'] ?? 'Payment',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(color: Colors.white),
+                              ),
+                              if (_paymentData!['note'] != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  _paymentData!['note'],
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(color: Colors.white70),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: infoBackground,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: infoBackground),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              hasError
+                                  ? Icons.warning_amber_rounded
+                                  : (_isSquareInvoice
+                                      ? Icons.notifications_active
+                                      : Icons.info_outline),
+                              color: infoIconColor,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                infoMessage,
+                                style: TextStyle(color: infoTextColor),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: infoBackground,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          hasError
-                              ? Icons.warning_amber_rounded
-                              : (_isSquareInvoice
-                                  ? Icons.notifications_active
-                                  : Icons.info_outline),
-                          color: infoIconColor,
+                      const SizedBox(height: 24),
+                      if (_isSquareInvoice) ...[
+                        _buildSquareInvoiceCard(),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: _squareInvoiceUrl == null
+                              ? null
+                              : () => _openLink(
+                                    _squareInvoiceUrl!,
+                                    mode: LaunchMode.inAppBrowserView,
+                                  ),
+                          icon: const Icon(Icons.open_in_new),
+                          label: const Text('Open Invoice'),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            infoMessage,
-                            style: TextStyle(color: infoTextColor),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _loadPaymentRequest,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Refresh Status'),
+                        ),
+                        const SizedBox(height: 28),
+                        const Text(
+                          'What happens next:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  if (_isSquareInvoice) ...[
-                    _buildSquareInvoiceCard(),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: _squareInvoiceUrl == null
-                          ? null
-                          : () => _openLink(
-                                _squareInvoiceUrl!,
-                                mode: LaunchMode.inAppBrowserView,
+                        const SizedBox(height: 12),
+                        _buildStep(1, 'Open Cash App and look for TogetherPay'),
+                        _buildStep(2, 'Tap Continue to approve the payment'),
+                        _buildStep(
+                          3,
+                          'We auto-mark this request once Cash App finishes processing',
+                        ),
+                      ] else ...[
+                        if (_paymentOptions.isNotEmpty)
+                          ..._paymentOptions.map((option) {
+                            final method = (option['method'] as String? ?? '')
+                                .toLowerCase();
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: FilledButton.icon(
+                                onPressed: () => _launchPaymentOption(option),
+                                icon: Icon(_optionIcon(method)),
+                                label: Text(_optionLabel(method)),
+                                style: FilledButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .primary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    side: BorderSide(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.2),
+                                    ),
+                                  ),
+                                ),
                               ),
-                      icon: const Icon(Icons.open_in_new),
-                      label: const Text('Open Invoice'),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _loadPaymentRequest,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Refresh Status'),
-                    ),
-                    const SizedBox(height: 32),
-                    const Text(
-                      'What happens next:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildStep(1, 'Open Cash App and look for TogetherPay'),
-                    _buildStep(2, 'Tap Continue to approve the payment'),
-                    _buildStep(
-                      3,
-                      'We auto-mark this request once Cash App finishes processing',
-                    ),
-                  ] else ...[
-                    OutlinedButton.icon(
-                      onPressed: _launchWallet,
-                      icon: const Icon(Icons.open_in_new),
-                      label: const Text('Open Wallet'),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _markAsPaid,
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text('Mark as Paid'),
-                    ),
-                    if (Env.debug) ...[
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: _launchWallet,
-                        icon: const Icon(Icons.bug_report),
-                        label: const Text('DEBUG: Launch Wallet'),
-                      ),
+                            );
+                          }),
+                        if (_paymentOptions.isEmpty && _smartPayUrl != null)
+                          OutlinedButton.icon(
+                            onPressed: _launchWallet,
+                            icon: const Icon(Icons.open_in_new),
+                            label: const Text('Open Payment Page'),
+                          ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: _markAsPaid,
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: const Text('Mark as Paid'),
+                        ),
+                        if (Env.debug) ...[
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: _launchWallet,
+                            icon: const Icon(Icons.bug_report),
+                            label: const Text('DEBUG: Launch Wallet'),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        const Text(
+                          'How it works:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildStep(1, 'Tap a payment option'),
+                        _buildStep(2, 'Enter the amount shown if needed'),
+                        _buildStep(3, 'Send the payment'),
+                        _buildStep(4, 'Confirm here once sent'),
+                      ],
+                      const SizedBox(height: 24),
+                      _buildCodeCard(),
                     ],
-                    const SizedBox(height: 32),
-                    const Text(
-                      'How it works:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildStep(1, 'Tap "Open Wallet"'),
-                    _buildStep(2,
-                        'Enter the amount shown (Cash App may not pre-fill)'),
-                    _buildStep(3, 'Send the payment'),
-                    _buildStep(4, 'Confirm here once sent'),
-                  ],
-                  const SizedBox(height: 24),
-                  _buildCodeCard(),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
     );
   }
@@ -625,6 +797,9 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
     final normalizedDue = dueLabel?.split('T').first;
 
     return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -679,8 +854,15 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [

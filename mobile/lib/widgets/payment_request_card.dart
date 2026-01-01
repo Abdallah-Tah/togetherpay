@@ -90,15 +90,16 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
     });
 
     try {
-      final cashAppUrl = _buildCashAppUrl(widget.paymentRequest);
-
       // Get deep_link from payment request data (same as pay_screen.dart button)
       final deepLinkUri = widget.paymentRequest['deep_link'] as String?;
       final webFallback = widget.paymentRequest['web_fallback_link'] as String?;
-      final url = cashAppUrl ?? deepLinkUri ?? webFallback;
+      final url = deepLinkUri ?? webFallback;
 
       if (url != null) {
-        final uri = Uri.tryParse(url);
+        Uri? uri = Uri.tryParse(url);
+        if (uri != null && !uri.hasScheme) {
+          uri = Uri.parse('${Env.appBaseUrl}$url');
+        }
         if (uri != null) {
           // Use in-app browser so the Cash App redirect stays inside the app.
           var launched = false;
@@ -142,25 +143,6 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
         });
       }
     }
-  }
-
-  String? _buildCashAppUrl(Map<String, dynamic> pr) {
-    final owner = pr['cycle']?['group']?['owner'] ?? pr['group']?['owner'];
-    final handle = owner?['cash_tag'] as String? ??
-        owner?['cashapp_cashtag'] as String? ??
-        pr['member']?['cashapp_cashtag'] as String? ??
-        pr['member']?['cash_tag'] as String? ??
-        pr['member']?['cashapp_tag'] as String?;
-    if (handle == null || handle.trim().isEmpty) return null;
-
-    final cents = pr['amount_cents'] as int? ?? 0;
-    if (cents <= 0) return null;
-
-    var cashtag = handle.trim();
-    cashtag = cashtag.startsWith('\$') ? cashtag.substring(1) : cashtag;
-    final amount = (cents / 100.0).toStringAsFixed(2);
-
-    return 'https://cash.app/\$$cashtag/$amount';
   }
 
   @override

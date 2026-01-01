@@ -15,6 +15,12 @@ class Env {
   /// App name
   static const String appName = 'TogetherPay';
 
+  /// Base URL for web app links (SmartPay, invitations)
+  static const String appBaseUrl = String.fromEnvironment(
+    'APP_BASE',
+    defaultValue: 'https://www.togetherpay.app',
+  );
+
   /// Get the actual API base URL (runtime fallback if compile-time is empty)
   static String get effectiveApiBase {
     return apiBase.isEmpty ? 'https://www.togetherpay.app/api/v1' : apiBase;

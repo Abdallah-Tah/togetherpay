@@ -2,31 +2,17 @@
 
 namespace App\Services;
 
-use App\Contracts\PaymentRequestDriver;
 use App\Models\BillingCycle;
 use App\Models\GroupMember;
 use App\Models\PaymentRequest;
 use App\Notifications\PaymentRequestEventNotification;
 use App\Notifications\PaymentRequestNotification;
-use App\Services\PaymentDrivers\CashAppDriver;
-use App\Services\PaymentDrivers\VenmoDriver;
+use App\Services\Square\SquareCustomerService;
+use App\Services\Square\SquareInvoiceService;
 use App\Support\PRCode;
 
 class PaymentRequestService
 {
-    protected array $drivers = [];
-
-    public function __construct()
-    {
-        $this->registerDrivers();
-    }
-
-    protected function registerDrivers(): void
-    {
-        $this->drivers['VENMO'] = new VenmoDriver;
-        $this->drivers['CASH_APP'] = new CashAppDriver;
-    }
-
     public function createRequestForMember(BillingCycle $cycle, GroupMember $member): PaymentRequest
     {
         $amountCents = $member->calculateAmount($cycle->total_amount_cents);
@@ -97,6 +83,8 @@ class PaymentRequestService
             ],
         );
 
+        $this->attachSquareInvoiceIfAvailable($paymentRequest, $member, $resolvedCycle);
+
         if ($markAsSent) {
             $this->sendRequest($paymentRequest);
 
@@ -120,21 +108,13 @@ class PaymentRequestService
     public function verifyHandle(string $channel, string $handle): bool
     {
         try {
-            $driver = $this->getDriver($channel);
+            $method = strtolower(str_replace('_', '', $channel));
+            $driver = PaymentDriverFactory::make($method);
 
             return $driver->validateAccount($handle);
         } catch (\InvalidArgumentException $e) {
             return false;
         }
-    }
-
-    protected function getDriver(string $channel): PaymentRequestDriver
-    {
-        if (! isset($this->drivers[$channel])) {
-            throw new \InvalidArgumentException("Unknown payment channel: {$channel}");
-        }
-
-        return $this->drivers[$channel];
     }
 
     protected function createRequestRecord(
@@ -149,43 +129,42 @@ class PaymentRequestService
             $cycle = $this->resolveCycle(null, $member);
         }
 
-        $channel = $member->preferred_channel;
-        $driver = $this->getDriver($channel);
-
         $cycleTimestamp = $this->resolveCycleTimestamp($cycle);
         $cycleYm = $cycleTimestamp->format('Y-m');
         $prCode = PRCode::make($member->group_id, $member->id, $cycleYm);
 
-        $linkPayload = $driver->buildLink($member, $amountCents, $prCode, $note);
-
-        if (is_string($linkPayload)) {
-            $deepLink = $linkPayload;
-            $webFallback = $this->buildWebFallbackLink($member);
-        } else {
-            $deepLink = $linkPayload['uri'] ?? $this->buildWebFallbackLink($member);
-            $webFallback = $linkPayload['web_fallback'] ?? $this->buildWebFallbackLink($member);
-        }
+        $paymentOptions = $this->buildPaymentOptions($member, $amountCents, $prCode, $note);
 
         $metadata = array_merge([
             'handle' => $member->getPaymentHandle(),
             'amount_display' => '$'.number_format($amountCents / 100, 2),
+            'payment_options' => $paymentOptions,
         ], $extraMetadata);
 
-        return PaymentRequest::create([
+        $paymentRequest = PaymentRequest::create([
             'group_id' => $member->group_id,
             'cycle_id' => $cycle?->id,
             'member_id' => $member->id,
             'amount_cents' => $amountCents,
-            'method_hint' => $channel,
+            'method_hint' => 'SMART_PAY',
             'pr_code' => $prCode,
             'note' => $note,
-            'deep_link' => $deepLink,
-            'web_fallback_link' => $webFallback,
+            'deep_link' => null,
+            'web_fallback_link' => null,
             'status' => $markAsSent ? 'sent' : 'pending',
             'initiated_at' => now(),
             'sent_at' => $markAsSent ? now() : null,
             'metadata' => $metadata,
         ]);
+
+        $smartPayLink = url("/pay/{$paymentRequest->id}");
+        $paymentRequest->update([
+            'deep_link' => $smartPayLink,
+            'web_fallback_link' => $smartPayLink,
+            'metadata' => array_merge($metadata, ['link' => $smartPayLink]),
+        ]);
+
+        return $paymentRequest->fresh();
     }
 
     protected function resolveCycle(?BillingCycle $cycle, GroupMember $member): BillingCycle
@@ -234,6 +213,87 @@ class PaymentRequestService
                 : null,
             default => null,
         };
+    }
+
+    protected function buildPaymentOptions(
+        GroupMember $member,
+        int $amountCents,
+        string $prCode,
+        string $note
+    ): array {
+        $options = [];
+
+        foreach (PaymentDriverFactory::available() as $method) {
+            $driver = PaymentDriverFactory::make($method);
+
+            try {
+                $linkPayload = $driver->buildLink($member, $amountCents, $prCode, $note);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            if (is_string($linkPayload)) {
+                $uri = $linkPayload;
+                $webFallback = $linkPayload;
+            } else {
+                $uri = $linkPayload['uri'] ?? null;
+                $webFallback = $linkPayload['web_fallback'] ?? null;
+            }
+
+            if (! $uri && ! $webFallback) {
+                continue;
+            }
+
+            $options[] = [
+                'method' => $driver->getName(),
+                'uri' => $uri,
+                'web_fallback' => $webFallback,
+            ];
+        }
+
+        return $options;
+    }
+
+    protected function attachSquareInvoiceIfAvailable(
+        PaymentRequest $paymentRequest,
+        GroupMember $member,
+        BillingCycle $cycle
+    ): void {
+        $group = $member->group;
+        $owner = $group?->owner;
+
+        if (! $owner || ! $owner->hasSquareAccount()) {
+            return;
+        }
+
+        try {
+            if (! $member->square_customer_id) {
+                $customerService = app(SquareCustomerService::class);
+                $customerId = $customerService->createCustomerForMember($member, $owner);
+                $member->update(['square_customer_id' => $customerId]);
+            }
+
+            $invoiceService = app(SquareInvoiceService::class);
+            $invoice = $invoiceService->createInvoiceForMember($member, $owner, $cycle);
+            $invoiceId = $invoice['id'] ?? null;
+            $invoiceUrl = $invoice['public_url'] ?? null;
+
+            if ($invoiceId) {
+                $metadata = $paymentRequest->metadata ?? [];
+                $metadata['square_public_url'] = $invoiceUrl;
+
+                $paymentRequest->update([
+                    'square_invoice_id' => $invoiceId,
+                    'metadata' => $metadata,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to attach Square invoice to manual payment request', [
+                'payment_request_id' => $paymentRequest->id,
+                'member_id' => $member->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     protected function resolveCycleTimestamp(?BillingCycle $cycle)

@@ -7,15 +7,13 @@ use function Livewire\Volt\{state, rules, mount};
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
-state(['groupId', 'email', 'phone', 'name', 'shareCount' => 1, 'venmoUsername', 'cashappCashtag']);
+state(['groupId', 'email', 'phone', 'name', 'shareCount' => 1]);
 
 rules([
     'email' => 'required|email',
     'phone' => 'nullable|string',
     'name' => 'required|string|max:255',
     'shareCount' => 'required|integer|min:1',
-    'venmoUsername' => 'nullable|string',
-    'cashappCashtag' => 'nullable|string',
 ]);
 
 mount(fn($groupId) => $this->groupId = $groupId);
@@ -68,8 +66,6 @@ $invite = function () {
         'member_data' => [
             'name' => $this->name,
             'share_count' => $this->shareCount,
-            'venmo_username' => $this->venmoUsername,
-            'cashapp_cashtag' => $this->cashappCashtag,
         ],
     ]);
 
@@ -78,7 +74,7 @@ $invite = function () {
         ->notify(new GroupInvitationNotification($invitation));
 
     // Reset form
-    $this->reset(['email', 'phone', 'name', 'shareCount', 'venmoUsername', 'cashappCashtag']);
+    $this->reset(['email', 'phone', 'name', 'shareCount']);
     $this->shareCount = 1;
 
     session()->flash('success', 'Invitation sent successfully to ' . $invitation->email);
@@ -130,18 +126,6 @@ $invite = function () {
                 label="Share Count"
                 min="1"
                 required
-            />
-
-            <flux:input
-                wire:model="venmoUsername"
-                label="Venmo Username (Optional)"
-                placeholder="@johndoe"
-            />
-
-            <flux:input
-                wire:model="cashappCashtag"
-                label="Cash App Cashtag (Optional)"
-                placeholder="$johndoe"
             />
 
             <div class="flex gap-2">

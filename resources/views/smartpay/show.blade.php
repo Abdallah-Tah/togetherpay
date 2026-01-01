@@ -29,6 +29,11 @@
         </div>
 
         <!-- Payment Options -->
+        @if(!$squareLink)
+            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Card and Apple Pay aren’t available because the group owner hasn’t connected Square yet.
+            </div>
+        @endif
         <div class="space-y-3 mb-6">
             @if($cashLink)
                 <a href="{{ $cashLink }}"
@@ -50,7 +55,17 @@
                 </a>
             @endif
 
-            @if(!$cashLink && !$venmoLink)
+            @if($squareLink)
+                <a href="{{ $squareLink }}"
+                   class="flex items-center justify-center w-full py-4 px-6 bg-gradient-to-r from-zinc-800 to-zinc-900 hover:from-zinc-900 hover:to-black text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h2m-2-5h2m-2 10h10a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Pay by Card / Apple Pay
+                </a>
+            @endif
+
+            @if(!$cashLink && !$venmoLink && !$squareLink)
                 <div class="text-center py-8">
                     <p class="text-gray-600 mb-4">No payment method configured</p>
                     <p class="text-sm text-gray-500">Please contact the group owner</p>
@@ -169,31 +184,20 @@
             const skipAutoOpen = urlParams.get('skip_auto_open') === '1';
 
             if (isMobile && !skipAutoOpen) {
-                @if($cashLink)
-                    // Show a toast notification
+                const autoOpenUrl = @json($autoOpenUrl);
+                const autoOpenToast = @json($autoOpenToast);
+
+                if (autoOpenUrl) {
                     const toast = document.createElement('div');
                     toast.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-teal-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                    toast.textContent = 'Opening Cash App...';
+                    toast.textContent = autoOpenToast || 'Opening payment app...';
                     document.body.appendChild(toast);
 
-                    // Auto-open Cash App after 1.5 seconds
                     setTimeout(() => {
-                        window.location.href = '{{ $cashLink }}';
+                        window.location.href = autoOpenUrl;
                         toast.remove();
                     }, 1500);
-                @elseif($venmoLink)
-                    // Show a toast notification
-                    const toast = document.createElement('div');
-                    toast.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                    toast.textContent = 'Opening Venmo...';
-                    document.body.appendChild(toast);
-
-                    // Auto-open Venmo after 1.5 seconds
-                    setTimeout(() => {
-                        window.location.href = '{{ $venmoLink }}';
-                        toast.remove();
-                    }, 1500);
-                @endif
+                }
             }
         });
     </script>

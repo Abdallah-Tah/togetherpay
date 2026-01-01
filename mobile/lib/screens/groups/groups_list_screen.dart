@@ -408,9 +408,12 @@ class _GroupsListScreenState extends State<GroupsListScreen> {
                   ScrollableState(), // This is a hack, better to use flutter_staggered_animations or similar
               duration: const Duration(milliseconds: 375),
             )..forward(),
-            child: GroupCard(
-              group: group,
-              onTap: () => _navigateToGroupDetails(group),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: GroupCard(
+                group: group,
+                onTap: () => _navigateToGroupDetails(group),
+              ),
             ),
           );
         },

@@ -7,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'env.dart';
 import 'screens/dashboard_screen.dart';
@@ -14,6 +15,7 @@ import 'screens/groups/groups_list_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/payments/payment_requests_screen.dart';
+import 'pay_screen.dart';
 import 'screens/reports/reports_screen.dart';
 import 'screens/settings/notification_center_screen.dart';
 import 'screens/settings/payment_methods_screen.dart';
@@ -153,6 +155,23 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
       debugPrint('Deep link received: $uri');
     }
 
+    if (uri.scheme == 'togetherpay' && uri.host == 'square') {
+      final isSuccess = uri.path == '/success';
+      final context = globalNavigatorKey.currentContext;
+      if (context != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isSuccess
+                ? 'Square connected successfully.'
+                : 'Square connection failed. Please try again.'),
+            backgroundColor: isSuccess ? Colors.green : Colors.red,
+          ),
+        );
+      }
+      _checkOnboardingStatus();
+      return;
+    }
+
     // Handle invitation links: /accept-invitation/{token}
     if (uri.path.startsWith('/accept-invitation/')) {
       final token = uri.pathSegments.last;
@@ -166,10 +185,28 @@ class _TogetherPayAppState extends State<TogetherPayApp> {
     }
     // Handle payment links: /pay/{token} or /p/{token}
     else if (uri.path.startsWith('/pay/') || uri.path.startsWith('/p/')) {
-      // TODO: Implement payment deep link handling
-      if (Env.debug) {
-        debugPrint('Payment link not yet implemented: ${uri.path}');
+      final context = globalNavigatorKey.currentContext;
+      if (context == null) return;
+
+      final token = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : '';
+      if (token.isEmpty) return;
+
+      if (uri.path.startsWith('/p/')) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PayScreen(prCode: token),
+          ),
+        );
+        return;
       }
+
+      final launchUri = uri.isAbsolute
+          ? uri
+          : Uri.parse('${Env.appBaseUrl}${uri.path}');
+      launchUrl(
+        launchUri,
+        mode: LaunchMode.inAppBrowserView,
+      );
     }
   }
 

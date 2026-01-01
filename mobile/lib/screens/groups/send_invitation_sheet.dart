@@ -24,8 +24,6 @@ class _SendInvitationSheetState extends State<SendInvitationSheet> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _shareCountController = TextEditingController(text: '1');
-  final _venmoController = TextEditingController();
-  final _cashAppController = TextEditingController();
 
   bool _loading = false;
   String? _error;
@@ -36,8 +34,6 @@ class _SendInvitationSheetState extends State<SendInvitationSheet> {
     _emailController.dispose();
     _phoneController.dispose();
     _shareCountController.dispose();
-    _venmoController.dispose();
-    _cashAppController.dispose();
     super.dispose();
   }
 
@@ -59,12 +55,6 @@ class _SendInvitationSheetState extends State<SendInvitationSheet> {
               ? null
               : _phoneController.text.trim(),
           'share_count': int.parse(_shareCountController.text),
-          'venmo_username': _venmoController.text.trim().isEmpty
-              ? null
-              : _venmoController.text.trim(),
-          'cashapp_cashtag': _cashAppController.text.trim().isEmpty
-              ? null
-              : _cashAppController.text.trim(),
         },
       );
 
@@ -247,46 +237,6 @@ class _SendInvitationSheetState extends State<SendInvitationSheet> {
                     }
                     return null;
                   },
-                ),
-                const SizedBox(height: 24),
-
-                // Payment methods section
-                Text(
-                  'Payment Methods (Optional)',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Add payment handles to make it easier for them',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                ),
-                const SizedBox(height: 16),
-
-                // Venmo username
-                TextFormField(
-                  controller: _venmoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Venmo Username',
-                    hintText: 'username',
-                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-                    helperText: 'Without @ symbol',
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Cash App tag
-                TextFormField(
-                  controller: _cashAppController,
-                  decoration: const InputDecoration(
-                    labelText: 'Cash App Tag',
-                    hintText: 'cashtag',
-                    prefixIcon: Icon(Icons.payments_outlined),
-                    helperText: 'Without \$ symbol',
-                  ),
                 ),
                 const SizedBox(height: 24),
 

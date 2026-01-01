@@ -31,12 +31,9 @@ class _AddMemberSheetState extends State<AddMemberSheet>
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _shareValueController = TextEditingController(text: '0');
-  final _venmoUsernameController = TextEditingController();
-  final _cashTagController = TextEditingController();
   final _searchController = TextEditingController();
 
   TabController? _tabController;
-  String _preferredChannel = 'VENMO';
   String _shareType = 'AMOUNT';
   bool _submittingNew = false;
   String? _errorNew;
@@ -66,8 +63,6 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     _emailController.dispose();
     _phoneController.dispose();
     _shareValueController.dispose();
-    _venmoUsernameController.dispose();
-    _cashTagController.dispose();
     super.dispose();
   }
 
@@ -77,8 +72,6 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     final member = widget.member!;
     final user = member['user'] as Map<String, dynamic>?;
 
-    _preferredChannel =
-        (member['preferred_channel'] as String? ?? 'VENMO').toUpperCase();
     _shareType = (member['share_type'] as String? ?? 'AMOUNT').toUpperCase();
 
     _nameController.text =
@@ -88,9 +81,6 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     _phoneController.text =
         (member['phone'] ?? user?['phone'] ?? '').toString();
     _shareValueController.text = _formatNumber(member['share_value']);
-    _venmoUsernameController.text =
-        member['venmo_username']?.toString() ?? '';
-    _cashTagController.text = member['cash_tag']?.toString() ?? '';
   }
 
   String _formatNumber(dynamic value) {
@@ -293,7 +283,6 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     });
 
     final payload = <String, dynamic>{
-      'preferred_channel': _preferredChannel,
       'share_type': _shareType,
       'share_value': double.tryParse(_shareValueController.text) ?? 0,
     };
@@ -301,13 +290,6 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     if (email.isNotEmpty) payload['email'] = email;
     if (phone.isNotEmpty) payload['phone'] = phone;
     if (name.isNotEmpty) payload['name'] = name;
-
-    if (_preferredChannel == 'VENMO') {
-      payload['venmo_username'] = _venmoUsernameController.text.trim();
-    } else if (_preferredChannel == 'CASH_APP') {
-      final cashTag = _cashTagController.text.trim();
-      if (cashTag.isNotEmpty) payload['cash_tag'] = cashTag;
-    }
 
     try {
       if (_isEditing) {
@@ -472,73 +454,6 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              key: ValueKey('new_channel_$_preferredChannel'),
-              initialValue: _preferredChannel,
-              decoration: const InputDecoration(
-                labelText: 'Payment channel',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: 'VENMO',
-                  child: Text('Venmo'),
-                ),
-                DropdownMenuItem(
-                  value: 'CASH_APP',
-                  child: Text('Cash App'),
-                ),
-              ],
-              onChanged: _submittingNew
-                  ? null
-                  : (value) {
-                      if (value != null) {
-                        setState(() {
-                          _preferredChannel = value;
-                        });
-                      }
-                    },
-            ),
-            const SizedBox(height: 16),
-            if (_preferredChannel == 'VENMO')
-              TextFormField(
-                controller: _venmoUsernameController,
-                enabled: !_submittingNew,
-                decoration: const InputDecoration(
-                  labelText: 'Venmo username',
-                  hintText: '@username',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (_preferredChannel == 'VENMO') {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Venmo username is required';
-                    }
-                  }
-                  return null;
-                },
-              ),
-            if (_preferredChannel == 'VENMO') const SizedBox(height: 16),
-            if (_preferredChannel == 'CASH_APP') ...[
-              TextFormField(
-                controller: _cashTagController,
-                enabled: !_submittingNew,
-                decoration: const InputDecoration(
-                  labelText: 'Cash tag',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (_preferredChannel == 'CASH_APP') {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Cash tag is required';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
             Row(
               children: [
                 Expanded(

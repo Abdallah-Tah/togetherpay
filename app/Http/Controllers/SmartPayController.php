@@ -17,25 +17,70 @@ class SmartPayController extends Controller
      */
     public function show(PaymentRequest $request)
     {
-        $member = $request->member; // relation to GroupMember
-        $group = $request->cycle->group;
+        $group = $request->cycle?->group ?? $request->group;
+        $owner = $group?->owner;
 
-        $note = "Group {$group->name} - ".$request->created_at->format('M Y')." - PR#{$request->id}";
+        $note = $group
+            ? "Group {$group->name} - ".$request->created_at->format('M Y')." - PR#{$request->id}"
+            : "Payment Request - ".$request->created_at->format('M Y')." - PR#{$request->id}";
 
-        // Generate Cash App link if member has cash tag
-        $cashLink = $member->cash_tag
-            ? PaymentLinks::cashApp($member->cash_tag, $request->amount_cents, $note)
+        // Generate Cash App link if owner has cash tag
+        $cashTag = $owner?->cashapp_tag ?? $owner?->cash_tag;
+        $cashLink = $cashTag
+            ? PaymentLinks::cashApp($cashTag, $request->amount_cents, $note)
             : null;
 
-        // Generate Venmo link if member has venmo username
-        $venmoLink = ! empty($member->venmo_username)
-            ? PaymentLinks::venmo($member->venmo_username, $request->amount_cents, $note)
+        // Generate Venmo link if owner has venmo username
+        $venmoUsername = $owner?->venmo_username;
+        $venmoLink = ! empty($venmoUsername)
+            ? PaymentLinks::venmo($venmoUsername, $request->amount_cents, $note)
+            : null;
+
+        // Square invoice link (card/Apple Pay/etc.) if available
+        $squareLink = data_get($request->metadata, 'square_public_url');
+
+        $paymentOptions = array_values(array_filter([
+            $cashLink ? [
+                'id' => 'cash_app',
+                'label' => 'Open Cash App',
+                'url' => $cashLink,
+                'toast' => 'Opening Cash App...',
+            ] : null,
+            $venmoLink ? [
+                'id' => 'venmo',
+                'label' => 'Open Venmo',
+                'url' => $venmoLink,
+                'toast' => 'Opening Venmo...',
+            ] : null,
+            $squareLink ? [
+                'id' => 'square',
+                'label' => 'Pay by Card / Apple Pay',
+                'url' => $squareLink,
+                'toast' => 'Opening payment page...',
+            ] : null,
+        ]));
+
+        $autoOpenUrl = count($paymentOptions) === 1
+            ? $paymentOptions[0]['url']
+            : null;
+        $autoOpenToast = count($paymentOptions) === 1
+            ? $paymentOptions[0]['toast']
             : null;
 
         // Generate QR code for this payment page
         $qrCode = $this->generateQrCode(url("/pay/{$request->id}"));
 
-        return view('smartpay.show', compact('request', 'cashLink', 'venmoLink', 'group', 'qrCode'));
+        return view('smartpay.show', compact(
+            'request',
+            'cashLink',
+            'venmoLink',
+            'squareLink',
+            'paymentOptions',
+            'autoOpenUrl',
+            'autoOpenToast',
+            'group',
+            'qrCode'
+        ));
     }
 
     /**

@@ -25,8 +25,8 @@ class AddMemberRequest extends FormRequest
             'email' => $emailRules,
             'phone' => ['nullable', 'string'],
             'name' => [$allowExisting ? 'nullable' : 'required', 'string', 'max:255'],
-            'preferred_channel' => ['sometimes', 'in:VENMO,CASH_APP,CARD'],
-            'venmo_username' => ['required_if:preferred_channel,VENMO', 'nullable', 'string'],
+            'preferred_channel' => ['nullable', 'in:VENMO,CASH_APP,CARD'],
+            'venmo_username' => ['nullable', 'string'],
             'cash_tag' => ['nullable', 'string'],
             'cash_phone' => ['nullable', 'string'],
             'cash_email' => ['nullable', 'email'],
@@ -41,7 +41,6 @@ class AddMemberRequest extends FormRequest
         return [
             'email.required' => 'Email is required',
             'email.unique' => 'Email already exists. Use the existing member option.',
-            'venmo_username.required_if' => 'Venmo username is required when preferred channel is Venmo',
         ];
     }
 }
