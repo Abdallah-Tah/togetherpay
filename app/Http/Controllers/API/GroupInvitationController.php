@@ -163,19 +163,19 @@ class GroupInvitationController extends Controller
         ]);
 
         $newEmail = $validated['email'] ?? $invitation->email;
+        $existingMember = $group->members()
+            ->whereHas('user', function ($query) use ($newEmail) {
+                $query->where('email', $newEmail);
+            })
+            ->first();
+
+        if ($existingMember) {
+            return response()->json([
+                'message' => 'This email is already a member of this group.',
+            ], 422);
+        }
+
         if ($newEmail !== $invitation->email) {
-            $existingMember = $group->members()
-                ->whereHas('user', function ($query) use ($newEmail) {
-                    $query->where('email', $newEmail);
-                })
-                ->first();
-
-            if ($existingMember) {
-                return response()->json([
-                    'message' => 'This email is already a member of this group.',
-                ], 422);
-            }
-
             $invitation->email = $newEmail;
             $invitation->token = GroupInvitation::generateToken();
         }

@@ -130,7 +130,22 @@ class GroupController extends Controller
             },
         ]);
 
+        $memberEmails = $group->members
+            ->pluck('email')
+            ->filter()
+            ->map(fn ($email) => strtolower(trim((string) $email)))
+            ->unique()
+            ->values();
+
+        $pendingInvitations = $group->invitations
+            ->filter(function ($invitation) use ($memberEmails) {
+                $email = strtolower(trim((string) $invitation->email));
+                return $email !== '' && ! $memberEmails->contains($email);
+            })
+            ->values();
+
         $groupArray = $group->toArray();
+        $groupArray['invitations'] = $pendingInvitations;
 
         return response()->json([
             'group' => $groupArray,
