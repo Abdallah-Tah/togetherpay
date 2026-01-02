@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\GroupInvitation;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -48,6 +49,11 @@ class Group extends Model
     public function members(): HasMany
     {
         return $this->hasMany(GroupMember::class);
+    }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(GroupInvitation::class);
     }
 
     public function cycles(): HasMany

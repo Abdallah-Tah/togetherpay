@@ -75,6 +75,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:60,1'])->group(functi
 
     // Group Invitations
     Route::post('/groups/{group}/invitations', [GroupInvitationController::class, 'store']);
+    Route::post('/groups/{group}/invitations/{invitation}/resend', [GroupInvitationController::class, 'resend']);
     Route::post('/invitations/{token}/accept', [GroupInvitationController::class, 'accept']);
     Route::delete('/groups/{group}/invitations/{invitation}', [GroupInvitationController::class, 'destroy']);
 

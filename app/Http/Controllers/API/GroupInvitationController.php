@@ -59,9 +59,19 @@ class GroupInvitationController extends Controller
             ->first();
 
         if ($existingInvitation) {
-            throw ValidationException::withMessages([
-                'email' => ['An invitation has already been sent to this email.'],
-            ]);
+            Notification::route('mail', $existingInvitation->email)
+                ->notify(new GroupInvitationNotification($existingInvitation));
+
+            return response()->json([
+                'message' => 'Invitation resent successfully.',
+                'invitation' => [
+                    'id' => $existingInvitation->id,
+                    'email' => $existingInvitation->email,
+                    'status' => $existingInvitation->status,
+                    'expires_at' => $existingInvitation->expires_at,
+                    'invitation_url' => url("/accept-invitation/{$existingInvitation->token}"),
+                ],
+            ], 200);
         }
 
         // Create invitation
@@ -124,6 +134,66 @@ class GroupInvitationController extends Controller
                 'expires_at' => $invitation->expires_at,
                 'is_valid' => $invitation->isValid(),
                 'member_data' => $invitation->member_data,
+            ],
+        ]);
+    }
+
+    /**
+     * Resend invitation email (optionally update email).
+     */
+    public function resend(Request $request, Group $group, GroupInvitation $invitation): JsonResponse
+    {
+        $this->authorize('update', $group);
+
+        if ((int) $invitation->group_id !== (int) $group->id) {
+            return response()->json([
+                'message' => 'Invitation not found for this group.',
+            ], 404);
+        }
+
+        if ($invitation->status === 'accepted') {
+            return response()->json([
+                'message' => 'Invitation has already been accepted.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'email' => ['nullable', 'email'],
+        ]);
+
+        $newEmail = $validated['email'] ?? $invitation->email;
+        if ($newEmail !== $invitation->email) {
+            $existingMember = $group->members()
+                ->whereHas('user', function ($query) use ($newEmail) {
+                    $query->where('email', $newEmail);
+                })
+                ->first();
+
+            if ($existingMember) {
+                return response()->json([
+                    'message' => 'This email is already a member of this group.',
+                ], 422);
+            }
+
+            $invitation->email = $newEmail;
+            $invitation->token = GroupInvitation::generateToken();
+        }
+
+        $invitation->status = 'pending';
+        $invitation->expires_at = now()->addDays(7);
+        $invitation->save();
+
+        Notification::route('mail', $invitation->email)
+            ->notify(new GroupInvitationNotification($invitation));
+
+        return response()->json([
+            'message' => 'Invitation resent successfully.',
+            'invitation' => [
+                'id' => $invitation->id,
+                'email' => $invitation->email,
+                'status' => $invitation->status,
+                'expires_at' => $invitation->expires_at,
+                'invitation_url' => url("/accept-invitation/{$invitation->token}"),
             ],
         ]);
     }

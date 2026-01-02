@@ -454,6 +454,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                 border: OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(

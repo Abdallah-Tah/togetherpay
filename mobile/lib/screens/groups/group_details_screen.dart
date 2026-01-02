@@ -514,11 +514,19 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
   Future<void> _showSendInvitationSheet() async {
     if (!_isOwner) return;
 
+    final invitations =
+        (_groupData?['invitations'] as List?)
+                ?.whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item))
+                .toList() ??
+            const <Map<String, dynamic>>[];
+
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (_) => SendInvitationSheet(
         groupId: widget.groupId,
+        invitations: invitations,
       ),
     );
 
@@ -657,8 +665,8 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                       Icons.mail_outline,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: const Text('Send invitation'),
-                    subtitle: const Text('Invite via email'),
+                    title: const Text('Resend invitation'),
+                    subtitle: const Text('Pending members only'),
                     dense: true,
                   ),
                 ),

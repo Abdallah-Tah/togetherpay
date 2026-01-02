@@ -122,6 +122,9 @@ class GroupController extends Controller
         $group->load([
             'owner',
             'members.user', // Load ALL members (including inactive) for proper filtering in the app
+            'invitations' => function ($query) {
+                $query->where('status', 'pending')->latest();
+            },
             'cycles' => function ($query) {
                 $query->latest()->with('paymentRequests')->limit(5);
             },
