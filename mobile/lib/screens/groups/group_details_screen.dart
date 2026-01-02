@@ -8,6 +8,7 @@ import '../../utils/animations.dart';
 import '../../utils/theme.dart';
 import '../../widgets/payment_request_card.dart';
 import '../../pay_screen.dart';
+import '../payments/payment_request_details_sheet.dart';
 import 'add_member_sheet.dart';
 import 'send_invitation_sheet.dart';
 import 'group_form_sheet.dart';
@@ -248,6 +249,16 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
         _loadGroupDetails();
       }
     });
+  }
+
+  void _showPaymentRequestDetails(Map<String, dynamic> paymentRequest) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          PaymentRequestDetailsSheet(paymentRequest: paymentRequest),
+    ).then((_) => _loadGroupDetails());
   }
 
   Future<void> _sendNudge(String prCode) async {
@@ -1574,16 +1585,27 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
         else
           ..._paymentRequests.map((request) {
             final status = (request['status'] as String?) ?? 'pending';
+            final paidAt = request['paid_at'];
+            final isPaid = _isPaidStatus(status) || paidAt != null;
             final prCode = _codeOf(request);
 
-            final canPay = !_isOwner && _isPayableStatus(status);
-            final canNudge = _isOwner && _isNudgeableStatus(status);
+            final canPay = !_isOwner && _isPayableStatus(status) && !isPaid;
+            final canNudge = _isOwner && _isNudgeableStatus(status) && !isPaid;
             final canConfirm = _isOwner && _isConfirmableStatus(status);
-            final canCancel = _isOwner && _isCancellableStatus(status);
+            final canCancel = _isOwner && _isCancellableStatus(status) && !isPaid;
+            final canOpenDetails = _isOwner || !isPaid;
 
             return PaymentRequestCard(
               paymentRequest: request,
-              onTap: () => _navigateToPayScreen(request),
+              onTap: canOpenDetails
+                  ? () {
+                      if (_isOwner) {
+                        _showPaymentRequestDetails(request);
+                      } else {
+                        _navigateToPayScreen(request);
+                      }
+                    }
+                  : null,
               onPay: canPay ? () => _navigateToPayScreen(request) : null,
               onNudge:
                   canNudge && prCode != null ? () => _sendNudge(prCode) : null,
@@ -1611,6 +1633,13 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
         normalized == 'sent' ||
         normalized == 'overdue' ||
         normalized == 'late';
+  }
+
+  bool _isPaidStatus(String status) {
+    final normalized = status.toLowerCase();
+    return normalized == 'paid' ||
+        normalized == 'owner_confirmed' ||
+        normalized == 'auto_verified';
   }
 
   bool _isNudgeableStatus(String status) {

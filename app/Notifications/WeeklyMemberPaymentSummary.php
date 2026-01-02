@@ -58,7 +58,7 @@ class WeeklyMemberPaymentSummary extends Notification implements ShouldQueue
 
         // Show summary by group
         foreach ($this->groupSummaries as $summary) {
-            $message->line("**{$summary['group_name']}**");
+            $message->line($summary['group_name']);
 
             $createdCount = (int) ($summary['requests_created_count'] ?? 0);
             if ($createdCount > 0) {
@@ -84,7 +84,7 @@ class WeeklyMemberPaymentSummary extends Notification implements ShouldQueue
             }
 
             if ($summary['needs_attention']) {
-                $message->line("💬 **Needs attention:** {$summary['attention_message']}");
+                $message->line("💬 Needs attention: {$summary['attention_message']}");
             }
 
             $message->line(''); // Empty line between groups

@@ -153,6 +153,7 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
     final groupName =
         widget.paymentRequest['group']?['name'] as String? ?? 'Payment';
     final dueDate = widget.paymentRequest['due_date'] as String?;
+    final paidAt = widget.paymentRequest['paid_at'];
     final code = widget.paymentRequest['code'] as String? ?? '';
 
     // Determine status color and icon
@@ -161,50 +162,57 @@ class _PaymentRequestCardState extends State<PaymentRequestCard>
     String statusLabel;
     LinearGradient? statusGradient;
 
-    switch (status.toLowerCase()) {
-      case 'paid':
-      case 'confirmed':
-      case 'owner_confirmed':
-        statusColor = Colors.green;
-        statusIcon = Icons.check_circle_rounded;
-        statusLabel = 'Paid';
-        statusGradient = AppTheme.successGradient;
-        break;
-      case 'member_marked':
-        statusColor = Colors.amber.shade800;
-        statusIcon = Icons.hourglass_bottom_rounded;
-        statusLabel = 'Awaiting confirm';
-        break;
-      case 'failed':
-      case 'error':
-        statusColor = Colors.red.shade700;
-        statusIcon = Icons.error_rounded;
-        statusLabel = 'Failed';
-        statusGradient = AppTheme.errorGradient;
-        break;
-      case 'overdue':
-      case 'late':
-        statusColor = Colors.red;
-        statusIcon = Icons.warning_rounded;
-        statusLabel = 'Overdue';
-        statusGradient = AppTheme.errorGradient;
-        break;
-      case 'sent':
-        statusColor = Colors.blue;
-        statusIcon = Icons.send_rounded;
-        statusLabel = 'Sent';
-        break;
-      case 'pending':
-      default:
-        statusColor = Colors.orange;
-        statusIcon = Icons.pending_rounded;
-        statusLabel = 'Pending';
-        statusGradient = AppTheme.warningGradient;
-        break;
+    final normalizedStatus = status.toLowerCase();
+    final isPaidStatus = normalizedStatus == 'paid' ||
+        normalizedStatus == 'confirmed' ||
+        normalizedStatus == 'owner_confirmed' ||
+        normalizedStatus == 'auto_verified' ||
+        paidAt != null;
+
+    if (isPaidStatus) {
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle_rounded;
+      statusLabel = 'Paid';
+      statusGradient = AppTheme.successGradient;
+    } else {
+      switch (normalizedStatus) {
+        case 'member_marked':
+          statusColor = Colors.amber.shade800;
+          statusIcon = Icons.hourglass_bottom_rounded;
+          statusLabel = 'Awaiting confirm';
+          break;
+        case 'failed':
+        case 'error':
+          statusColor = Colors.red.shade700;
+          statusIcon = Icons.error_rounded;
+          statusLabel = 'Failed';
+          statusGradient = AppTheme.errorGradient;
+          break;
+        case 'overdue':
+        case 'late':
+          statusColor = Colors.red;
+          statusIcon = Icons.warning_rounded;
+          statusLabel = 'Overdue';
+          statusGradient = AppTheme.errorGradient;
+          break;
+        case 'sent':
+          statusColor = Colors.blue;
+          statusIcon = Icons.send_rounded;
+          statusLabel = 'Sent';
+          break;
+        case 'pending':
+        default:
+          statusColor = Colors.orange;
+          statusIcon = Icons.pending_rounded;
+          statusLabel = 'Pending';
+          statusGradient = AppTheme.warningGradient;
+          break;
+      }
     }
 
     final dueDateLabel = _formatDueDateLabel(dueDate);
-    final showPayButton = widget.onPay != null && _canShowPayButton(status);
+    final showPayButton =
+        widget.onPay != null && _canShowPayButton(status) && !isPaidStatus;
     final showNudgeButton = widget.onNudge != null && _canShowNudge(status);
     final showConfirmButton =
         widget.onConfirm != null && _canShowConfirm(status);

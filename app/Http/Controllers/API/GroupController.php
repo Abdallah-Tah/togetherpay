@@ -240,6 +240,11 @@ class GroupController extends Controller
             $user->update(['name' => $request->name]);
         }
 
+        $resolvedName = $request->name ?? $user->name;
+        if (! $resolvedName || trim($resolvedName) === '') {
+            $resolvedName = $request->email ? explode('@', $request->email)[0] : 'Member';
+        }
+
         \Log::info('FOUND USER', [
             'user_id' => $user->id,
             'email' => $user->email,
@@ -275,7 +280,7 @@ class GroupController extends Controller
             ]);
 
             $existingMember->update([
-                'name' => $request->name,
+                'name' => $resolvedName,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'preferred_channel' => $request->preferred_channel ?? $existingMember->preferred_channel,
@@ -299,7 +304,7 @@ class GroupController extends Controller
             $member = GroupMember::create([
                 'group_id' => $group->id,
                 'user_id' => $user->id,
-                'name' => $request->name,
+                'name' => $resolvedName,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'preferred_channel' => $request->preferred_channel ?? 'VENMO',
@@ -324,7 +329,7 @@ class GroupController extends Controller
                 'status' => 'pending',
                 'expires_at' => now()->addDays(7),
                 'member_data' => [
-                    'name' => $request->name,
+                    'name' => $resolvedName,
                     'preferred_channel' => $request->preferred_channel ?? 'CASH_APP',
                     'venmo_username' => $request->venmo_username,
                     'cash_tag' => $request->cash_tag,

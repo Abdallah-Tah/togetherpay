@@ -397,6 +397,8 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
     final amountCents = pr['amount_cents'] as int? ?? 0;
     final amount = amountCents / 100.0;
     final status = pr['status'] as String? ?? 'pending';
+    final isOwner = pr['is_owner'] == true;
+    final paidAtValue = pr['paid_at'];
     final dueDateStr = pr['due_date'] as String?;
     final paidAtStr = pr['paid_at'] as String?;
 
@@ -404,7 +406,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
     DateTime? paidAt;
     bool isOverdue = false;
 
-    final isPaid = _isPaidStatus(status);
+    final isPaid = _isPaidStatus(status) || paidAtValue != null;
     final isAwaitingConfirm = _isAwaitingConfirmationStatus(status);
 
     if (dueDateStr != null) {
@@ -479,7 +481,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
             ),
           ),
           child: InkWell(
-            onTap: () => _showPaymentRequestDetails(pr),
+            onTap: isOwner || !isPaid ? () => _showPaymentRequestDetails(pr) : null,
             child: Padding(
               padding: const EdgeInsets.all(AppTheme.spaceMedium),
               child: Column(

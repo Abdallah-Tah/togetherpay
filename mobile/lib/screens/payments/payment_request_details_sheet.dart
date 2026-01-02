@@ -400,7 +400,7 @@ class _PaymentRequestDetailsSheetState
     final normalizedStatus = status.toLowerCase();
     final isOwner = pr['is_owner'] == true;
     final isMember = pr['is_member'] == true;
-    final isPaid = normalizedStatus == 'paid' ||
+    var isPaid = normalizedStatus == 'paid' ||
         normalizedStatus == 'owner_confirmed' ||
         normalizedStatus == 'auto_verified';
     final isAwaitingConfirm = normalizedStatus == 'member_marked';
@@ -410,6 +410,10 @@ class _PaymentRequestDetailsSheetState
     final sentAtStr = pr['sent_at'] as String?;
     final isProcessing = _isProcessing;
     final canCancelRequest = prCode != null && _canCancelStatus(status);
+    if (paidAtStr != null) {
+      isPaid = true;
+    }
+
     final canMemberMark =
         isMember && !isPaid && !isAwaitingConfirm && _canMarkStatus(status);
     final canOwnerConfirm = isOwner && isAwaitingConfirm;
@@ -619,9 +623,12 @@ class _PaymentRequestDetailsSheetState
                     if (memberPhone != null)
                       _buildContactRow(Icons.phone, memberPhone),
                     const SizedBox(height: AppTheme.spaceMedium),
-                    if (paymentOptions.isNotEmpty ||
-                        squareUrl != null ||
-                        fallbackUrl != null) ...[
+                    if (isMember &&
+                        !isPaid &&
+                        !isAwaitingConfirm &&
+                        (paymentOptions.isNotEmpty ||
+                            squareUrl != null ||
+                            fallbackUrl != null)) ...[
                       Text(
                         'Payment Options',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(

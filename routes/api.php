@@ -33,6 +33,10 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     Route::middleware('throttle:5,1')->group(function () {
         Route::post('/auth/register', [AuthController::class, 'register']);
         Route::post('/auth/login', [AuthController::class, 'login']);
+    });
+
+    // Password reset should be a bit more forgiving than login/register.
+    Route::middleware('throttle:10,1')->group(function () {
         Route::post('/auth/password/forgot', [PasswordResetController::class, 'sendResetLink']);
         Route::post('/auth/password/reset', [PasswordResetController::class, 'resetPassword']);
     });

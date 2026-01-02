@@ -483,12 +483,27 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final hasError = _error != null;
+    final status =
+        (_paymentData?['status'] as String? ?? '').toLowerCase().trim();
+    final paidAt = _paymentData?['paid_at'];
+    final isPaid = status == 'paid' ||
+        status == 'owner_confirmed' ||
+        status == 'auto_verified' ||
+        paidAt != null;
+    final isAwaitingConfirm = status == 'member_marked';
+    final canShowPaymentActions =
+        !_isSquareInvoice && !isPaid && !isAwaitingConfirm;
+    final canMarkAsPaid = canShowPaymentActions;
     final infoMessage = _error ??
         (_isSquareInvoice
             ? 'Cash App will notify you automatically. Use "Open Invoice" below if you need to review it manually.'
-            : _paymentOptions.isNotEmpty
-                ? 'Choose a payment option below.'
-                : 'Open the payment page to choose a method.');
+            : isPaid
+                ? 'This payment is already marked as paid.'
+                : isAwaitingConfirm
+                    ? 'Payment sent. Waiting for owner confirmation.'
+                    : _paymentOptions.isNotEmpty
+                        ? 'Choose a payment option below.'
+                        : 'Open the payment page to choose a method.');
     final infoBackground = hasError
         ? Colors.orange.shade50
         : (_isSquareInvoice ? Colors.green.shade50 : Colors.blue.shade50);
@@ -682,69 +697,72 @@ class _PayScreenState extends State<PayScreen> with WidgetsBindingObserver {
                           'We auto-mark this request once Cash App finishes processing',
                         ),
                       ] else ...[
-                        if (_paymentOptions.isNotEmpty)
-                          ..._paymentOptions.map((option) {
-                            final method = (option['method'] as String? ?? '')
-                                .toLowerCase();
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: FilledButton.icon(
-                                onPressed: () => _launchPaymentOption(option),
-                                icon: Icon(_optionIcon(method)),
-                                label: Text(_optionLabel(method)),
-                                style: FilledButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 14),
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Theme.of(context)
-                                      .colorScheme
-                                      .primary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    side: BorderSide(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.2),
+                        if (canShowPaymentActions) ...[
+                          if (_paymentOptions.isNotEmpty)
+                            ..._paymentOptions.map((option) {
+                              final method = (option['method'] as String? ?? '')
+                                  .toLowerCase();
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: FilledButton.icon(
+                                  onPressed: () => _launchPaymentOption(option),
+                                  icon: Icon(_optionIcon(method)),
+                                  label: Text(_optionLabel(method)),
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 14),
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      side: BorderSide(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary
+                                            .withOpacity(0.2),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
-                        if (_paymentOptions.isEmpty && _smartPayUrl != null)
-                          OutlinedButton.icon(
-                            onPressed: _launchWallet,
-                            icon: const Icon(Icons.open_in_new),
-                            label: const Text('Open Payment Page'),
+                              );
+                            }),
+                          if (_paymentOptions.isEmpty && _smartPayUrl != null)
+                            OutlinedButton.icon(
+                              onPressed: _launchWallet,
+                              icon: const Icon(Icons.open_in_new),
+                              label: const Text('Open Payment Page'),
+                            ),
+                          const SizedBox(height: 8),
+                          if (canMarkAsPaid)
+                            OutlinedButton.icon(
+                              onPressed: _markAsPaid,
+                              icon: const Icon(Icons.check_circle_outline),
+                              label: const Text('Mark as Paid'),
+                            ),
+                          if (Env.debug) ...[
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              onPressed: _launchWallet,
+                              icon: const Icon(Icons.bug_report),
+                              label: const Text('DEBUG: Launch Wallet'),
+                            ),
+                          ],
+                          const SizedBox(height: 24),
+                          const Text(
+                            'How it works:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
-                        const SizedBox(height: 8),
-                        OutlinedButton.icon(
-                          onPressed: _markAsPaid,
-                          icon: const Icon(Icons.check_circle_outline),
-                          label: const Text('Mark as Paid'),
-                        ),
-                        if (Env.debug) ...[
                           const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: _launchWallet,
-                            icon: const Icon(Icons.bug_report),
-                            label: const Text('DEBUG: Launch Wallet'),
-                          ),
+                          _buildStep(1, 'Tap a payment option'),
+                          _buildStep(2, 'Enter the amount shown if needed'),
+                          _buildStep(3, 'Send the payment'),
+                          _buildStep(4, 'Confirm here once sent'),
                         ],
-                        const SizedBox(height: 24),
-                        const Text(
-                          'How it works:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildStep(1, 'Tap a payment option'),
-                        _buildStep(2, 'Enter the amount shown if needed'),
-                        _buildStep(3, 'Send the payment'),
-                        _buildStep(4, 'Confirm here once sent'),
                       ],
                       const SizedBox(height: 24),
                       _buildCodeCard(),
