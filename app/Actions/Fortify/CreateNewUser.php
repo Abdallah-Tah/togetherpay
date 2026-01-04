@@ -52,7 +52,7 @@ class CreateNewUser implements CreatesNewUsers
         $user = User::create([
             'name' => $input['name'],
             'email' => $input['email'],
-            'password' => Hash::make($input['password']),
+            'password' => $input['password'], // Will be auto-hashed by the 'hashed' cast
         ]);
 
         // Send welcome email

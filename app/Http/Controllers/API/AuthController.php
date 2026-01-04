@@ -24,7 +24,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'password' => Hash::make($request->password),
+            'password' => $request->password, // Will be auto-hashed by the 'hashed' cast
             'role' => 'member',
         ]);
 
@@ -214,7 +214,7 @@ class AuthController extends Controller
         }
 
         $user->forceFill([
-            'password' => Hash::make($validated['password']),
+            'password' => $validated['password'], // Will be auto-hashed by the 'hashed' cast
         ])->save();
 
         return response()->json([

@@ -238,7 +238,7 @@ class GroupInvitationController extends Controller
         DB::transaction(function () use ($user, $validated, $invitation) {
             $user->update([
                 'name' => $validated['name'],
-                'password' => \Hash::make($validated['password']),
+                'password' => $validated['password'], // Will be auto-hashed by the 'hashed' cast
                 'cash_tag' => $validated['cash_tag'] ?? null,
                 'venmo_username' => $validated['venmo_username'] ?? null,
                 'is_placeholder' => false,
@@ -365,7 +365,7 @@ class GroupInvitationController extends Controller
         DB::transaction(function () use ($user, $validated, $invitation) {
             $user->update([
                 'name' => $validated['name'],
-                'password' => Hash::make($validated['password']),
+                'password' => $validated['password'], // Will be auto-hashed by the 'hashed' cast
                 'cash_tag' => $validated['cash_tag'] ?? null,
                 'venmo_username' => $validated['venmo_username'] ?? null,
                 'is_placeholder' => false,
