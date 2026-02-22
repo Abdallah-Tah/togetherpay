@@ -204,12 +204,18 @@ class PaymentRequestService
 
     protected function buildWebFallbackLink(GroupMember $member): ?string
     {
+        $owner = $member->group->owner;
+
+        if (! $owner) {
+            return null;
+        }
+
         return match ($member->preferred_channel) {
-            'CASH_APP' => $member->cash_tag
-                ? 'https://cash.app/'.ltrim($member->cash_tag, '$')
+            'CASH_APP' => $owner->cashapp_tag
+                ? 'https://cash.app/'.ltrim($owner->cashapp_tag, '$')
                 : null,
-            'VENMO' => $member->venmo_username
-                ? 'https://venmo.com/'.ltrim($member->venmo_username, '@')
+            'VENMO' => $owner->venmo_username
+                ? 'https://venmo.com/'.ltrim($owner->venmo_username, '@')
                 : null,
             default => null,
         };
@@ -222,12 +228,34 @@ class PaymentRequestService
         string $note
     ): array {
         $options = [];
+        $owner = $member->group->owner;
+
+        if (! $owner) {
+            return $options;
+        }
+
+        // Map driver method names to channel constants
+        $channelMap = [
+            'venmo' => 'VENMO',
+            'cash_app' => 'CASH_APP',
+            'cashapp' => 'CASH_APP',  // Factory returns 'cashapp' without underscore
+        ];
 
         foreach (PaymentDriverFactory::available() as $method) {
+            $channel = $channelMap[$method] ?? strtoupper($method);
+
+            // Get owner's payout handle for this channel
+            $ownerHandle = $owner->getPayoutChannel($channel);
+
+            // Skip if owner doesn't support this channel
+            if (! $ownerHandle) {
+                continue;
+            }
+
             $driver = PaymentDriverFactory::make($method);
 
             try {
-                $linkPayload = $driver->buildLink($member, $amountCents, $prCode, $note);
+                $linkPayload = $driver->buildLink($ownerHandle, $member, $amountCents, $prCode, $note);
             } catch (\InvalidArgumentException $e) {
                 continue;
             }
@@ -244,12 +272,20 @@ class PaymentRequestService
                 continue;
             }
 
+            // Mark preferred channel
+            $isPreferred = $member->preferred_channel === $channel;
+
             $options[] = [
                 'method' => $driver->getName(),
+                'channel' => $channel,
                 'uri' => $uri,
                 'web_fallback' => $webFallback,
+                'is_preferred' => $isPreferred,
             ];
         }
+
+        // Sort so preferred channel is first
+        usort($options, fn ($a, $b) => ($b['is_preferred'] ?? false) <=> ($a['is_preferred'] ?? false));
 
         return $options;
     }

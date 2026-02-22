@@ -8,17 +8,19 @@ use App\Models\GroupMember;
 class VenmoDriver implements PaymentRequestDriver
 {
     public function buildLink(
+        string $ownerHandle,
         GroupMember $member,
         int $amountCents,
         string $prCode,
         string $note
     ): array {
-        $handle = ltrim((string) $member->venmo_username, '@');
+        // Owner's handle is who receives the payment
+        $recipientHandle = ltrim($ownerHandle, '@');
         $amount = number_format($amountCents / 100, 2, '.', '');
 
         $query = http_build_query([
             'txn' => 'pay',
-            'recipients' => "@{$handle}",
+            'recipients' => "@{$recipientHandle}",
             'amount' => $amount,
             'note' => $note,
         ]);
@@ -26,7 +28,7 @@ class VenmoDriver implements PaymentRequestDriver
         $deepLink = "venmo://paycharge?{$query}";
         $webFallback = sprintf(
             'https://venmo.com/u/%s?txn=pay&amount=%s&note=%s&pr=%s',
-            $handle,
+            $recipientHandle,
             $amount,
             urlencode($note),
             urlencode($prCode)

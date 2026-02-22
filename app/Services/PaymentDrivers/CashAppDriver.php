@@ -8,17 +8,18 @@ use App\Models\GroupMember;
 class CashAppDriver implements PaymentRequestDriver
 {
     public function buildLink(
+        string $ownerHandle,
         GroupMember $member,
         int $amountCents,
         string $prCode,
         string $note
     ): array {
-        $handle = $member->cash_tag ?? $member->cash_phone ?? $member->cash_email ?? '';
+        // Owner's handle is who receives the payment
         $amount = number_format($amountCents / 100, 2, '.', '');
 
         // Treat anything that is explicitly a cashtag (or stored as one) as a cashtag
-        if (! empty($member->cash_tag) || str_starts_with($handle, '$')) {
-            $cashtag = ltrim($member->cash_tag ?? $handle, '$');
+        if (str_starts_with($ownerHandle, '$')) {
+            $cashtag = ltrim($ownerHandle, '$');
 
             // Build recipient with $ prefix for deep link
             $recipient = '$'.$cashtag;
@@ -40,7 +41,7 @@ class CashAppDriver implements PaymentRequestDriver
         }
 
         // Fallback for phone/email (less common)
-        $recipient = $handle;
+        $recipient = $ownerHandle;
         $uri = $this->buildSmartUri($recipient, $amount, $note);
 
         $webFallback = sprintf(

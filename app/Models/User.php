@@ -278,6 +278,46 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the payout channel identifier for a specific channel
+     */
+    public function getPayoutChannel(string $channel): ?string
+    {
+        return match (strtoupper($channel)) {
+            'VENMO' => $this->venmo_username,
+            'CASH_APP', 'CASHAPP' => $this->cashapp_tag,
+            default => null,
+        };
+    }
+
+    /**
+     * Check if owner supports a specific payment channel
+     */
+    public function supportsPaymentChannel(string $channel): bool
+    {
+        return filled($this->getPayoutChannel($channel));
+    }
+
+    /**
+     * Get all configured payout channels
+     *
+     * @return array<string, string>
+     */
+    public function getConfiguredPayoutChannels(): array
+    {
+        $channels = [];
+
+        if (filled($this->venmo_username)) {
+            $channels['VENMO'] = $this->venmo_username;
+        }
+
+        if (filled($this->cashapp_tag)) {
+            $channels['CASH_APP'] = $this->cashapp_tag;
+        }
+
+        return $channels;
+    }
+
+    /**
      * Check if user has completed onboarding
      */
     public function hasCompletedOnboarding(): bool

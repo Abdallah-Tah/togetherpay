@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Contracts\PaymentRequestDriver;
-use App\Drivers\CashAppLinkDriver;
-use App\Drivers\VenmoLinkDriver;
+use App\Services\PaymentDrivers\CashAppDriver;
+use App\Services\PaymentDrivers\VenmoDriver;
 
 final class PaymentDriverFactory
 {
@@ -18,8 +18,8 @@ final class PaymentDriverFactory
     public static function make(string $method): PaymentRequestDriver
     {
         return match (strtolower($method)) {
-            'cashapp', 'cash_app' => new CashAppLinkDriver,
-            'venmo' => new VenmoLinkDriver,
+            'cashapp', 'cash_app' => new CashAppDriver,
+            'venmo' => new VenmoDriver,
             default => throw new \InvalidArgumentException("Unsupported payment method: {$method}"),
         };
     }

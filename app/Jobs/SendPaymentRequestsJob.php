@@ -34,10 +34,12 @@ class SendPaymentRequestsJob implements ShouldQueue
                 // Send the request (marks as sent in DB)
                 $paymentService->sendRequest($request);
 
-                // Send notification to member
-                $request->member->user->notify(
-                    new PaymentRequestNotification($request)
-                );
+                // Send notification to member (only if they have a user account)
+                if ($request->member?->user) {
+                    $request->member->user->notify(
+                        new PaymentRequestNotification($request)
+                    );
+                }
 
                 // Notify group owner (sender) that request was sent
                 $owner = $request->cycle?->group?->owner ?? $request->group?->owner;
@@ -52,7 +54,8 @@ class SendPaymentRequestsJob implements ShouldQueue
 
                 $sentCount++;
 
-                Log::info("Sent payment request {$request->id} to user {$request->member->user_id}");
+                $userId = $request->member?->user_id ?? 'no user';
+                Log::info("Sent payment request {$request->id} to user {$userId}");
             } catch (\Exception $e) {
                 Log::error("Failed to send payment request {$request->id}: {$e->getMessage()}");
 
