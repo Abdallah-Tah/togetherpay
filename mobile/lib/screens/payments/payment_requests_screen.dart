@@ -205,7 +205,8 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
             ),
             child: TabBar(
               controller: _tabController,
-              isScrollable: false,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(25),
                 color: AppTheme.primary,
