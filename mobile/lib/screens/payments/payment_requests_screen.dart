@@ -197,7 +197,7 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color:
                   isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200,
@@ -207,6 +207,8 @@ class _PaymentRequestsScreenState extends State<PaymentRequestsScreen>
               controller: _tabController,
               isScrollable: true,
               tabAlignment: TabAlignment.start,
+              padding: EdgeInsets.zero,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 12),
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(25),
                 color: AppTheme.primary,
