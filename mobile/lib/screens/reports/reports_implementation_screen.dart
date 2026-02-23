@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:dio/dio.dart';
+import 'dart:io';
 
 import '../../main.dart';
 import '../../env.dart';
@@ -128,21 +131,67 @@ class _ReportsImplementationScreenState
     if (_selectedGroupId == null) return;
 
     try {
-      final url =
-          '${Env.apiBase}/reports/export/csv?group_id=$_selectedGroupId&start_date=${DateFormat('yyyy-MM-dd').format(_startDate)}&end_date=${DateFormat('yyyy-MM-dd').format(_endDate)}';
-
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('CSV export started'),
-              backgroundColor: Colors.green,
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Generating CSV export...'),
+              ],
             ),
-          );
-        }
+            duration: Duration(seconds: 30),
+          ),
+        );
+      }
+
+      // Make authenticated API call
+      final response = await dio.get(
+        '/reports/export/csv',
+        queryParameters: {
+          'group_id': _selectedGroupId,
+          'start_date': DateFormat('yyyy-MM-dd').format(_startDate),
+          'end_date': DateFormat('yyyy-MM-dd').format(_endDate),
+        },
+        options: Options(
+          responseType: ResponseType.bytes,
+        ),
+      );
+
+      // Get downloads directory
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName =
+          'payment_report_${DateFormat('yyyyMMdd').format(DateTime.now())}.csv';
+      final filePath = '${directory.path}/$fileName';
+
+      // Write file
+      final file = File(filePath);
+      await file.writeAsBytes(response.data);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('CSV saved: $fileName'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'Open',
+              textColor: Colors.white,
+              onPressed: () async {
+                await OpenFilex.open(filePath);
+              },
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (Env.debug) {
@@ -150,9 +199,10 @@ class _ReportsImplementationScreenState
       }
 
       if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to export CSV'),
+          SnackBar(
+            content: Text('Failed to export CSV: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -164,21 +214,67 @@ class _ReportsImplementationScreenState
     if (_selectedGroupId == null) return;
 
     try {
-      final url =
-          '${Env.apiBase}/reports/export/pdf?group_id=$_selectedGroupId&start_date=${DateFormat('yyyy-MM-dd').format(_startDate)}&end_date=${DateFormat('yyyy-MM-dd').format(_endDate)}';
-
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('PDF report started'),
-              backgroundColor: Colors.green,
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Generating PDF report...'),
+              ],
             ),
-          );
-        }
+            duration: Duration(seconds: 30),
+          ),
+        );
+      }
+
+      // Make authenticated API call
+      final response = await dio.get(
+        '/reports/export/pdf',
+        queryParameters: {
+          'group_id': _selectedGroupId,
+          'start_date': DateFormat('yyyy-MM-dd').format(_startDate),
+          'end_date': DateFormat('yyyy-MM-dd').format(_endDate),
+        },
+        options: Options(
+          responseType: ResponseType.bytes,
+        ),
+      );
+
+      // Get downloads directory
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName =
+          'payment_report_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf';
+      final filePath = '${directory.path}/$fileName';
+
+      // Write file
+      final file = File(filePath);
+      await file.writeAsBytes(response.data);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PDF saved: $fileName'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'Open',
+              textColor: Colors.white,
+              onPressed: () async {
+                await OpenFilex.open(filePath);
+              },
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (Env.debug) {
@@ -186,9 +282,10 @@ class _ReportsImplementationScreenState
       }
 
       if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to export PDF'),
+          SnackBar(
+            content: Text('Failed to export PDF: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
