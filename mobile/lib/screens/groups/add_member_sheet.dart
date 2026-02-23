@@ -78,7 +78,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     final user = member['user'] as Map<String, dynamic>?;
 
     _shareType = (member['share_type'] as String? ?? 'AMOUNT').toUpperCase();
-    _preferredChannel = member['preferred_channel'] as String?;
+    _preferredChannel = (member['preferred_channel'] as String?)?.toUpperCase();
 
     _nameController.text =
         (member['name'] ?? user?['name'] ?? '').toString();
@@ -307,7 +307,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
 
     // Add payment channel information
     if (_preferredChannel != null) {
-      payload['preferred_channel'] = _preferredChannel;
+      payload['preferred_channel'] = _preferredChannel!.toLowerCase();
     }
 
     final venmoUsername = _venmoUsernameController.text.trim();
