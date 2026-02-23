@@ -124,7 +124,7 @@ class ScreenshotDemoSeeder extends Seeder
             'name' => $name,
             'email' => $email,
             'phone' => null,
-            'share_type' => 'fixed',
+            'share_type' => 'AMOUNT',
             'share_value' => $shareValue,
             'venmo_username' => $venmoUsername,
             'cash_tag' => $cashTag,
