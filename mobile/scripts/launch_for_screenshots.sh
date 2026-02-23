@@ -86,19 +86,61 @@ launch_android() {
     echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 
+    # Check if emulator is available
+    echo -e "${YELLOW}→ Checking for Pixel 9 Pro emulator...${NC}"
+    EMULATOR_NAME=$(flutter emulators | grep -i "pixel.*9.*pro" | head -1 | awk '{print $1}' || echo "Pixel_9_Pro")
+
+    if [ -z "$EMULATOR_NAME" ]; then
+        echo -e "${YELLOW}⚠️  Pixel 9 Pro emulator not found. Available emulators:${NC}"
+        flutter emulators
+        echo ""
+        echo -e "${YELLOW}Please create a Pixel 9 Pro emulator first or update the script.${NC}"
+        exit 1
+    fi
+
     # Launch emulator
-    echo -e "${YELLOW}→ Starting Pixel 9 Pro emulator...${NC}"
-    flutter emulators --launch Pixel_9_Pro &
-    sleep 10
+    echo -e "${YELLOW}→ Starting $EMULATOR_NAME emulator...${NC}"
+    echo -e "${YELLOW}  (This may take 30-60 seconds to boot)${NC}"
+    flutter emulators --launch "$EMULATOR_NAME" > /dev/null 2>&1 &
+
+    # Wait for device to be ready
+    echo -e "${YELLOW}→ Waiting for emulator to boot...${NC}"
+    timeout=60
+    elapsed=0
+    while [ $elapsed -lt $timeout ]; do
+        if adb devices | grep -q "emulator.*device$"; then
+            echo -e "${GREEN}  ✓ Emulator ready!${NC}"
+            sleep 3  # Extra wait for full boot
+            break
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+        echo -n "."
+    done
+    echo ""
+
+    if [ $elapsed -ge $timeout ]; then
+        echo -e "${YELLOW}⚠️  Emulator boot timeout. Continuing anyway...${NC}"
+    fi
+
+    # Get actual device ID
+    DEVICE_ID=$(flutter devices | grep "android" | head -1 | awk '{print $1}' | sed 's/[•()]//g')
+
+    if [ -z "$DEVICE_ID" ]; then
+        echo -e "${YELLOW}⚠️  No Android device found. Available devices:${NC}"
+        flutter devices
+        exit 1
+    fi
 
     # Launch app (flutter run handles building and installing automatically)
     echo ""
-    echo -e "${YELLOW}→ Building and launching TogetherPay on Pixel 9 Pro...${NC}"
+    echo -e "${YELLOW}→ Building and launching TogetherPay on emulator...${NC}"
+    echo -e "${YELLOW}  Device ID: $DEVICE_ID${NC}"
     echo -e "${YELLOW}  (This may take 1-2 minutes on first run)${NC}"
-    flutter run -d Pixel_9_Pro &
+    flutter run -d "$DEVICE_ID" &
     FLUTTER_PID=$!
 
-    sleep 5
+    sleep 8
 
     show_screenshot_instructions "Pixel 9 Pro" "1080x1920" "Android"
 
