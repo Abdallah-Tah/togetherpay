@@ -15,7 +15,11 @@
       "Bash(flutter doctor:*)",
       "Bash(flutter devices:*)",
       "mcp__laravel-boost__get-config",
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "Bash(php artisan:*)",
+      "Bash(flutter emulators:*)",
+      "Bash(chmod:*)",
+      "Bash(flutter pub get:*)"
     ],
     "deny": [],
     "ask": []

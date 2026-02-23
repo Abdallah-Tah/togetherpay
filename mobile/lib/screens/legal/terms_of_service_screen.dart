@@ -75,7 +75,7 @@ class TermsOfServiceScreen extends StatelessWidget {
           _buildSection(
             context,
             '9. Contact',
-            'Questions about these Terms? Email support@togetherpay.com.',
+            'Questions about these Terms? Email support@togetherpay.app.',
           ),
           const SizedBox(height: 24),
         ],
