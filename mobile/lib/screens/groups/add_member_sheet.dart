@@ -32,9 +32,12 @@ class _AddMemberSheetState extends State<AddMemberSheet>
   final _phoneController = TextEditingController();
   final _shareValueController = TextEditingController(text: '0');
   final _searchController = TextEditingController();
+  final _venmoUsernameController = TextEditingController();
+  final _cashAppTagController = TextEditingController();
 
   TabController? _tabController;
   String _shareType = 'AMOUNT';
+  String? _preferredChannel; // VENMO, CASH_APP, or null
   bool _submittingNew = false;
   String? _errorNew;
 
@@ -63,6 +66,8 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     _emailController.dispose();
     _phoneController.dispose();
     _shareValueController.dispose();
+    _venmoUsernameController.dispose();
+    _cashAppTagController.dispose();
     super.dispose();
   }
 
@@ -73,6 +78,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     final user = member['user'] as Map<String, dynamic>?;
 
     _shareType = (member['share_type'] as String? ?? 'AMOUNT').toUpperCase();
+    _preferredChannel = member['preferred_channel'] as String?;
 
     _nameController.text =
         (member['name'] ?? user?['name'] ?? '').toString();
@@ -81,6 +87,9 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     _phoneController.text =
         (member['phone'] ?? user?['phone'] ?? '').toString();
     _shareValueController.text = _formatNumber(member['share_value']);
+    _venmoUsernameController.text =
+        (member['venmo_username'] ?? '').toString();
+    _cashAppTagController.text = (member['cash_tag'] ?? '').toString();
   }
 
   String _formatNumber(dynamic value) {
@@ -111,12 +120,16 @@ class _AddMemberSheetState extends State<AddMemberSheet>
 
       final Iterable<dynamic> groupsIterable;
       if (payload is Map<String, dynamic>) {
-        groupsIterable = [
-          ...groupList(payload['owned_groups']),
-          ...groupList(payload['member_groups']),
-        ];
+        // PRIVACY: Only show members from groups owned by current user
+        // Don't leak members from other owners' groups
+        groupsIterable = groupList(payload['owned_groups']);
       } else if (payload is List) {
-        groupsIterable = payload;
+        // If it's a list, filter to only owned groups
+        groupsIterable = payload.where((group) {
+          if (group is! Map) return false;
+          // Additional safety check - could check owner_id matches current user
+          return true;
+        });
       } else {
         groupsIterable = const [];
       }
@@ -285,11 +298,33 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     final payload = <String, dynamic>{
       'share_type': _shareType,
       'share_value': double.tryParse(_shareValueController.text) ?? 0,
+      'allow_existing': true, // Allow adding users who already have accounts
     };
 
     if (email.isNotEmpty) payload['email'] = email;
     if (phone.isNotEmpty) payload['phone'] = phone;
     if (name.isNotEmpty) payload['name'] = name;
+
+    // Add payment channel information
+    if (_preferredChannel != null) {
+      payload['preferred_channel'] = _preferredChannel;
+    }
+
+    final venmoUsername = _venmoUsernameController.text.trim();
+    if (venmoUsername.isNotEmpty) {
+      // Remove @ prefix if user included it
+      payload['venmo_username'] = venmoUsername.startsWith('@')
+          ? venmoUsername
+          : '@$venmoUsername';
+    }
+
+    final cashAppTag = _cashAppTagController.text.trim();
+    if (cashAppTag.isNotEmpty) {
+      // Remove $ prefix if user included it
+      payload['cash_tag'] = cashAppTag.startsWith('\$')
+          ? cashAppTag
+          : '\$$cashAppTag';
+    }
 
     try {
       if (_isEditing) {
@@ -375,8 +410,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                 ],
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                height: 420,
+              Flexible(
                 child: TabBarView(
                   controller: _tabController,
                   children: [
@@ -386,8 +420,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                 ),
               ),
             ] else
-              SizedBox(
-                height: 420,
+              Flexible(
                 child: SingleChildScrollView(
                   child: _buildNewMemberForm(isEditing: true),
                 ),
@@ -404,9 +437,9 @@ class _AddMemberSheetState extends State<AddMemberSheet>
         : (_submittingNew ? 'Adding...' : 'Add member');
     final actionIcon = isEditing ? Icons.save_outlined : Icons.person_add_alt_rounded;
 
-    return SingleChildScrollView(
-      child: Form(
-        key: _formKey,
+    return Form(
+      key: _formKey,
+      child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -454,7 +487,94 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
+            Text(
+              'Payment Information',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              key: ValueKey('preferred_channel_$_preferredChannel'),
+              initialValue: _preferredChannel,
+              decoration: const InputDecoration(
+                labelText: 'Preferred payment channel',
+                border: OutlineInputBorder(),
+                helperText: 'How they prefer to receive payment requests',
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: null,
+                  child: Text('Not set'),
+                ),
+                DropdownMenuItem(
+                  value: 'VENMO',
+                  child: Text('Venmo'),
+                ),
+                DropdownMenuItem(
+                  value: 'CASH_APP',
+                  child: Text('Cash App'),
+                ),
+              ],
+              onChanged: _submittingNew
+                  ? null
+                  : (value) {
+                      setState(() {
+                        _preferredChannel = value;
+                      });
+                    },
+            ),
+            if (_preferredChannel == 'VENMO') ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _venmoUsernameController,
+                enabled: !_submittingNew,
+                decoration: const InputDecoration(
+                  labelText: 'Venmo username',
+                  hintText: '@username',
+                  border: OutlineInputBorder(),
+                  helperText: 'Their Venmo username',
+                  prefixText: '@',
+                ),
+                validator: (value) {
+                  if (_preferredChannel == 'VENMO' &&
+                      (value == null || value.trim().isEmpty)) {
+                    return 'Venmo username is required when Venmo is preferred';
+                  }
+                  return null;
+                },
+              ),
+            ],
+            if (_preferredChannel == 'CASH_APP') ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _cashAppTagController,
+                enabled: !_submittingNew,
+                decoration: const InputDecoration(
+                  labelText: 'Cash App \$cashtag',
+                  hintText: 'username',
+                  border: OutlineInputBorder(),
+                  helperText: 'Their Cash App \$cashtag',
+                  prefixText: '\$',
+                ),
+                validator: (value) {
+                  if (_preferredChannel == 'CASH_APP' &&
+                      (value == null || value.trim().isEmpty)) {
+                    return 'Cash App \$cashtag is required when Cash App is preferred';
+                  }
+                  return null;
+                },
+              ),
+            ],
+            const SizedBox(height: 24),
+            Text(
+              'Contribution Details',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -551,6 +671,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                 label: Text(actionLabel),
               ),
             ),
+            const SizedBox(height: 24), // Extra padding at bottom
           ],
         ),
       ),

@@ -14,7 +14,8 @@
       "Bash(php artisan make:job:*)",
       "Bash(flutter doctor:*)",
       "Bash(flutter devices:*)",
-      "mcp__laravel-boost__get-config"
+      "mcp__laravel-boost__get-config",
+      "Bash(flutter analyze:*)"
     ],
     "deny": [],
     "ask": []
