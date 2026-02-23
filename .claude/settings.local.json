@@ -19,7 +19,10 @@
       "Bash(php artisan:*)",
       "Bash(flutter emulators:*)",
       "Bash(chmod:*)",
-      "Bash(flutter pub get:*)"
+      "Bash(flutter pub get:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
