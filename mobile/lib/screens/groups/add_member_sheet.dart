@@ -312,18 +312,16 @@ class _AddMemberSheetState extends State<AddMemberSheet>
 
     final venmoUsername = _venmoUsernameController.text.trim();
     if (venmoUsername.isNotEmpty) {
-      // Remove @ prefix if user included it
-      payload['venmo_username'] = venmoUsername.startsWith('@')
-          ? venmoUsername
-          : '@$venmoUsername';
+      // Strip any leading @ symbols user may have typed, then add one @
+      final cleanUsername = venmoUsername.replaceFirst(RegExp(r'^@+'), '');
+      payload['venmo_username'] = '@$cleanUsername';
     }
 
     final cashAppTag = _cashAppTagController.text.trim();
     if (cashAppTag.isNotEmpty) {
-      // Remove $ prefix if user included it
-      payload['cash_tag'] = cashAppTag.startsWith('\$')
-          ? cashAppTag
-          : '\$$cashAppTag';
+      // Strip any leading $ symbols user may have typed, then add one $
+      final cleanTag = cashAppTag.replaceFirst(RegExp(r'^\$+'), '');
+      payload['cash_tag'] = '\$$cleanTag';
     }
 
     try {
@@ -532,15 +530,18 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                 enabled: !_submittingNew,
                 decoration: const InputDecoration(
                   labelText: 'Venmo username',
-                  hintText: '@username',
+                  hintText: 'username',
                   border: OutlineInputBorder(),
-                  helperText: 'Their Venmo username',
+                  helperText: 'Enter username only (without @)',
                   prefixText: '@',
                 ),
                 validator: (value) {
                   if (_preferredChannel == 'VENMO' &&
                       (value == null || value.trim().isEmpty)) {
                     return 'Venmo username is required when Venmo is preferred';
+                  }
+                  if (value != null && value.trim().startsWith('@')) {
+                    return 'Don\'t include @ - it\'s added automatically';
                   }
                   return null;
                 },
@@ -555,13 +556,16 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                   labelText: 'Cash App \$cashtag',
                   hintText: 'username',
                   border: OutlineInputBorder(),
-                  helperText: 'Their Cash App \$cashtag',
+                  helperText: 'Enter username only (without \$)',
                   prefixText: '\$',
                 ),
                 validator: (value) {
                   if (_preferredChannel == 'CASH_APP' &&
                       (value == null || value.trim().isEmpty)) {
                     return 'Cash App \$cashtag is required when Cash App is preferred';
+                  }
+                  if (value != null && value.trim().startsWith('\$')) {
+                    return 'Don\'t include \$ - it\'s added automatically';
                   }
                   return null;
                 },

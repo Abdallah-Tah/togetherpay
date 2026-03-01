@@ -23,7 +23,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(flutter run:*)"
+      "Bash(flutter run:*)",
+      "Bash(adb -s 00152153L003383 install:*)",
+      "Bash(./vendor/bin/pint:*)"
     ],
     "deny": [],
     "ask": []
