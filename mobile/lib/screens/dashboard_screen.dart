@@ -8,6 +8,7 @@ import '../env.dart';
 import '../services/api_service.dart';
 import '../utils/theme.dart';
 import 'payments/payment_request_details_sheet.dart';
+import 'settings/notification_center_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -348,6 +349,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               )
             : null,
         actions: [
+          IconButton(
+            tooltip: 'Notifications',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const NotificationCenterScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.notifications_outlined),
+          ),
           IconButton(
             tooltip: 'Refresh',
             onPressed: _loading ? null : _loadDashboard,
