@@ -323,18 +323,20 @@ class _NotificationPreferencesScreenState
                             });
                           },
                         ),
-                        const Divider(height: 1),
-                        SwitchListTile(
-                          secondary: const Icon(Icons.sms_outlined),
-                          title: const Text('SMS Notifications'),
-                          subtitle: const Text('Receive text messages'),
-                          value: _smsNotifications,
-                          onChanged: (value) {
-                            setState(() {
-                              _smsNotifications = value;
-                            });
-                          },
-                        ),
+                        // SMS notifications are currently disabled/hidden
+                        // Uncomment when SMS feature is implemented
+                        // const Divider(height: 1),
+                        // SwitchListTile(
+                        //   secondary: const Icon(Icons.sms_outlined),
+                        //   title: const Text('SMS Notifications'),
+                        //   subtitle: const Text('Receive text messages'),
+                        //   value: _smsNotifications,
+                        //   onChanged: (value) {
+                        //     setState(() {
+                        //       _smsNotifications = value;
+                        //     });
+                        //   },
+                        // ),
                       ],
                     ),
                   ),
