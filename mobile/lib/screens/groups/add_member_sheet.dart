@@ -307,7 +307,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
 
     // Add payment channel information
     if (_preferredChannel != null) {
-      payload['preferred_channel'] = _preferredChannel!.toLowerCase();
+      payload['preferred_channel'] = _preferredChannel;
     }
 
     final venmoUsername = _venmoUsernameController.text.trim();

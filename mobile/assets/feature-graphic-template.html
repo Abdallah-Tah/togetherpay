@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TogetherPay Feature Graphic - 1024x500px</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .feature-graphic {
+            width: 1024px;
+            height: 500px;
+            background: linear-gradient(135deg, #5CCFC9 0%, #4AB8B3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 60px 80px;
+            border-radius: 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-graphic::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        .feature-graphic::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -5%;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+        }
+
+        .left-content {
+            flex: 1;
+            text-align: left;
+            z-index: 1;
+        }
+
+        .app-name {
+            font-size: 72px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
+        }
+
+        .tagline {
+            font-size: 32px;
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 500;
+            margin-bottom: 40px;
+            line-height: 1.3;
+        }
+
+        .features {
+            display: flex;
+            gap: 30px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .right-content {
+            flex: 0 0 auto;
+            z-index: 1;
+        }
+
+        .app-icon {
+            width: 180px;
+            height: 180px;
+            background: white;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .icon-text {
+            font-size: 80px;
+            font-weight: 900;
+            color: #5CCFC9;
+        }
+
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            max-width: 1024px;
+        }
+
+        .instructions h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            text-align: left;
+            padding-left: 20px;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .instructions code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="feature-graphic" id="feature-graphic">
+            <div class="left-content">
+                <div class="app-name">TogetherPay</div>
+                <div class="tagline">Split bills effortlessly.<br>Get paid faster.</div>
+                <div class="features">
+                    <div class="feature-item">
+                        <div class="feature-icon">✓</div>
+                        <span>Venmo & Cash App</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">✓</div>
+                        <span>Auto Reminders</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">✓</div>
+                        <span>Real-time Tracking</span>
+                    </div>
+                </div>
+            </div>
+            <div class="right-content">
+                <div class="app-icon">
+                    <div class="icon-text">TP</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>📸 How to Create Your Feature Graphic:</h3>
+            <ol>
+                <li>Press <code>F11</code> (or <code>Cmd+Shift+F</code> on Mac) to enter fullscreen mode</li>
+                <li>Zoom to 100% (press <code>Cmd/Ctrl + 0</code>)</li>
+                <li>Take a screenshot of ONLY the teal banner above (1024x500px area)</li>
+                <li>On Mac: Use <code>Cmd+Shift+4</code> then drag to select exactly the banner</li>
+                <li>On Windows: Use Snipping Tool or <code>Win+Shift+S</code></li>
+                <li>Save as PNG and upload to Play Console Feature Graphic section</li>
+            </ol>
+            <p style="margin-top: 15px; color: #999; font-size: 14px;">
+                The banner above is exactly 1024x500px - perfect for Google Play Store!
+            </p>
+        </div>
+    </div>
+</body>
+</html>
