@@ -105,7 +105,16 @@ class _SendInvitationSheetState extends State<SendInvitationSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final invitations = widget.invitations;
+    // Separate invitations by status
+    final pendingInvitations = widget.invitations
+        .where((inv) => inv['status'] == 'pending')
+        .toList();
+    final acceptedInvitations = widget.invitations
+        .where((inv) => inv['status'] == 'accepted')
+        .toList();
+    final otherInvitations = widget.invitations
+        .where((inv) => inv['status'] != 'pending' && inv['status'] != 'accepted')
+        .toList();
 
     return Container(
       padding: EdgeInsets.only(
@@ -131,7 +140,7 @@ class _SendInvitationSheetState extends State<SendInvitationSheet> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Resend Invitation',
+                        'Invitations',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -145,34 +154,30 @@ class _SendInvitationSheetState extends State<SendInvitationSheet> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Resend an invitation to a pending member',
+                  'View invitation history and resend to pending members',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey.shade600,
                       ),
                 ),
                 const SizedBox(height: 24),
 
-                if (invitations.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.blue.shade100),
-                    ),
-                    child: Text(
-                      'No pending invitations to resend.',
-                      style: TextStyle(color: Colors.blue.shade900),
-                    ),
-                  )
-                else ...[
+                // Pending Invitations Section
+                if (pendingInvitations.isNotEmpty) ...[
+                  Text(
+                    'Pending (${pendingInvitations.length})',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade700,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
                   DropdownButtonFormField<Map<String, dynamic>>(
-                    value: _selectedInvitation,
+                    initialValue: _selectedInvitation,
                     decoration: const InputDecoration(
-                      labelText: 'Pending invitation',
+                      labelText: 'Select invitation to resend',
                       prefixIcon: Icon(Icons.group_outlined),
                     ),
-                    items: invitations.map((invitation) {
+                    items: pendingInvitations.map((invitation) {
                       final email = invitation['email']?.toString() ?? 'Unknown';
                       return DropdownMenuItem(
                         value: invitation,
@@ -193,6 +198,7 @@ class _SendInvitationSheetState extends State<SendInvitationSheet> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    enabled: !_loading,
                     decoration: const InputDecoration(
                       labelText: 'Email',
                       hintText: 'member@example.com',
@@ -210,83 +216,227 @@ class _SendInvitationSheetState extends State<SendInvitationSheet> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 16),
+
+                  // Error message
+                  if (_error != null)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red.shade700),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _error!,
+                              style: TextStyle(color: Colors.red.shade900),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Resend button
+                  FilledButton.icon(
+                    onPressed: _loading ? null : _resendInvitation,
+                    icon: _loading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.refresh),
+                    label: Text(_loading ? 'Sending...' : 'Resend Invitation'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
                   const SizedBox(height: 24),
                 ],
 
-                // Error message
-                if (_error != null)
+                // No pending invitations message
+                if (pendingInvitations.isEmpty)
                   Container(
-                    padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 24),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200),
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade100),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline, color: Colors.red.shade700),
-                        const SizedBox(width: 8),
+                        Icon(Icons.info_outline, color: Colors.blue.shade700),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            _error!,
-                            style: TextStyle(color: Colors.red.shade900),
+                            'No pending invitations to resend.',
+                            style: TextStyle(color: Colors.blue.shade900),
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                // Submit button
-                FilledButton.icon(
-                  onPressed: _loading || invitations.isEmpty
-                      ? null
-                      : _resendInvitation,
-                  icon: _loading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.refresh),
-                  label: Text(_loading ? 'Sending...' : 'Resend Invitation'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                // Accepted Invitations Section
+                if (acceptedInvitations.isNotEmpty) ...[
+                  Text(
+                    'Accepted (${acceptedInvitations.length})',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
                   ),
-                ),
-                const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+                  ...acceptedInvitations.map((invitation) {
+                    final email = invitation['email']?.toString() ?? 'Unknown';
+                    final acceptedAt = invitation['accepted_at']?.toString();
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.check_circle,
+                               color: Colors.green.shade700,
+                               size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  email,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.green.shade900,
+                                  ),
+                                ),
+                                if (acceptedAt != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Joined',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.green.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 16),
+                ],
+
+                // Other Invitations (expired, cancelled)
+                if (otherInvitations.isNotEmpty) ...[
+                  Text(
+                    'Other (${otherInvitations.length})',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...otherInvitations.map((invitation) {
+                    final email = invitation['email']?.toString() ?? 'Unknown';
+                    final status = invitation['status']?.toString() ?? 'unknown';
+                    final statusColor = status == 'expired'
+                        ? Colors.orange
+                        : Colors.grey;
+                    final statusIcon = status == 'expired'
+                        ? Icons.schedule
+                        : Icons.cancel;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: statusColor.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: statusColor.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(statusIcon,
+                               color: statusColor.shade700,
+                               size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  email,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: statusColor.shade900,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  status.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: statusColor.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 16),
+                ],
 
                 // Info text
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: Colors.blue.shade700,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'We will resend the invitation link to the selected member.',
-                          style: TextStyle(
-                            color: Colors.blue.shade900,
-                            fontSize: 13,
+                if (pendingInvitations.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.blue.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'We will resend the invitation link to the selected member.',
+                            style: TextStyle(
+                              color: Colors.blue.shade900,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),

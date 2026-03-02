@@ -25,7 +25,9 @@
       "Bash(git push:*)",
       "Bash(flutter run:*)",
       "Bash(adb -s 00152153L003383 install:*)",
-      "Bash(./vendor/bin/pint:*)"
+      "Bash(./vendor/bin/pint:*)",
+      "Bash(flutter --version:*)",
+      "Bash(adb devices:*)"
     ],
     "deny": [],
     "ask": []
