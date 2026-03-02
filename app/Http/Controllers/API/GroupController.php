@@ -123,29 +123,14 @@ class GroupController extends Controller
             'owner',
             'members.user', // Load ALL members (including inactive) for proper filtering in the app
             'invitations' => function ($query) {
-                $query->where('status', 'pending')->latest();
+                $query->latest(); // Load ALL invitations (pending, accepted, expired, cancelled)
             },
             'cycles' => function ($query) {
                 $query->latest()->with('paymentRequests')->limit(5);
             },
         ]);
 
-        $memberEmails = $group->members
-            ->pluck('email')
-            ->filter()
-            ->map(fn ($email) => strtolower(trim((string) $email)))
-            ->unique()
-            ->values();
-
-        $pendingInvitations = $group->invitations
-            ->filter(function ($invitation) use ($memberEmails) {
-                $email = strtolower(trim((string) $invitation->email));
-                return $email !== '' && ! $memberEmails->contains($email);
-            })
-            ->values();
-
         $groupArray = $group->toArray();
-        $groupArray['invitations'] = $pendingInvitations;
 
         return response()->json([
             'group' => $groupArray,
