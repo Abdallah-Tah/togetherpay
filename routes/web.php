@@ -10,6 +10,7 @@ use App\Livewire\Groups\Show as GroupsShow;
 use App\Livewire\Members\Index as MembersIndex;
 use App\Livewire\PaymentRequests\Index as PaymentRequestsIndex;
 use App\Livewire\Reports\Index as ReportsIndex;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
@@ -21,6 +22,58 @@ Volt::route('/how-it-works', 'how-it-works')->name('how-it-works');
 Volt::route('/privacy', 'privacy')->name('privacy');
 Volt::route('/terms', 'terms')->name('terms');
 Volt::route('/contact', 'contact')->name('contact');
+
+Route::get('/dev/mail-preview', function (Request $request) {
+    abort_unless(app()->environment(['local', 'testing']), 404);
+
+    $template = (string) $request->query('template', 'group-invitation');
+    $templates = [
+        'group-invitation' => function () {
+            return view('emails.group-invitation', [
+                'groupName' => 'T-Mobile Family Plan',
+                'invitedByName' => 'Abdallah Mohamed',
+                'token' => 'INV-7H4K9P2Q',
+                'invitationUrl' => config('app.frontend_url', config('app.url')).'/accept-invitation/demo-token',
+                'expiresAt' => now()->addDays(7),
+            ]);
+        },
+        'member-invitation' => function () {
+            return view('emails.member-invitation', [
+                'groupName' => 'T-Mobile Family Plan',
+                'invitedByName' => 'Abdallah Mohamed',
+                'token' => 'REG-8J1M5V3T',
+                'invitationUrl' => config('app.frontend_url', config('app.url')).'/register?token=demo-token',
+            ]);
+        },
+        'existing-member-added-to-group' => function () {
+            return view('emails.existing-member-added-to-group', [
+                'notifiable' => (object) ['name' => 'Mohamed Taha'],
+                'group' => (object) ['name' => 'Testing Group'],
+                'addedBy' => (object) ['name' => 'Abdallah Mohamed'],
+                'appUrl' => config('app.frontend_url', config('app.url')),
+            ]);
+        },
+        'payment-request' => function () {
+            return view('emails.payment-request', [
+                'notifiable' => (object) ['name' => 'Mohamed Taha'],
+                'group' => (object) ['name' => 'Testing Group'],
+                'amount' => '25.00',
+                'dueDate' => now()->addDays(5)->format('M d, Y'),
+                'payLink' => config('app.frontend_url', config('app.url')).'/pay/demo-request',
+            ]);
+        },
+        'notify-me-confirmation' => fn () => view('emails.notify-me-confirmation'),
+    ];
+
+    if (! array_key_exists($template, $templates)) {
+        return response()->json([
+            'message' => 'Unknown template.',
+            'available_templates' => array_keys($templates),
+        ], 422);
+    }
+
+    return $templates[$template]();
+})->name('dev.mail-preview');
 
 // Smart Pay - Public payment page (no auth required)
 Route::get('/pay/{request}', [SmartPayController::class, 'show'])->name('smartpay.show');
