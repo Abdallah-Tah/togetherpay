@@ -27,7 +27,17 @@
       "Bash(adb -s 00152153L003383 install:*)",
       "Bash(./vendor/bin/pint:*)",
       "Bash(flutter --version:*)",
-      "Bash(adb devices:*)"
+      "Bash(adb devices:*)",
+      "Bash(adb kill-server:*)",
+      "Bash(adb start-server:*)",
+      "Bash(adb:*)",
+      "mcp__laravel-boost__database-query",
+      "Bash(emulator -list-avds:*)",
+      "Bash(for i in {1..30})",
+      "Bash(do adb devices)",
+      "Bash(break)",
+      "Bash(echo:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

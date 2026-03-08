@@ -21,6 +21,7 @@ use Illuminate\Validation\ValidationException;
 class GroupInvitationController extends Controller
 {
     private const INVITE_OTP_EXPIRES_MINUTES = 10;
+
     private const INVITE_OTP_MAX_ATTEMPTS_PER_HOUR = 5;
 
     /**
@@ -60,6 +61,12 @@ class GroupInvitationController extends Controller
             ->first();
 
         if ($existingInvitation) {
+            $existingInvitation->update([
+                'resend_count' => $existingInvitation->resend_count + 1,
+                'last_resent_at' => now(),
+                'expires_at' => now()->addDays(7),
+            ]);
+
             Notification::route('mail', $existingInvitation->email)
                 ->notify(new GroupInvitationNotification($existingInvitation));
 
@@ -69,7 +76,9 @@ class GroupInvitationController extends Controller
                     'id' => $existingInvitation->id,
                     'email' => $existingInvitation->email,
                     'status' => $existingInvitation->status,
+                    'resend_count' => $existingInvitation->resend_count,
                     'expires_at' => $existingInvitation->expires_at,
+                    'last_resent_at' => $existingInvitation->last_resent_at,
                     'invitation_url' => url("/accept-invitation/{$existingInvitation->token}"),
                 ],
             ], 200);
@@ -82,6 +91,7 @@ class GroupInvitationController extends Controller
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'token' => GroupInvitation::generateToken(),
+            'resend_count' => 0,
             'expires_at' => now()->addDays(7),
             'member_data' => [
                 'name' => $validated['name'],
@@ -101,7 +111,9 @@ class GroupInvitationController extends Controller
                 'id' => $invitation->id,
                 'email' => $invitation->email,
                 'status' => $invitation->status,
+                'resend_count' => $invitation->resend_count,
                 'expires_at' => $invitation->expires_at,
+                'last_resent_at' => $invitation->last_resent_at,
                 'invitation_url' => url("/accept-invitation/{$invitation->token}"),
             ],
         ], 201);
@@ -132,7 +144,9 @@ class GroupInvitationController extends Controller
                 ],
                 'email' => $invitation->email,
                 'status' => $invitation->status,
+                'resend_count' => $invitation->resend_count,
                 'expires_at' => $invitation->expires_at,
+                'last_resent_at' => $invitation->last_resent_at,
                 'is_valid' => $invitation->isValid(),
                 'member_data' => $invitation->member_data,
             ],
@@ -181,6 +195,8 @@ class GroupInvitationController extends Controller
         }
 
         $invitation->status = 'pending';
+        $invitation->resend_count = $invitation->resend_count + 1;
+        $invitation->last_resent_at = now();
         $invitation->expires_at = now()->addDays(7);
         $invitation->save();
 
@@ -193,7 +209,9 @@ class GroupInvitationController extends Controller
                 'id' => $invitation->id,
                 'email' => $invitation->email,
                 'status' => $invitation->status,
+                'resend_count' => $invitation->resend_count,
                 'expires_at' => $invitation->expires_at,
+                'last_resent_at' => $invitation->last_resent_at,
                 'invitation_url' => url("/accept-invitation/{$invitation->token}"),
             ],
         ]);

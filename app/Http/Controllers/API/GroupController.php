@@ -40,6 +40,7 @@ class GroupController extends Controller
                     ->filter(fn ($member) => ($member->status ?? 'active') === 'active')
                     ->filter(fn ($member) => $member->user_id !== $group->owner_id)
                     ->count();
+
                 return $groupArray;
             });
 
@@ -69,6 +70,7 @@ class GroupController extends Controller
                     ->filter(fn ($member) => ($member->status ?? 'active') === 'active')
                     ->filter(fn ($member) => $member->user_id !== $group->owner_id)
                     ->count();
+
                 return $groupArray;
             })
             ->filter()
@@ -312,6 +314,7 @@ class GroupController extends Controller
                 'phone' => $request->phone,
                 'token' => GroupInvitation::generateToken(),
                 'status' => 'pending',
+                'resend_count' => 0,
                 'expires_at' => now()->addDays(7),
                 'member_data' => [
                     'name' => $resolvedName,

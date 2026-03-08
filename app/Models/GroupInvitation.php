@@ -18,15 +18,19 @@ class GroupInvitation extends Model
         'phone',
         'token',
         'status',
+        'resend_count',
         'expires_at',
         'accepted_at',
+        'last_resent_at',
         'accepted_by_user_id',
         'member_data',
     ];
 
     protected $casts = [
+        'resend_count' => 'integer',
         'expires_at' => 'datetime',
         'accepted_at' => 'datetime',
+        'last_resent_at' => 'datetime',
         'member_data' => 'array',
     ];
 

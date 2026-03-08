@@ -525,12 +525,11 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
   Future<void> _showSendInvitationSheet() async {
     if (!_isOwner) return;
 
-    final invitations =
-        (_groupData?['invitations'] as List?)
-                ?.whereType<Map>()
-                .map((item) => Map<String, dynamic>.from(item))
-                .toList() ??
-            const <Map<String, dynamic>>[];
+    final invitations = (_groupData?['invitations'] as List?)
+            ?.whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList() ??
+        const <Map<String, dynamic>>[];
 
     final result = await showModalBottomSheet<bool>(
       context: context,
@@ -676,8 +675,8 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                       Icons.mail_outline,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: const Text('Resend invitation'),
-                    subtitle: const Text('Pending members only'),
+                    title: const Text('Invitations'),
+                    subtitle: const Text('Pending, accepted, resent'),
                     dense: true,
                   ),
                 ),
@@ -713,9 +712,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
       ),
       body: Container(
         decoration: BoxDecoration(
-          color: isDark
-              ? null
-              : Theme.of(context).scaffoldBackgroundColor,
+          color: isDark ? null : Theme.of(context).scaffoldBackgroundColor,
           gradient: isDark
               ? const LinearGradient(
                   colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
@@ -894,7 +891,10 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
             Text(
               'Owner: $ownerName',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6),
                 fontSize: 13,
               ),
               overflow: TextOverflow.ellipsis,
@@ -905,7 +905,10 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
             Text(
               'AMOUNT',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.5),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
@@ -937,7 +940,10 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
             Text(
               'Timezone: $timezone',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6),
                 fontSize: 13,
               ),
             ),
@@ -988,7 +994,6 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
     }
   }
 
-
   Widget _buildMembersSection() {
     final members = _groupData!['members'];
     final List<Map<String, dynamic>> activeMembers = [];
@@ -1009,12 +1014,10 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
       }
 
       activeMembers.sort((a, b) {
-        final nameA = (a['user']?['name'] as String?) ??
-            (a['name'] as String?) ??
-            '';
-        final nameB = (b['user']?['name'] as String?) ??
-            (b['name'] as String?) ??
-            '';
+        final nameA =
+            (a['user']?['name'] as String?) ?? (a['name'] as String?) ?? '';
+        final nameB =
+            (b['user']?['name'] as String?) ?? (b['name'] as String?) ?? '';
         return nameA.toLowerCase().compareTo(nameB.toLowerCase());
       });
     }
@@ -1118,13 +1121,19 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                   Icon(
                     Icons.group_outlined,
                     size: 48,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'No members added yet',
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
                       fontSize: 16,
                     ),
                   ),
@@ -1145,7 +1154,8 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
     final share = _formatMemberShare(member);
 
     final isGroupOwnerMember = _isGroupOwner(member);
-    final canManageMember = _isOwner; // Owner can edit all members including themselves
+    final canManageMember =
+        _isOwner; // Owner can edit all members including themselves
     final amountDisplay = share ?? '--';
 
     return Container(
@@ -1228,7 +1238,9 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primaryContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
                                   color: Theme.of(context).colorScheme.primary,
@@ -1265,7 +1277,10 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                   IconButton(
                     icon: Icon(
                       Icons.more_vert_rounded,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
                     ),
                     onPressed: () => _handleMemberTap(member, true),
                     tooltip: 'Member options',
@@ -1333,7 +1348,8 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
               ),
               title: Text(
                 'Request payment',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                style:
+                    TextStyle(color: Theme.of(context).colorScheme.onSurface),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -1347,7 +1363,8 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
               ),
               title: Text(
                 'Edit member',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                style:
+                    TextStyle(color: Theme.of(context).colorScheme.onSurface),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -1557,13 +1574,19 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                   Icon(
                     Icons.payment_outlined,
                     size: 48,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'No payment requests yet',
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
                       fontSize: 16,
                     ),
                   ),
@@ -1573,7 +1596,10 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                       'Create a cycle to generate payment requests',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.4),
                         fontSize: 14,
                       ),
                     ),
@@ -1592,7 +1618,8 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
             final canPay = !_isOwner && _isPayableStatus(status) && !isPaid;
             final canNudge = _isOwner && _isNudgeableStatus(status) && !isPaid;
             final canConfirm = _isOwner && _isConfirmableStatus(status);
-            final canCancel = _isOwner && _isCancellableStatus(status) && !isPaid;
+            final canCancel =
+                _isOwner && _isCancellableStatus(status) && !isPaid;
             final canOpenDetails = _isOwner || !isPaid;
 
             return PaymentRequestCard(
