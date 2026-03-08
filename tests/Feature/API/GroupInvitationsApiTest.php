@@ -2,7 +2,9 @@
 
 use App\Models\Group;
 use App\Models\GroupInvitation;
+use App\Models\GroupMember;
 use App\Models\User;
+use App\Notifications\ExistingMemberAddedToGroupNotification;
 use App\Notifications\GroupInvitationNotification;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
@@ -120,4 +122,86 @@ it('returns accepted invitations in group details payload', function () {
             'status' => 'accepted',
             'resend_count' => 2,
         ]);
+});
+
+it('allows resending a pending invitation even when a group member row already exists', function () {
+    Notification::fake();
+
+    $owner = User::factory()->create(['role' => 'owner']);
+    $invitee = User::factory()->create([
+        'email' => 'mahdi@example.com',
+        'is_placeholder' => true,
+        'invitation_accepted_at' => null,
+    ]);
+    $group = Group::factory()->create(['owner_id' => $owner->id]);
+
+    GroupMember::factory()->create([
+        'group_id' => $group->id,
+        'user_id' => $invitee->id,
+        'email' => $invitee->email,
+        'status' => 'active',
+    ]);
+
+    $invitation = GroupInvitation::create([
+        'group_id' => $group->id,
+        'invited_by_user_id' => $owner->id,
+        'email' => $invitee->email,
+        'phone' => null,
+        'token' => GroupInvitation::generateToken(),
+        'status' => 'pending',
+        'resend_count' => 0,
+        'expires_at' => now()->addDays(7),
+        'member_data' => [
+            'name' => 'Mahdi',
+            'share_count' => 1,
+        ],
+    ]);
+
+    Sanctum::actingAs($owner);
+
+    $response = $this->postJson("/api/v1/groups/{$group->id}/invitations/{$invitation->id}/resend");
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('invitation.status', 'pending')
+        ->assertJsonPath('invitation.resend_count', 1);
+});
+
+it('adds an existing account to another group without creating a new invitation', function () {
+    Notification::fake();
+
+    $owner = User::factory()->create(['role' => 'owner']);
+    $existingUser = User::factory()->create([
+        'email' => 'member@example.com',
+        'is_placeholder' => false,
+    ]);
+    $group = Group::factory()->create(['owner_id' => $owner->id]);
+
+    Sanctum::actingAs($owner);
+
+    $response = $this->postJson("/api/v1/groups/{$group->id}/members", [
+        'email' => $existingUser->email,
+        'allow_existing' => true,
+        'share_type' => 'AMOUNT',
+        'share_value' => 25,
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('invitation_sent', false);
+
+    $this->assertDatabaseHas('group_members', [
+        'group_id' => $group->id,
+        'user_id' => $existingUser->id,
+        'status' => 'active',
+    ]);
+
+    $this->assertDatabaseMissing('group_invitations', [
+        'group_id' => $group->id,
+        'email' => $existingUser->email,
+    ]);
+
+    Notification::assertSentTo(
+        $existingUser,
+        ExistingMemberAddedToGroupNotification::class,
+    );
 });

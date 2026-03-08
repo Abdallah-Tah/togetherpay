@@ -10,6 +10,7 @@ use App\Models\Group;
 use App\Models\GroupInvitation;
 use App\Models\GroupMember;
 use App\Models\User;
+use App\Notifications\ExistingMemberAddedToGroupNotification;
 use App\Notifications\GroupInvitationNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -338,6 +339,18 @@ class GroupController extends Controller
             } catch (\Exception $e) {
                 \Log::error('FAILED TO SEND INVITATION EMAIL', [
                     'invitation_id' => $invitation->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if (! $isNewInvitation && ! $user->is_placeholder) {
+            try {
+                $user->notify(new ExistingMemberAddedToGroupNotification($group, $request->user()));
+            } catch (\Exception $e) {
+                \Log::warning('FAILED TO SEND EXISTING MEMBER GROUP EMAIL', [
+                    'group_id' => $group->id,
+                    'user_id' => $user->id,
                     'error' => $e->getMessage(),
                 ]);
             }

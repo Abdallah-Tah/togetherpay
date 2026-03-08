@@ -42,7 +42,6 @@ class _AddMemberSheetState extends State<AddMemberSheet>
   String? _errorNew;
 
   bool _loadingExisting = false;
-  int? _addingExistingUserId;
   List<Map<String, dynamic>> _existingMembers = [];
   List<Map<String, dynamic>> _filteredMembers = [];
   String? _errorExisting;
@@ -80,15 +79,13 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     _shareType = (member['share_type'] as String? ?? 'AMOUNT').toUpperCase();
     _preferredChannel = (member['preferred_channel'] as String?)?.toUpperCase();
 
-    _nameController.text =
-        (member['name'] ?? user?['name'] ?? '').toString();
+    _nameController.text = (member['name'] ?? user?['name'] ?? '').toString();
     _emailController.text =
         (member['email'] ?? user?['email'] ?? '').toString();
     _phoneController.text =
         (member['phone'] ?? user?['phone'] ?? '').toString();
     _shareValueController.text = _formatNumber(member['share_value']);
-    _venmoUsernameController.text =
-        (member['venmo_username'] ?? '').toString();
+    _venmoUsernameController.text = (member['venmo_username'] ?? '').toString();
     _cashAppTagController.text = (member['cash_tag'] ?? '').toString();
   }
 
@@ -108,8 +105,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
       final response = await ApiService().dio.get('/groups');
       final payload = response.data;
 
-      final Set<int> currentMemberIds =
-          widget.existingMemberUserIds.toSet();
+      final Set<int> currentMemberIds = widget.existingMemberUserIds.toSet();
       final Set<int> seenUserIds = {};
       final List<Map<String, dynamic>> members = [];
 
@@ -206,64 +202,28 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     });
   }
 
-  Future<void> _addExistingMember(Map<String, dynamic> member) async {
-    final user = member['user'] as Map<String, dynamic>;
-    final email = user['email'] as String?;
-    final phone = user['phone'] as String?;
-    final userId = user['id'] as int?;
-
-    if (email == null && phone == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('This user has no email or phone on file'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
+  void _useExistingMemberAsTemplate(Map<String, dynamic> entry) {
+    final user = entry['user'] as Map<String, dynamic>? ?? {};
+    final member = entry['member'] as Map<String, dynamic>? ?? {};
 
     setState(() {
-      _addingExistingUserId = userId;
       _errorExisting = null;
+      _errorNew = null;
+      _nameController.text = (member['name'] ?? user['name'] ?? '').toString();
+      _emailController.text =
+          (member['email'] ?? user['email'] ?? '').toString();
+      _phoneController.text =
+          (member['phone'] ?? user['phone'] ?? '').toString();
+      _preferredChannel =
+          (member['preferred_channel'] as String?)?.toUpperCase();
+      _venmoUsernameController.text =
+          (member['venmo_username'] ?? '').toString();
+      _cashAppTagController.text = (member['cash_tag'] ?? '').toString();
+      _shareType = (member['share_type'] as String? ?? 'AMOUNT').toUpperCase();
+      _shareValueController.clear();
     });
 
-    final payload = <String, dynamic>{
-      'share_type': 'AMOUNT',
-      'share_value': 0,
-      'allow_existing': true,
-    };
-    if (email != null) payload['email'] = email;
-    if (phone != null) payload['phone'] = phone;
-
-    try {
-      await ApiService().dio.post(
-            '/groups/${widget.groupId}/members',
-            data: payload,
-          );
-
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    } on DioException catch (e) {
-      if (Env.debug) {
-        debugPrint('Add existing member error: ${e.response?.data}');
-      }
-      setState(() {
-        _errorExisting = e.response?.data?['message'] as String? ??
-            'Failed to add member';
-        _addingExistingUserId = null;
-      });
-    } catch (e) {
-      if (Env.debug) {
-        debugPrint('Unexpected existing member error: $e');
-      }
-      setState(() {
-        _errorExisting = 'An unexpected error occurred';
-        _addingExistingUserId = null;
-      });
-    }
+    _tabController?.animateTo(0);
   }
 
   Future<void> _submitMember() async {
@@ -354,7 +314,8 @@ class _AddMemberSheetState extends State<AddMemberSheet>
       });
     } catch (e) {
       if (Env.debug) {
-        debugPrint('Unexpected ${_isEditing ? 'update' : 'add'} member error: $e');
+        debugPrint(
+            'Unexpected ${_isEditing ? 'update' : 'add'} member error: $e');
       }
       if (!mounted) return;
       setState(() {
@@ -433,7 +394,8 @@ class _AddMemberSheetState extends State<AddMemberSheet>
     final actionLabel = isEditing
         ? (_submittingNew ? 'Saving...' : 'Save changes')
         : (_submittingNew ? 'Adding...' : 'Add member');
-    final actionIcon = isEditing ? Icons.save_outlined : Icons.person_add_alt_rounded;
+    final actionIcon =
+        isEditing ? Icons.save_outlined : Icons.person_add_alt_rounded;
 
     return Form(
       key: _formKey,
@@ -618,8 +580,7 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText:
-                          _shareType == 'PERCENT' ? 'Percent' : 'Amount',
+                      labelText: _shareType == 'PERCENT' ? 'Percent' : 'Amount',
                       border: const OutlineInputBorder(),
                       prefixText: _shareType == 'AMOUNT' ? '\$' : null,
                       suffixText: _shareType == 'PERCENT' ? '%' : null,
@@ -721,10 +682,8 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                 final user = entry['user'] as Map<String, dynamic>;
                 final name = user['name'] as String? ?? 'Unnamed';
                 final email = user['email'] as String? ?? 'No email';
-                final group = entry['source_group'] as String? ?? 'Unknown group';
-                final userId = user['id'] as int?;
-                final isAdding = userId != null &&
-                    _addingExistingUserId == userId;
+                final group =
+                    entry['source_group'] as String? ?? 'Unknown group';
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -732,16 +691,10 @@ class _AddMemberSheetState extends State<AddMemberSheet>
                     title: Text(name),
                     subtitle: Text('$email\n$group'),
                     isThreeLine: true,
-                    trailing: isAdding
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : TextButton(
-                            onPressed: () => _addExistingMember(entry),
-                            child: const Text('Add'),
-                          ),
+                    trailing: TextButton(
+                      onPressed: () => _useExistingMemberAsTemplate(entry),
+                      child: const Text('Use'),
+                    ),
                   ),
                 );
               },

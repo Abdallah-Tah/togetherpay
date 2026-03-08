@@ -1,52 +1,30 @@
-@component('emails.layout', ['title' => 'Join ' . $groupName])
-    <h1>Welcome to TogetherPay! 🎉</h1>
+@component('emails.layout', ['title' => 'You were invited to ' . $groupName])
+    <h1>You were invited to join {{ $groupName }}</h1>
 
-    <p>{{ $invitedByName }} has added you to the group <strong>{{ $groupName }}</strong>.</p>
+    <p>{{ $invitedByName }} added you to <strong>{{ $groupName }}</strong> on TogetherPay.</p>
 
-    <p>TogetherPay makes splitting recurring bills effortless. Here's what you can do:</p>
+    <p>Use the button below to open your invite and join the group.</p>
+
+    <div class="button-container">
+        <a href="{{ $invitationUrl }}" class="button">Open Invitation</a>
+    </div>
 
     <div class="payment-details">
         <div class="row">
-            <span class="label">✓ Receive automatic payment requests</span>
+            <span class="label">Invitation code</span>
+            <span class="value" style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">{{ $token }}</span>
         </div>
         <div class="row">
-            <span class="label">✓ Pay instantly via Venmo or Cash App</span>
-        </div>
-        <div class="row">
-            <span class="label">✓ Track your payment history</span>
-        </div>
-        <div class="row">
-            <span class="label">✓ Get reminders before due dates</span>
-        </div>
-    </div>
-
-    <h2 style="color: #18181b; font-size: 20px; font-weight: 600; margin-top: 30px; margin-bottom: 15px;">Get Started</h2>
-
-    <p style="margin-bottom: 10px;"><strong>Step 1:</strong> Download the TogetherPay app from your app store</p>
-    <p style="margin-bottom: 10px;"><strong>Step 2:</strong> Tap the button below to accept your invitation</p>
-    <p style="margin-bottom: 20px;"><strong>Step 3:</strong> Verify your email with a one-time code and create your password</p>
-
-    <div class="button-container">
-        <a href="{{ $invitationUrl }}" class="button">Accept Invitation</a>
-    </div>
-
-    <div class="note note-info">
-        <strong>📱 Don't have the TogetherPay app yet?</strong><br>
-        Download now to get started:<br>
-        <a href="https://apps.apple.com/app/togetherpay" style="color: #1e3a8a;">• iPhone/iPad (App Store)</a><br>
-        <a href="https://play.google.com/store/apps/details?id=com.togetherpay.mobile" style="color: #1e3a8a;">• Android (Google Play)</a>
-    </div>
-
-    <div class="payment-details" style="margin-top: 25px;">
-        <div class="row">
-            <span class="label">Your invitation code:</span>
-            <span class="value" style="font-family: monospace;">{{ $token }}</span>
-        </div>
-        <div class="row">
-            <span class="label">Expires:</span>
+            <span class="label">Expires on</span>
             <span class="value">{{ $expiresAt->format('F j, Y') }}</span>
         </div>
     </div>
 
-    <p style="font-size: 14px; color: #a1a1aa; margin-top: 30px;">Use the invitation code if prompted in the app.</p>
+    <div class="note note-info">
+        If you already have a TogetherPay account, sign in with this email and open the invite link.
+    </div>
+
+    <p style="font-size: 14px; color: #71717a; margin-top: 24px;">
+        If you did not expect this invitation, you can safely ignore this email.
+    </p>
 @endcomponent
